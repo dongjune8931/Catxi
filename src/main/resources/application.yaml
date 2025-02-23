@@ -1,0 +1,36 @@
+spring:
+  application:
+    name: catxi
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/catxi
+    username: root
+    password: dpsjwl58
+  jpa:
+    hibernate:
+      ddl-auto: update
+      naming:
+        physical-strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
+  security:
+    oauth2:
+      client:
+        registration:
+          kakao:
+            client-id: edc5fae8c093d3899ffa236e5156cc06
+            redirect-uri: http://localhost:8080/login/oauth2/code/kakao
+            authorization-grant-type: authorization_code
+            scope: profile_nickname
+        provider:
+          kakao:
+            authorization-uri: https://kauth.kakao.com/oauth/authorize
+            token-uri: https://kauth.kakao.com/oauth/token
+            user-info-uri: https://kapi.kakao.com/v2/user/me
+            user-name-attribute: id
+
+  jwt:
+    secret: asdsad
+
+kakao:
+  map:
+    api:
+      key: edc5fae8c093d3899ffa236e5156cc06
