@@ -1,1 +1,4 @@
-spring.application.name=catxi
+spring:
+  profiles:
+    default: local
+
