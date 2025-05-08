@@ -5,12 +5,14 @@ import lombok.*;
 
 import java.time.LocalDateTime;
 
+import com.project.catxi.common.domain.BaseTimeEntity;
+
 @Getter
 @Entity
 @Table
 @NoArgsConstructor
 @AllArgsConstructor
-public class Member {
+public class Member extends BaseTimeEntity {
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)

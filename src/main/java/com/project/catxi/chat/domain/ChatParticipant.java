@@ -1,7 +1,5 @@
 package com.project.catxi.chat.domain;
 
-import java.time.LocalDateTime;
-
 import com.project.catxi.common.domain.BaseTimeEntity;
 import com.project.catxi.member.domain.Member;
 
@@ -36,14 +34,12 @@ public class ChatParticipant extends BaseTimeEntity {
 	private Long id;
 
 	@ManyToOne(fetch = FetchType.LAZY)
-	@JoinColumn(name = "chatRoom", nullable = false)
+	@JoinColumn(name = "chat_room_id", nullable = false)
 	private ChatRoom chatRoom;
 
 	@ManyToOne(fetch = FetchType.LAZY)
 	@JoinColumn(name = "member_id", nullable = false)
 	private Member member;
-
-	private LocalDateTime joinAt;
 
 	private boolean ready;
 

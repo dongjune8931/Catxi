@@ -44,9 +44,6 @@ public class ChatRoom extends BaseTimeEntity {
 	@Column(nullable = false)
 	private Long maxCapacity;   // 1~4
 
-	@Column(nullable = false, updatable = false)
-	private LocalDateTime createdAt;
-
 	@OneToMany(mappedBy = "chatRoom", cascade = CascadeType.ALL, orphanRemoval = true)
 	private final List<ChatParticipant> participants = new ArrayList<>();
 
