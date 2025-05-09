@@ -1,4 +1,14 @@
 spring:
-  profiles:
-    default: local
-
+  datasource:
+    url: jdbc:mysql://localhost:3306/catxi?allowPublicKeyRetrieval=true&useSSL=false
+    username: root
+    password: 4987
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.MySQL8Dialect
