@@ -1,8 +1,8 @@
 spring:
   datasource:
-    url: jdbc:mysql://localhost:3306/catxi?allowPublicKeyRetrieval=true&useSSL=false
-    username: root
-    password: 4987
+    url: jdbc:mysql://${HOST}:${PORT}/catxi?allowPublicKeyRetrieval=true&useSSL=false
+    username: ${USER}
+    password: ${PW}
     driver-class-name: com.mysql.cj.jdbc.Driver
   jpa:
     hibernate:
