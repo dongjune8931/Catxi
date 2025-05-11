@@ -1,13 +1,19 @@
 package com.project.catxi.chat.controller;
 
+import java.util.List;
+
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.project.catxi.chat.dto.ChatMessageRes;
 import com.project.catxi.chat.dto.RoomCreateReq;
 import com.project.catxi.chat.dto.RoomCreateRes;
 import com.project.catxi.chat.service.ChatMessageService;
@@ -29,10 +35,17 @@ public class ChatController {
 	}
 
 	@PostMapping("/room/create")
-	public ResponseEntity<ApiResponse<RoomCreateRes>> createRoom(@RequestBody RoomCreateReq roomCreateReq, Member member){
+	public ResponseEntity<ApiResponse<RoomCreateRes>> createRoom(@RequestBody RoomCreateReq roomCreateReq,
+		Member member) {
 		RoomCreateRes res = chatRoomService.creatRoom(roomCreateReq, member);
 		return ResponseEntity.ok(ApiResponse.success(res));
 	}
 
+	@GetMapping("/{roomId}/messages")
+	public ResponseEntity<ApiResponse<List<ChatMessageRes>>> getHistory(@PathVariable Long roomId, @RequestParam("memberId") Long memberId){
+		List<ChatMessageRes> history =
+			chatMessageService.getChatHistory(roomId, memberId);
 
+		return  ResponseEntity.ok(ApiResponse.success(history));
+	}
 }
