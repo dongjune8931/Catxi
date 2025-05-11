@@ -1,0 +1,19 @@
+package com.project.catxi.common.api.error;
+
+import org.springframework.http.HttpStatus;
+
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+
+@Getter
+@RequiredArgsConstructor
+public enum MemberErrorCode implements ErrorCode{
+	MEMBER_NOT_FOUND(HttpStatus.NOT_FOUND, "PORTFOLIO404", "멤버를 찾을 수 없습니다."),
+	INVALID_MEMBER_PARAMETER(HttpStatus.BAD_REQUEST, "PORTFOLIO400", "유효하지 않는 멤버입니다");
+
+	private final HttpStatus httpStatus;
+	private final String code;
+	private final String message;
+
+
+}
