@@ -7,13 +7,12 @@ import lombok.RequiredArgsConstructor;
 
 @Getter
 @RequiredArgsConstructor
-public enum MemberErrorCode implements ErrorCode{
-	MEMBER_NOT_FOUND(HttpStatus.NOT_FOUND, "MEMBER404", "멤버를 찾을 수 없습니다."),
-	INVALID_MEMBER_PARAMETER(HttpStatus.BAD_REQUEST, "MEMBER400", "유효하지 않는 멤버입니다");
+public enum ChatParticipantErrorCode implements ErrorCode{
+
+	CHATROOM_NOT_FOUND(HttpStatus.NOT_FOUND, "CHATPARTICIPANT404", "채팅방를 찾을 수 없습니다."),
+	ALREADY_IN_ACTIVE_ROOM(HttpStatus.CONFLICT,"CHATPARTICIPANT409","이미 참여 중인 채팅방이 있습니다.");
 
 	private final HttpStatus httpStatus;
 	private final String code;
 	private final String message;
-
-
 }
