@@ -2,9 +2,8 @@ package com.project.catxi.chat.controller;
 
 import java.util.List;
 
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -19,7 +18,6 @@ import com.project.catxi.chat.dto.RoomCreateRes;
 import com.project.catxi.chat.service.ChatMessageService;
 import com.project.catxi.chat.service.ChatRoomService;
 import com.project.catxi.common.api.ApiResponse;
-import com.project.catxi.common.api.CommonPageResponse;
 import com.project.catxi.member.domain.Member;
 
 @RestController
@@ -47,5 +45,14 @@ public class ChatController {
 			chatMessageService.getChatHistory(roomId, memberId);
 
 		return  ResponseEntity.ok(ApiResponse.success(history));
+	}
+
+	@DeleteMapping("/{roomId}/leave")
+	public ResponseEntity<ApiResponse<Void>> leaveRoom(
+		@PathVariable Long roomId,
+		@RequestParam  Long memberId) {      // 임시 – 로그인 완성 후 제거
+
+		chatRoomService.leaveChatRoom(roomId, memberId);
+		return ResponseEntity.ok(ApiResponse.successWithNoData());
 	}
 }
