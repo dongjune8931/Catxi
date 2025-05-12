@@ -43,10 +43,18 @@ public class ChatParticipant extends BaseTimeEntity {
 	@JoinColumn(name = "member_id", nullable = false)
 	private Member member;
 
-	private boolean ready;
+	private boolean isReady;
 
 	@Column(nullable = false)
 	private boolean isHost;
 
 	private boolean isActive;
+
+	public void setActive(boolean active) {
+		isActive = active;
+	}
+
+	public void setReady(boolean ready) {
+		isReady=ready;
+	}
 }
