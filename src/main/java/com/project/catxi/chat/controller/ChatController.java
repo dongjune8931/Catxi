@@ -48,4 +48,15 @@ public class ChatController {
 
 		return  ResponseEntity.ok(ApiResponse.success(history));
 	}
+
+	@PostMapping("/rooms/{roomId}/join")
+	public ResponseEntity<ApiResponse<Void>> joinChatRoom(
+		@PathVariable Long roomId,
+		@RequestParam Long memberId) {
+
+		chatRoomService.joinChatRoom(roomId, memberId);
+		return ResponseEntity.ok(ApiResponse.successWithNoData());
+	}
+
+
 }
