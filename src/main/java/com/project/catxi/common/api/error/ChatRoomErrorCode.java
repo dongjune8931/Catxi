@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public enum ChatRoomErrorCode implements ErrorCode{
 
+	CHATROOM_FULL(HttpStatus.NOT_FOUND, "CHATROOM405", "채팅방에 인원이 꽉찼습니다."),
 	CHATROOM_NOT_FOUND(HttpStatus.NOT_FOUND, "CHATROOM404", "채팅방를 찾을 수 없습니다."),
 	NOT_OWNED_CHATROOM(HttpStatus.FORBIDDEN, "CHATROOM403", "본인 소유의 채팅방이 아닙니다."),
 	INVALID_CHATROOM_PARAMETER(HttpStatus.BAD_REQUEST, "CHATROOM400", "채팅방 요청 데이터가 올바르지 않습니다.");
