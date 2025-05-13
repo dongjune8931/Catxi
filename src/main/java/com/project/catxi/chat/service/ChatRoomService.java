@@ -1,5 +1,7 @@
 package com.project.catxi.chat.service;
 
+
+import java.util.List;
 import java.util.Optional;
 
 import org.springframework.stereotype.Service;
@@ -32,6 +34,15 @@ public class ChatRoomService {
 	private final ChatParticipantRepository chatParticipantRepository;
 	private final MemberRepository memberRepository;
 
+
+	private void HostNotInOtherRoom(Member host) {
+		boolean exists = chatParticipantRepository.existsByMemberAndActiveTrue(host);
+		if (exists)
+			throw new CatxiException(ChatParticipantErrorCode.ALREADY_IN_ACTIVE_ROOM);
+	}
+
+
+
 	public RoomCreateRes creatRoom(RoomCreateReq roomReq, Member host){
 		HostNotInOtherRoom(host);
 		if(roomReq.startPoint().equals(roomReq.endPoint()))
@@ -50,7 +61,7 @@ public class ChatRoomService {
 			.chatRoom(room)
 			.member(host)
 			.isHost(true)
-			.ready(true)
+			.isReady(true)
 			.isActive(true)
 			.build();
 		chatParticipantRepository.save(hostPart);
@@ -64,6 +75,24 @@ public class ChatRoomService {
 			room.getStatus()
 		);
 	}
+
+
+	//로그인 전이라 member 임시로 추가해둠.
+	public void leaveChatRoom(Long roomId,Long memberId){
+		Member member = memberRepository.findById(memberId)
+			.orElseThrow(() -> new CatxiException(MemberErrorCode.MEMBER_NOT_FOUND));
+		ChatRoom chatRoom = chatRoomRepository.findById(roomId)
+			.orElseThrow(() -> new CatxiException(ChatRoomErrorCode.CHATROOM_NOT_FOUND));
+		ChatParticipant chatParticipant = chatParticipantRepository
+			.findByChatRoomAndMemberAndActiveTrue(chatRoom, member)
+			.orElseThrow(() -> new CatxiException(ChatParticipantErrorCode.PARTICIPANT_NOT_FOUND));
+		if (chatParticipant.isHost()) {
+			chatRoomRepository.delete(chatRoom);
+			return;
+		}
+
+		chatParticipant.setActive(false);
+		chatParticipant.setReady(false);
 
 	public void joinChatRoom(Long roomId, Long memberId) {
 
@@ -95,6 +124,7 @@ public class ChatRoomService {
 		boolean exists = chatParticipantRepository.existsByMemberAndActiveTrue(host);
 		if (exists)
 			throw new CatxiException(ChatParticipantErrorCode.ALREADY_IN_ACTIVE_ROOM);
+
 	}
 
 
