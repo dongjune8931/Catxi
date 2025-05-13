@@ -47,6 +47,7 @@ public class ChatController {
 		return  ResponseEntity.ok(ApiResponse.success(history));
 	}
 
+
 	@DeleteMapping("/{roomId}/leave")
 	public ResponseEntity<ApiResponse<Void>> leaveRoom(
 		@PathVariable Long roomId,
@@ -55,4 +56,15 @@ public class ChatController {
 		chatRoomService.leaveChatRoom(roomId, memberId);
 		return ResponseEntity.ok(ApiResponse.successWithNoData());
 	}
+
+	@PostMapping("/rooms/{roomId}/join")
+	public ResponseEntity<ApiResponse<Void>> joinChatRoom(
+		@PathVariable Long roomId,
+		@RequestParam Long memberId) {
+
+		chatRoomService.joinChatRoom(roomId, memberId);
+		return ResponseEntity.ok(ApiResponse.successWithNoData());
+	}
+
+
 }

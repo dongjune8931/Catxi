@@ -1,6 +1,8 @@
 package com.project.catxi.chat.service;
 
+
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -32,11 +34,14 @@ public class ChatRoomService {
 	private final ChatParticipantRepository chatParticipantRepository;
 	private final MemberRepository memberRepository;
 
+
 	private void HostNotInOtherRoom(Member host) {
 		boolean exists = chatParticipantRepository.existsByMemberAndActiveTrue(host);
 		if (exists)
 			throw new CatxiException(ChatParticipantErrorCode.ALREADY_IN_ACTIVE_ROOM);
 	}
+
+
 
 	public RoomCreateRes creatRoom(RoomCreateReq roomReq, Member host){
 		HostNotInOtherRoom(host);
@@ -71,6 +76,7 @@ public class ChatRoomService {
 		);
 	}
 
+
 	//로그인 전이라 member 임시로 추가해둠.
 	public void leaveChatRoom(Long roomId,Long memberId){
 		Member member = memberRepository.findById(memberId)
@@ -87,6 +93,38 @@ public class ChatRoomService {
 
 		chatParticipant.setActive(false);
 		chatParticipant.setReady(false);
+
+	public void joinChatRoom(Long roomId, Long memberId) {
+
+		ChatRoom chatRoom = chatRoomRepository.findById(roomId)
+			.orElseThrow(() -> new CatxiException(ChatRoomErrorCode.CHATROOM_NOT_FOUND));
+
+		Member member = memberRepository.findById(memberId)
+			.orElseThrow(() -> new CatxiException(MemberErrorCode.MEMBER_NOT_FOUND));
+
+		HostNotInOtherRoom(member);
+
+		if(chatRoom.getStatus()!=RoomStatus.WAITING)
+			throw new CatxiException(ChatRoomErrorCode.INVALID_CHATROOM_PARAMETER);
+
+		long current = chatParticipantRepository.countByChatRoomAndActiveTrue(chatRoom);
+		if (current >= chatRoom.getMaxCapacity())
+			throw new CatxiException(ChatRoomErrorCode.CHATROOM_FULL);
+
+		ChatParticipant chatParticipant = ChatParticipant.builder()
+			.chatRoom(chatRoom)
+			.member(member)
+			.isActive(true)
+			.build();
+
+		chatParticipantRepository.save(chatParticipant);
+	}
+
+	private void HostNotInOtherRoom(Member host) {
+		boolean exists = chatParticipantRepository.existsByMemberAndActiveTrue(host);
+		if (exists)
+			throw new CatxiException(ChatParticipantErrorCode.ALREADY_IN_ACTIVE_ROOM);
+
 	}
 
 
