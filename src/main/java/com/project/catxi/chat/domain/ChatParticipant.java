@@ -48,10 +48,10 @@ public class ChatParticipant extends BaseTimeEntity {
 	@Column(nullable = false)
 	private boolean isHost;
 
-	private boolean isActive;
+	private boolean active;
 
-	public void setActive(boolean active) {
-		isActive = active;
+	public void setActive(boolean isActive) {
+		active = isActive;
 	}
 
 	public void setReady(boolean ready) {
