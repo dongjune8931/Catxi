@@ -2,8 +2,6 @@ package com.project.catxi.chat.controller;
 
 import java.util.List;
 
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -14,12 +12,12 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.project.catxi.chat.dto.ChatMessageRes;
+import com.project.catxi.chat.dto.ChatRoomRes;
 import com.project.catxi.chat.dto.RoomCreateReq;
 import com.project.catxi.chat.dto.RoomCreateRes;
 import com.project.catxi.chat.service.ChatMessageService;
 import com.project.catxi.chat.service.ChatRoomService;
 import com.project.catxi.common.api.ApiResponse;
-import com.project.catxi.common.api.CommonPageResponse;
 import com.project.catxi.member.domain.Member;
 
 @RestController
@@ -48,4 +46,18 @@ public class ChatController {
 
 		return  ResponseEntity.ok(ApiResponse.success(history));
 	}
+
+
+	@GetMapping("/rooms")
+	public ResponseEntity<ApiResponse<List<ChatRoomRes>>> getRoomList(
+		@RequestParam("direction") String direction,
+		@RequestParam("station")String station,
+		@RequestParam("sort") String sort,
+		@RequestParam(value = "page", defaultValue = "0") int page
+	){
+		List<ChatRoomRes> roomList = chatRoomService.getChatRoomList(direction,station, sort, page);
+		return ResponseEntity.ok(ApiResponse.success(roomList));
+	}
+
+
 }
