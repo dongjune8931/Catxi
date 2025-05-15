@@ -3,6 +3,7 @@ package com.project.catxi.chat.controller;
 import java.util.List;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -47,17 +48,33 @@ public class ChatController {
 		return  ResponseEntity.ok(ApiResponse.success(history));
 	}
 
-
 	@GetMapping("/rooms")
 	public ResponseEntity<ApiResponse<List<ChatRoomRes>>> getRoomList(
 		@RequestParam("direction") String direction,
 		@RequestParam("station")String station,
 		@RequestParam("sort") String sort,
 		@RequestParam(value = "page", defaultValue = "0") int page
-	){
-		List<ChatRoomRes> roomList = chatRoomService.getChatRoomList(direction,station, sort, page);
+	) {
+		List<ChatRoomRes> roomList = chatRoomService.getChatRoomList(direction, station, sort, page);
 		return ResponseEntity.ok(ApiResponse.success(roomList));
 	}
 
+	@DeleteMapping("/{roomId}/leave")
+	public ResponseEntity<ApiResponse<Void>> leaveRoom(
+		@PathVariable Long roomId,
+		@RequestParam  Long memberId) {      // 임시 – 로그인 완성 후 제거
+
+		chatRoomService.leaveChatRoom(roomId, memberId);
+		return ResponseEntity.ok(ApiResponse.successWithNoData());
+	}
+
+	@PostMapping("/rooms/{roomId}/join")
+	public ResponseEntity<ApiResponse<Void>> joinChatRoom(
+		@PathVariable Long roomId,
+		@RequestParam Long memberId) {
+
+		chatRoomService.joinChatRoom(roomId, memberId);
+		return ResponseEntity.ok(ApiResponse.successWithNoData());
+	}
 
 }

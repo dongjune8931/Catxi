@@ -59,7 +59,7 @@ public class ChatMessageService {
 			.orElseThrow(() -> new CatxiException(MemberErrorCode.MEMBER_NOT_FOUND));
 
 		if (!chatParticipantRepository.existsByChatRoomAndMember(room, member)) {
-			throw new CatxiException(ChatParticipantErrorCode.CHATROOM_NOT_FOUND);
+			throw new CatxiException(ChatParticipantErrorCode.PARTICIPANT_NOT_FOUND);
 		}
 
 		return chatMessageRepository.findByChatRoomOrderByCreatedTimeAsc(room)
