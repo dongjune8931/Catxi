@@ -3,8 +3,10 @@ package com.project.catxi.chat.repository;
 import java.util.List;
 import java.util.Set;
 
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.support.PageableExecutionUtils;
 import org.springframework.stereotype.Repository;
 
 import com.project.catxi.chat.domain.ChatRoom;
@@ -19,6 +21,7 @@ import com.querydsl.core.types.OrderSpecifier;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.core.types.dsl.EnumPath;
 import com.querydsl.core.types.dsl.PathBuilder;
+import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 
 import lombok.RequiredArgsConstructor;
@@ -29,17 +32,35 @@ public class ChatRoomRepositoryCustomImpl implements ChatRoomRepositoryCustom {
 	private final JPAQueryFactory jpaQueryFactory;
 
 	@Override
-	public List<ChatRoom> findByLocationAndDirection(Location location, String point, Pageable pageable) {
+	public Page<ChatRoom> findByLocationAndDirection(Location location, String point, Pageable pageable) {
 		QChatRoom chatRoom = QChatRoom.chatRoom;
 
-		return jpaQueryFactory
+		// 1. 페이징 조회
+		List<ChatRoom> chatRooms = jpaQueryFactory
 			.selectFrom(chatRoom)
-			.join(chatRoom.host, QMember.member).fetchJoin()
-			.where(filterByLocationAndPoint(location, point), chatRoom.status.eq(RoomStatus.WAITING))
+			.where(
+				chatRoom.status.eq(RoomStatus.WAITING),
+				filterByLocationAndPoint(location, point)
+			)
+			.orderBy(getOrderSpecifier(pageable))
 			.offset(pageable.getOffset())
 			.limit(pageable.getPageSize())
-			.orderBy(getOrderSpecifier(pageable))
 			.fetch();
+
+		// 2. 전체 데이터 개수 조회
+		JPAQuery<Long> total = jpaQueryFactory
+			.select(chatRoom.count())
+			.from(chatRoom)
+			.where(
+				chatRoom.status.eq(RoomStatus.WAITING),
+				filterByLocationAndPoint(location, point)
+			);
+
+		return PageableExecutionUtils.getPage(
+			chatRooms,
+			pageable,
+			total::fetchOne
+		);
 	}
 
 	private OrderSpecifier<?> getOrderSpecifier(Pageable pageable) {
