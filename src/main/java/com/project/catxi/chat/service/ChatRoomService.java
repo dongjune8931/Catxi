@@ -2,6 +2,7 @@ package com.project.catxi.chat.service;
 
 import java.util.List;
 
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -76,7 +77,7 @@ public class ChatRoomService {
 	}
 
 
-	public List<ChatRoomRes> getChatRoomList(String direction, String station, String sort, Integer page) {
+	public Page<ChatRoomRes> getChatRoomList(String direction, String station, String sort, Integer page) {
 		Pageable pageable = PageRequest.of(page, 10, Sort.by(sort));
 
 		Location location = switch (station) {
@@ -85,11 +86,9 @@ public class ChatRoomService {
 			default -> Location.GURO_ST;
 		};
 
-		List<ChatRoom> chatRooms = chatRoomRepository.findByLocationAndDirection(location, direction, pageable);
+		Page<ChatRoom> chatRooms = chatRoomRepository.findByLocationAndDirection(location, direction, pageable);
 
-		return chatRooms.stream()
-			.map(ChatRoomRes::from)
-			.toList();
+		return chatRooms.map(ChatRoomRes::from);
 	}
 
 
