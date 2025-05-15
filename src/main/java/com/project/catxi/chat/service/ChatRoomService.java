@@ -42,14 +42,6 @@ public class ChatRoomService {
 	private final MemberRepository memberRepository;
 
 
-	private void HostNotInOtherRoom(Member host) {
-		boolean exists = chatParticipantRepository.existsByMemberAndActiveTrue(host);
-		if (exists)
-			throw new CatxiException(ChatParticipantErrorCode.ALREADY_IN_ACTIVE_ROOM);
-	}
-
-
-
 	public RoomCreateRes creatRoom(RoomCreateReq roomReq, Member host){
 		HostNotInOtherRoom(host);
 		if(roomReq.startPoint().equals(roomReq.endPoint()))
@@ -69,7 +61,7 @@ public class ChatRoomService {
 			.member(host)
 			.isHost(true)
 			.isReady(true)
-			.isActive(true)
+			.active(true)
 			.build();
 		chatParticipantRepository.save(hostPart);
 
@@ -102,7 +94,7 @@ public class ChatRoomService {
 
 
 	//로그인 전이라 member 임시로 추가해둠.
-	public void leaveChatRoom(Long roomId,Long memberId){
+	public void leaveChatRoom(Long roomId,Long memberId) {
 		Member member = memberRepository.findById(memberId)
 			.orElseThrow(() -> new CatxiException(MemberErrorCode.MEMBER_NOT_FOUND));
 		ChatRoom chatRoom = chatRoomRepository.findById(roomId)
@@ -117,6 +109,7 @@ public class ChatRoomService {
 
 		chatParticipant.setActive(false);
 		chatParticipant.setReady(false);
+	}
 
 	public void joinChatRoom(Long roomId, Long memberId) {
 
@@ -138,7 +131,7 @@ public class ChatRoomService {
 		ChatParticipant chatParticipant = ChatParticipant.builder()
 			.chatRoom(chatRoom)
 			.member(member)
-			.isActive(true)
+			.active(true)
 			.build();
 
 		chatParticipantRepository.save(chatParticipant);
