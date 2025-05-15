@@ -96,19 +96,7 @@ public class ChatRoomService {
 		List<ChatRoom> chatRooms = chatRoomRepository.findByLocationAndDirection(location, direction, pageable);
 
 		return chatRooms.stream()
-			.map(room -> new ChatRoomRes(
-				room.getRoomId(),
-				room.getHost().getId(),
-				room.getHost().getName(),
-				room.getHost().getNickname(),
-				room.getStartPoint(),
-				room.getEndPoint(),
-				room.getMaxCapacity(),
-				(long) room.getParticipants().size(),
-				room.getStatus(),
-				room.getDepartAt().toString(),
-				room.getCreatedTime().toString()
-			))
+			.map(ChatRoomRes::from)
 			.toList();
 	}
 
