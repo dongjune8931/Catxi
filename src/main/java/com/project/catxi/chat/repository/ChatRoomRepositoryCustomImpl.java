@@ -10,7 +10,9 @@ import org.springframework.data.support.PageableExecutionUtils;
 import org.springframework.stereotype.Repository;
 
 import com.project.catxi.chat.domain.ChatRoom;
+import com.project.catxi.chat.domain.QChatParticipant;
 import com.project.catxi.chat.domain.QChatRoom;
+import com.project.catxi.chat.dto.ChatRoomRes;
 import com.project.catxi.common.api.error.ChatRoomErrorCode;
 import com.project.catxi.common.api.exception.CatxiException;
 import com.project.catxi.common.domain.Location;
@@ -18,9 +20,11 @@ import com.project.catxi.common.domain.RoomStatus;
 import com.project.catxi.member.domain.QMember;
 import com.querydsl.core.types.Order;
 import com.querydsl.core.types.OrderSpecifier;
+import com.querydsl.core.types.Projections;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.core.types.dsl.EnumPath;
 import com.querydsl.core.types.dsl.PathBuilder;
+import com.querydsl.jpa.JPAExpressions;
 import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 
@@ -32,12 +36,31 @@ public class ChatRoomRepositoryCustomImpl implements ChatRoomRepositoryCustom {
 	private final JPAQueryFactory jpaQueryFactory;
 
 	@Override
-	public Page<ChatRoom> findByLocationAndDirection(Location location, String point, Pageable pageable) {
+	public Page<ChatRoomRes> findByLocationAndDirection(Location location, String point, Pageable pageable) {
 		QChatRoom chatRoom = QChatRoom.chatRoom;
+		QChatParticipant participant = QChatParticipant.chatParticipant;
+		QMember host = QMember.member;
 
 		// 1. 페이징 조회
-		List<ChatRoom> chatRooms = jpaQueryFactory
-			.selectFrom(chatRoom)
+		List<ChatRoomRes> chatRooms = jpaQueryFactory
+			.select(Projections.constructor(
+				ChatRoomRes.class,
+				chatRoom.roomId,
+				host.id,
+				host.name,
+				host.nickname,
+				chatRoom.startPoint,
+				chatRoom.endPoint,
+				chatRoom.maxCapacity,
+				JPAExpressions.select(participant.count())
+					.from(participant)
+					.where(participant.chatRoom.eq(chatRoom)),
+				chatRoom.status,
+				chatRoom.departAt.stringValue(),
+				chatRoom.createdTime.stringValue()
+			))
+			.from(chatRoom)
+			.join(chatRoom.host, host)
 			.where(
 				chatRoom.status.eq(RoomStatus.WAITING),
 				filterByLocationAndPoint(location, point)
