@@ -1,5 +1,6 @@
 package com.project.catxi.chat.repository;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
@@ -65,7 +66,7 @@ public class ChatRoomRepositoryCustomImpl implements ChatRoomRepositoryCustom {
 				chatRoom.status.eq(RoomStatus.WAITING),
 				filterByLocationAndPoint(location, point)
 			)
-			.orderBy(getOrderSpecifier(pageable))
+			.orderBy(getOrderSpecifier(pageable.getSort()))
 			.offset(pageable.getOffset())
 			.limit(pageable.getPageSize())
 			.fetch();
@@ -86,15 +87,16 @@ public class ChatRoomRepositoryCustomImpl implements ChatRoomRepositoryCustom {
 		);
 	}
 
-	private OrderSpecifier<?> getOrderSpecifier(Pageable pageable) {
-		Sort.Order order = pageable.getSort().iterator().next();
-		PathBuilder<ChatRoom> path = new PathBuilder<>(ChatRoom.class, "chatRoom");
-		String property = order.getProperty();
+	private OrderSpecifier<?>[] getOrderSpecifier(Sort sort) {
+		List<OrderSpecifier<?>> orderSpecifiers = new ArrayList<>();
 
-		return new OrderSpecifier<>(
-			order.isAscending() ? Order.ASC : Order.DESC,
-			path.getComparable(property, Comparable.class)
-		);
+		for (Sort.Order order : sort) {
+			Order direction = order.isAscending() ? Order.ASC : Order.DESC;
+			PathBuilder<ChatRoom> pathBuilder = new PathBuilder<>(ChatRoom.class, "chatRoom");
+			orderSpecifiers.add(new OrderSpecifier<>(direction, pathBuilder.getString(order.getProperty())));
+		}
+
+		return orderSpecifiers.toArray(new OrderSpecifier[0]);
 	}
 
 	private BooleanExpression filterByLocationAndPoint(Location location, String point) {
