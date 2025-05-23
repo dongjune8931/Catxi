@@ -53,19 +53,19 @@ public class ChatRoomRepositoryCustomImpl implements ChatRoomRepositoryCustom {
 				chatRoom.startPoint,
 				chatRoom.endPoint,
 				chatRoom.maxCapacity,
-				JPAExpressions.select(participant.count())
-					.from(participant)
-					.where(participant.chatRoom.eq(chatRoom)),
+				participant.id.countDistinct(),
 				chatRoom.status,
 				chatRoom.departAt.stringValue(),
 				chatRoom.createdTime.stringValue()
 			))
 			.from(chatRoom)
 			.join(chatRoom.host, host)
+			.leftJoin(chatRoom.participants, participant)
 			.where(
 				chatRoom.status.eq(RoomStatus.WAITING),
 				filterByLocationAndPoint(location, point)
 			)
+			.groupBy(chatRoom.roomId)
 			.orderBy(getOrderSpecifier(pageable.getSort()))
 			.offset(pageable.getOffset())
 			.limit(pageable.getPageSize())
