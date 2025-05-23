@@ -34,7 +34,7 @@ public class SecurityConfig {
   public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
 
     //csrf disable
-    //JWT의 경우 세션을 stateless로 운영 -> csrf 공격에 대해 깊이 생각할 필요 X
+    //JWT의 경우 세션을 stateless로 운영
     http
         .csrf((auth) -> auth.disable());
 
