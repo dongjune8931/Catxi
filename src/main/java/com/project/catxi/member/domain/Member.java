@@ -12,6 +12,7 @@ import com.project.catxi.common.domain.BaseTimeEntity;
 @Table
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
 public class Member extends BaseTimeEntity {
 
 	@Id
@@ -20,7 +21,7 @@ public class Member extends BaseTimeEntity {
 
 	//이름
 	@Column(nullable = false, length = 30)
-	private String name;
+	private String Membername;
 
 	//닉네임
 	@Column(nullable = false, length = 30)
@@ -36,4 +37,6 @@ public class Member extends BaseTimeEntity {
 	@Column(nullable = false, updatable = false)
 	private LocalDateTime createdAt;
 
+	@Column(nullable = false)
+	private String password;
 }

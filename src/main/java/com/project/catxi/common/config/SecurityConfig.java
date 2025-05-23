@@ -34,10 +34,8 @@ public class SecurityConfig {
   public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
 
     //csrf disable
-    //JWT의 경우 세션을 stateless로 운영
     http
         .csrf((auth) -> auth.disable());
-
     //Form 로그인 방식 disable -> Custom하게 설정
     http
         .formLogin((auth) -> auth.disable());
@@ -50,6 +48,7 @@ public class SecurityConfig {
     //경로별 인가 작업
     http
         .authorizeHttpRequests((auth)-> auth
+            .requestMatchers("/swagger", "/swagger/", "/swagger-ui/**", "/v3/api-docs/**").permitAll() // Swagger 허용
             .requestMatchers("/login","/","/join").permitAll()
             .requestMatchers("/admin").hasRole("ADMIN")
             .anyRequest().authenticated()
