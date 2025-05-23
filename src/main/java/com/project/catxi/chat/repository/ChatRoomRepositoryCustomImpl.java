@@ -67,8 +67,6 @@ public class ChatRoomRepositoryCustomImpl implements ChatRoomRepositoryCustom {
 			)
 			.groupBy(chatRoom.roomId)
 			.orderBy(getOrderSpecifier(pageable.getSort()))
-			.offset(pageable.getOffset())
-			.limit(pageable.getPageSize())
 			.fetch();
 
 		// 2. 전체 데이터 개수 조회
