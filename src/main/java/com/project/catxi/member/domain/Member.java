@@ -18,12 +18,15 @@ public class Member extends BaseTimeEntity {
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
 
+	//이름
 	@Column(nullable = false, length = 30)
 	private String name;
 
+	//닉네임
 	@Column(nullable = false, length = 30)
 	private String nickname;
 
+	//학번
 	@Column(nullable = false, length = 20, unique = true)
 	private Long studentNo;
 
