@@ -16,6 +16,7 @@ import com.project.catxi.member.domain.Member;
 @Entity
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
 public class ChatRoom extends BaseTimeEntity {
 
 	@Id

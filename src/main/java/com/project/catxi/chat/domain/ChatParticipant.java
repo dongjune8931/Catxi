@@ -14,6 +14,7 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
@@ -27,6 +28,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Getter
+@Builder
 public class ChatParticipant extends BaseTimeEntity {
 
 	@Id
@@ -41,8 +43,18 @@ public class ChatParticipant extends BaseTimeEntity {
 	@JoinColumn(name = "member_id", nullable = false)
 	private Member member;
 
-	private boolean ready;
+	private boolean isReady;
 
 	@Column(nullable = false)
 	private boolean isHost;
+
+	private boolean active;
+
+	public void setActive(boolean isActive) {
+		active = isActive;
+	}
+
+	public void setReady(boolean ready) {
+		isReady=ready;
+	}
 }
