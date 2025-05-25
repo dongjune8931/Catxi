@@ -23,9 +23,10 @@ public class MemberService {
   }
 
   public Long signUp(SignUpDTO dto) {
+
     // 유효성은 컨트롤러에서 @Valid 처리
     Member member = Member.builder()
-        .Membername(dto.getMembername())
+        .membername(dto.getMembername())
         .nickname(dto.getNickname())
         .studentNo(dto.getStudentNo())
         .password(bCryptPasswordEncoder.encode(dto.getPassword()))

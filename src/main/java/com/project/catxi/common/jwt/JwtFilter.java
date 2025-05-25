@@ -13,6 +13,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 public class JwtFilter extends OncePerRequestFilter {
+
   private final JwtUtill jwtUtill;
 
   public JwtFilter(JwtUtill jwtUtill) {
@@ -47,7 +48,7 @@ public class JwtFilter extends OncePerRequestFilter {
       return;
     }
 
-    // jwtUtill 객체에서 username, role 받아옴
+    // jwtUtill 객체에서 username 받아옴
     String membername = jwtUtill.getMembername(token);
 
     // Member를 생성하여 값 초기화
@@ -57,7 +58,7 @@ public class JwtFilter extends OncePerRequestFilter {
     member.setPassword("CatxiPassword");
 
     // UserDetails에 회원 정보 객체 담기
-    CustomUserDetails customUserDetails = new CustomUserDetails(Member);
+    CustomUserDetails customUserDetails = new CustomUserDetails(member);
 
     // 스프링 시큐리티 인증 토큰 생성
     Authentication authToken = new UsernamePasswordAuthenticationToken(customUserDetails, null, customUserDetails.getAuthorities());

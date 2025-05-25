@@ -35,9 +35,11 @@ public class CustomUserDetails implements UserDetails {
   }
 
   @Override
-  public String getMembername() {
+  public String getUsername() {
     return member.getMembername();
   }
+
+
 
   // 계정 블락 여부
   /*@Override

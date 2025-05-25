@@ -29,7 +29,7 @@ public class JwtUtill {
     return Jwts.parser().verifyWith(secretKey).build().parseSignedClaims(token).getPayload().getExpiration().before(new Date());
   }
 
-  public String createJwt(String Membername, String role, Long expiredMs) {
+  public String createJwt(String Membername, Long expiredMs) {
 
     return Jwts.builder()
         .claim("membername", getMembername(Membername))

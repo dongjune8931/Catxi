@@ -8,6 +8,7 @@ import java.time.LocalDateTime;
 import com.project.catxi.common.domain.BaseTimeEntity;
 
 @Getter
+@Setter
 @Entity
 @Table
 @NoArgsConstructor
@@ -21,7 +22,7 @@ public class Member extends BaseTimeEntity {
 
 	//이름
 	@Column(nullable = false, length = 30)
-	private String Membername;
+	private String membername;
 
 	//닉네임
 	@Column(nullable = false, length = 30)
