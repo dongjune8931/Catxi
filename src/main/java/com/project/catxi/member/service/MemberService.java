@@ -5,11 +5,13 @@ import com.project.catxi.common.api.exception.CatxiException;
 import com.project.catxi.member.DTO.SignUpDTO;
 import com.project.catxi.member.domain.Member;
 import com.project.catxi.member.repository.MemberRepository;
+import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
 @Service
 @Transactional
 public class MemberService {
@@ -31,6 +33,7 @@ public class MemberService {
         .studentNo(dto.getStudentNo())
         .password(bCryptPasswordEncoder.encode(dto.getPassword()))
         .matchCount(0)
+        .createdAt(LocalDateTime.now())
         .build();
 
     try {

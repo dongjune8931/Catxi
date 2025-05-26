@@ -57,7 +57,7 @@ public class SecurityConfig {
     http
         .authorizeHttpRequests((auth)-> auth
             .requestMatchers("/swagger", "/swagger/", "/swagger-ui/**", "/v3/api-docs/**").permitAll() // Swagger 허용
-            .requestMatchers("/login","/","/join").permitAll()
+            .requestMatchers("/login","/","/signUp").permitAll()
             .requestMatchers("/admin").hasRole("ADMIN")
             .anyRequest().authenticated()
         );
