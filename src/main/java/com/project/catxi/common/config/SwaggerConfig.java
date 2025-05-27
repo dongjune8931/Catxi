@@ -1,5 +1,7 @@
 package com.project.catxi.common.config;
 
+import io.swagger.v3.oas.models.security.SecurityRequirement;
+import io.swagger.v3.oas.models.security.SecurityScheme;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -21,10 +23,22 @@ public class SwaggerConfig {
 			.version("1.0")
 			.description(
 			"CATXI에요");
+
+		String jwtSchemeName = "JWT_t0ken";
+		SecurityRequirement securityRequirement = new SecurityRequirement().addList(jwtSchemeName);
+
+		Components components = new Components()
+				.addSecuritySchemes(jwtSchemeName,new SecurityScheme()
+						.name(jwtSchemeName)
+						.type(SecurityScheme.Type.HTTP)
+						.scheme("bearer")
+						.bearerFormat("JWT"));
+
 		//Swagger UI 설정 및 보안 추가
 		return new OpenAPI()
 			.addServersItem(new Server().url("http://localhost:8080"))
-			.components(new Components())
-			.info(info);
+			.components(components)
+			.info(info)
+				.addSecurityItem(securityRequirement);
 	}
 }
