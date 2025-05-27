@@ -40,4 +40,13 @@ public class Member extends BaseTimeEntity {
 
 	@Column(nullable = false)
 	private String password;
+
+	@Column(nullable = false)
+	private boolean isLogin;
+
+	// 로그인했음 표시
+	public void setLogin(boolean isLogin) {
+		this.isLogin = isLogin;
+	}
+
 }

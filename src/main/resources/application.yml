@@ -13,4 +13,6 @@ spring:
         format_sql: true
         dialect: org.hibernate.dialect.MySQL8Dialect
   jwt:
+    header: authorization
     secret: ${SECRET_KEY}
+    access-token-validity-in-seconds: 3600
