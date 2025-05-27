@@ -7,20 +7,26 @@ import com.project.catxi.member.DTO.AuthDTO;
 import com.project.catxi.member.DTO.AuthDTO.LoginResponse;
 import com.project.catxi.member.DTO.IdResponse;
 import com.project.catxi.member.DTO.SignUpDTO;
+import com.project.catxi.member.domain.Member;
+import com.project.catxi.member.repository.MemberRepository;
 import com.project.catxi.member.service.MemberService;
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
 import java.net.URI;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.security.core.GrantedAuthority;
+import org.springframework.web.server.ResponseStatusException;
 
 
 @RestController
@@ -31,6 +37,7 @@ public class MemberController {
   private final JwtUtill jwtUtill;
   private final AuthenticationManager authenticationManager;
   private final JwtConfig jwtConfig;
+  private final MemberRepository memberRepository;
 
   //@Operation(summary = "SignUp Api")
   @PostMapping("/signUp")
@@ -62,11 +69,24 @@ public class MemberController {
         .orElse("ROLE_USER"); // 기본 권한 처리
 
     // JWT 생성
-    String token = jwtUtill.createJwt("access",username, role, jwtConfig.getAccessTokenValidityInSeconds() // 유효 시간
+    String token = jwtUtill.createJwt("access", username, role,
+        jwtConfig.getAccessTokenValidityInSeconds() // 유효 시간
     );
 
     return ResponseEntity.ok(new LoginResponse(token));
   }
 
+  @Operation(summary = "학생 이름 입력시 학번 반환")
+  @GetMapping("/stdNo")
+  public Long getStudentNo(@RequestParam("nickname") String nickname){
+    Member member = memberRepository.findByNickname(nickname)
+        .orElseThrow(() ->
+            new ResponseStatusException(
+                HttpStatus.NOT_FOUND,
+                "해당 닉네임의 회원을 찾을 수 없습니다."
+            )
+        );
+    return member.getStudentNo();
+  }
 
 }
