@@ -9,9 +9,42 @@ spring:
     driver-class-name: com.mysql.cj.jdbc.Driver
   jpa:
     hibernate:
-      ddl-auto: none  # 배포 환경에서는 자동 스키마 변경 방지
-    show-sql: false   # 성능을 위해 쿼리 출력 비활성화
+      ddl-auto: none
+    show-sql: false
     properties:
       hibernate:
         format_sql: false
         dialect: org.hibernate.dialect.MySQL8Dialect
+
+  data:
+    redis:
+      host: ${REDIS_HOST}
+      port: ${REDIS_PORT}
+      password: ${REDIS_PW}
+      timeout: 2000ms
+      lettuce:
+        pool:
+          max-active: 8
+          max-idle: 8
+          min-idle: 0
+
+server:
+  port: 8080
+
+jwt:
+  header: authorization
+  secret: ${SECRET_KEY}
+  access-token-validity-in-seconds: 3600
+
+# WebSocket 설정
+websocket:
+  endpoint: "/ws"
+  allowed-origins: "*"
+
+# Redis Pub/Sub 채널
+chat:
+  redis:
+    channels:
+      message: "chatMessage"
+      join: "roomJoin"
+      exit: "roomExit"
