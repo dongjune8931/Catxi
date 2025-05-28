@@ -15,8 +15,8 @@ spring:
         dialect: org.hibernate.dialect.MySQL8Dialect
 
   # Redis 설정 추가 (로컬용)
-  redis:
-    data:
+  data:
+    redis:
       host: ${REDIS_HOST:localhost}      # 기본값 localhost
       port: ${REDIS_PORT:6379}           # 기본값 6379
       password: ${REDIS_PW:}             # 기본값 빈 문자열 (비밀번호 없음)
