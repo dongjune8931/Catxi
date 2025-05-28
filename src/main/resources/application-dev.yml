@@ -43,3 +43,8 @@ chat:
       message: "chatMessage"
       join: "roomJoin"
       exit: "roomExit"
+
+  jwt:
+    header: authorization
+    secret: ${SECRET_KEY}
+    access-token-validity-in-seconds: 3600
