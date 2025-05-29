@@ -22,7 +22,7 @@ import lombok.NoArgsConstructor;
 @Table(
 	name = "chat_participant",
 	uniqueConstraints = {
-		@UniqueConstraint(name = "uk_participant_member", columnNames = "member_id")
+		@UniqueConstraint(name = "uk_participant_member", columnNames = { "member_id", "active" })
 	}
 )
 @NoArgsConstructor
