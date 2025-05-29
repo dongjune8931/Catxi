@@ -1,14 +1,16 @@
 package com.project.catxi.chat.service;
 
 
-import java.util.List;
-import java.util.Optional;
-
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.project.catxi.chat.domain.ChatParticipant;
 import com.project.catxi.chat.domain.ChatRoom;
+import com.project.catxi.chat.dto.ChatRoomRes;
 import com.project.catxi.chat.dto.RoomCreateReq;
 import com.project.catxi.chat.dto.RoomCreateRes;
 import com.project.catxi.chat.repository.ChatParticipantRepository;
@@ -17,6 +19,7 @@ import com.project.catxi.common.api.error.ChatParticipantErrorCode;
 import com.project.catxi.common.api.error.ChatRoomErrorCode;
 import com.project.catxi.common.api.error.MemberErrorCode;
 import com.project.catxi.common.api.exception.CatxiException;
+import com.project.catxi.common.domain.Location;
 import com.project.catxi.common.domain.RoomStatus;
 import com.project.catxi.member.domain.Member;
 import com.project.catxi.member.repository.MemberRepository;
@@ -66,6 +69,19 @@ public class ChatRoomService {
 			room.getDepartAt(),
 			room.getStatus()
 		);
+	}
+
+
+	public Page<ChatRoomRes> getChatRoomList(String direction, String station, String sort, Integer page) {
+		Pageable pageable = PageRequest.of(page, 10, Sort.by(sort));
+
+		Location location = switch (station) {
+			case "SOSA_ST" -> Location.SOSA_ST;
+			case "YEOKGOK_ST" -> Location.YEOKGOK_ST;
+			default -> Location.GURO_ST;
+		};
+
+		return chatRoomRepository.findByLocationAndDirection(location, direction, pageable);
 	}
 
 
