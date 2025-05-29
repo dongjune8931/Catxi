@@ -23,6 +23,7 @@ import com.querydsl.core.types.Order;
 import com.querydsl.core.types.OrderSpecifier;
 import com.querydsl.core.types.Projections;
 import com.querydsl.core.types.dsl.BooleanExpression;
+import com.querydsl.core.types.dsl.CaseBuilder;
 import com.querydsl.core.types.dsl.EnumPath;
 import com.querydsl.core.types.dsl.PathBuilder;
 import com.querydsl.jpa.JPAExpressions;
@@ -53,7 +54,10 @@ public class ChatRoomRepositoryCustomImpl implements ChatRoomRepositoryCustom {
 				chatRoom.startPoint,
 				chatRoom.endPoint,
 				chatRoom.maxCapacity,
-				participant.id.countDistinct(),
+				new CaseBuilder()
+					.when(participant.active.isTrue()).then(1)
+					.otherwise(0)
+					.sum().longValue(),
 				chatRoom.status,
 				chatRoom.departAt.stringValue(),
 				chatRoom.createdTime.stringValue()
