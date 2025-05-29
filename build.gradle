@@ -46,7 +46,7 @@ dependencies {
 }
 
 
-def generated = 'src/main/generated'
+def generated = 'build/generated/querydsl'
 
 tasks.withType(JavaCompile) {
 	options.getGeneratedSourceOutputDirectory().set(file(generated))
