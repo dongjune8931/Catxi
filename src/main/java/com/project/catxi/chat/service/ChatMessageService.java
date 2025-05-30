@@ -50,13 +50,13 @@ public class ChatMessageService {
 		chatMessageRepository.save(chatMsg);
 	}
 
-	public List<ChatMessageRes> getChatHistory(Long roomId, Long memberId) {
+	public List<ChatMessageRes> getChatHistory(Long roomId, String membername) {
+
+		Member member = memberRepository.findByMembername(membername)
+			.orElseThrow(() -> new CatxiException(MemberErrorCode.MEMBER_NOT_FOUND));
 
 		ChatRoom room = chatRoomRepository.findById(roomId)
 			.orElseThrow(() -> new CatxiException(ChatRoomErrorCode.CHATROOM_NOT_FOUND));
-
-		Member member = memberRepository.findById(memberId)
-			.orElseThrow(() -> new CatxiException(MemberErrorCode.MEMBER_NOT_FOUND));
 
 		if (!chatParticipantRepository.existsByChatRoomAndMember(room, member)) {
 			throw new CatxiException(ChatParticipantErrorCode.PARTICIPANT_NOT_FOUND);
