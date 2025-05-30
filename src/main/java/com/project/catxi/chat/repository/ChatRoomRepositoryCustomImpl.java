@@ -48,7 +48,7 @@ public class ChatRoomRepositoryCustomImpl implements ChatRoomRepositoryCustom {
 				ChatRoomRes.class,
 				chatRoom.roomId,
 				host.id,
-				host.name,
+				host.membername,
 				host.nickname,
 				chatRoom.startPoint,
 				chatRoom.endPoint,

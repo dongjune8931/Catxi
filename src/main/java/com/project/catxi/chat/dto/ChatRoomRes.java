@@ -21,7 +21,7 @@ public record ChatRoomRes (
 		return new ChatRoomRes(
 			chatRoom.getRoomId(),
 			chatRoom.getHost().getId(),
-			chatRoom.getHost().getName(),
+			chatRoom.getHost().getMembername(),
 			chatRoom.getHost().getNickname(),
 			chatRoom.getStartPoint(),
 			chatRoom.getEndPoint(),
