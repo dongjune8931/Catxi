@@ -38,10 +38,16 @@ public class ChatRoomService {
 	private final MemberRepository memberRepository;
 
 
-	public RoomCreateRes creatRoom(RoomCreateReq roomReq, Member host){
+	public RoomCreateRes createRoom(RoomCreateReq roomReq, String membername) {
+		Member host = memberRepository.findByMembername(membername)
+			.orElseThrow(() -> new CatxiException(MemberErrorCode.MEMBER_NOT_FOUND));
+
 		HostNotInOtherRoom(host);
-		if(roomReq.startPoint().equals(roomReq.endPoint()))
+
+		if (roomReq.startPoint().equals(roomReq.endPoint())) {
 			throw new CatxiException(ChatRoomErrorCode.INVALID_CHATROOM_PARAMETER);
+		}
+
 		ChatRoom room = ChatRoom.builder()
 			.host(host)
 			.startPoint(roomReq.startPoint())

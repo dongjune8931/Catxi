@@ -4,6 +4,7 @@ import java.util.List;
 
 import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -21,6 +22,7 @@ import com.project.catxi.chat.service.ChatMessageService;
 import com.project.catxi.chat.service.ChatRoomService;
 import com.project.catxi.common.api.ApiResponse;
 import com.project.catxi.common.api.CommonPageResponse;
+import com.project.catxi.member.DTO.CustomUserDetails;
 import com.project.catxi.member.domain.Member;
 
 @RestController
@@ -37,10 +39,12 @@ public class ChatController {
 
 	@PostMapping("/room/create")
 	public ResponseEntity<ApiResponse<RoomCreateRes>> createRoom(@RequestBody RoomCreateReq roomCreateReq,
-		Member member) {
-		RoomCreateRes res = chatRoomService.creatRoom(roomCreateReq, member);
+		@AuthenticationPrincipal CustomUserDetails userDetails) {
+		String membername = userDetails.getUsername();
+		RoomCreateRes res = chatRoomService.createRoom(roomCreateReq, membername);
 		return ResponseEntity.ok(ApiResponse.success(res));
 	}
+
 
 	@GetMapping("/{roomId}/messages")
 	public ResponseEntity<ApiResponse<List<ChatMessageRes>>> getHistory(@PathVariable Long roomId, @RequestParam("memberId") Long memberId){
