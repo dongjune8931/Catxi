@@ -36,7 +36,7 @@ public class SwaggerConfig {
 
 		//Swagger UI 설정 및 보안 추가
 		return new OpenAPI()
-			.addServersItem(new Server().url("http://localhost:8080"))
+			.addServersItem(new Server().url("/"))
 			.components(components)
 			.info(info)
 				.addSecurityItem(securityRequirement);
