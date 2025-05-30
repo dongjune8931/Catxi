@@ -16,6 +16,11 @@ spring:
         format_sql: false
         dialect: org.hibernate.dialect.MySQL8Dialect
 
+  jwt:
+    header: authorization
+    secret: ${SECRET_KEY}
+    access-token-validity-in-seconds: 3600
+
   data:
     redis:
       host: ${REDIS_HOST}
@@ -30,11 +35,6 @@ spring:
 
 server:
   port: 8080
-
-jwt:
-  header: authorization
-  secret: ${SECRET_KEY}
-  access-token-validity-in-seconds: 3600
 
 # WebSocket 설정
 websocket:
