@@ -47,11 +47,14 @@ public class ChatController {
 
 
 	@GetMapping("/{roomId}/messages")
-	public ResponseEntity<ApiResponse<List<ChatMessageRes>>> getHistory(@PathVariable Long roomId, @RequestParam("memberId") Long memberId){
-		List<ChatMessageRes> history =
-			chatMessageService.getChatHistory(roomId, memberId);
+	public ResponseEntity<ApiResponse<List<ChatMessageRes>>> getHistory(
+		@PathVariable Long roomId,
+		@AuthenticationPrincipal CustomUserDetails userDetails) {
 
-		return  ResponseEntity.ok(ApiResponse.success(history));
+		String membername = userDetails.getUsername();
+		List<ChatMessageRes> history = chatMessageService.getChatHistory(roomId, membername);
+
+		return ResponseEntity.ok(ApiResponse.success(history));
 	}
 
 	@GetMapping("/rooms")
@@ -68,18 +71,20 @@ public class ChatController {
 	@DeleteMapping("/{roomId}/leave")
 	public ResponseEntity<ApiResponse<Void>> leaveRoom(
 		@PathVariable Long roomId,
-		@RequestParam  Long memberId) {      // 임시 – 로그인 완성 후 제거
+		@AuthenticationPrincipal CustomUserDetails userDetails) {
 
-		chatRoomService.leaveChatRoom(roomId, memberId);
+		String membername = userDetails.getUsername();
+		chatRoomService.leaveChatRoom(roomId, membername);
 		return ResponseEntity.ok(ApiResponse.successWithNoData());
 	}
 
 	@PostMapping("/rooms/{roomId}/join")
 	public ResponseEntity<ApiResponse<Void>> joinChatRoom(
 		@PathVariable Long roomId,
-		@RequestParam Long memberId) {
+		@AuthenticationPrincipal CustomUserDetails userDetails) {
 
-		chatRoomService.joinChatRoom(roomId, memberId);
+		String membername = userDetails.getUsername();
+		chatRoomService.joinChatRoom(roomId, membername);
 		return ResponseEntity.ok(ApiResponse.successWithNoData());
 	}
 
