@@ -1,6 +1,6 @@
 package com.project.catxi.common.auth.service;
 
-import com.project.catxi.member.DTO.CustomUserDetails;
+import com.project.catxi.member.dto.CustomUserDetails;
 import com.project.catxi.member.domain.Member;
 import com.project.catxi.member.repository.MemberRepository;
 import lombok.RequiredArgsConstructor;

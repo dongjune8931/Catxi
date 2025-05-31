@@ -1,4 +1,4 @@
-package com.project.catxi.member.DTO;
+package com.project.catxi.member.dto;
 
 import com.project.catxi.member.domain.Member;
 import java.util.ArrayList;

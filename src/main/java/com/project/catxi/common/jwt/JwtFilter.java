@@ -3,7 +3,7 @@ package com.project.catxi.common.jwt;
 import com.project.catxi.common.api.error.MemberErrorCode;
 import com.project.catxi.common.api.handler.MemberHandler;
 import com.project.catxi.common.config.JwtConfig;
-import com.project.catxi.member.DTO.CustomUserDetails;
+import com.project.catxi.member.dto.CustomUserDetails;
 import com.project.catxi.member.domain.Member;
 import io.jsonwebtoken.ExpiredJwtException;
 import jakarta.servlet.FilterChain;
