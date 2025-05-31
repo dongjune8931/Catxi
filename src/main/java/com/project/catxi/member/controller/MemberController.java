@@ -1,6 +1,5 @@
 package com.project.catxi.member.controller;
 
-import com.project.catxi.common.api.ApiResponse;
 import com.project.catxi.common.config.JwtConfig;
 import com.project.catxi.common.jwt.JwtUtill;
 import com.project.catxi.member.dto.AuthDTO;
