@@ -1,5 +1,4 @@
 spring:
-
   datasource:
     url: jdbc:mysql://${HOST}:${PORT}/catxi?allowPublicKeyRetrieval=true&useSSL=false
     username: ${USER}
@@ -28,7 +27,7 @@ spring:
             client-name: kakao
             client-id: ${KAKAO_CLIENT_ID}
             client-secret: ${KAKAO_CLIENT_SECRET}
-            redirect-uri: http://localhost:5173/callback/kakao
+            redirect-uri: http://localhost:8080/auth/login/kakao
             authorization-grant-type: authorization_code
             scope: profile_nickname,account_email
             client-authentication-method: client_secret_post
