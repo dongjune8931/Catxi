@@ -88,7 +88,6 @@ public class SecurityConfig {
     // JWT -> Session 항상 Stateless 상태로 둬야 함
     http
         .sessionManagement((session) -> session
-
             .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
         );
 
