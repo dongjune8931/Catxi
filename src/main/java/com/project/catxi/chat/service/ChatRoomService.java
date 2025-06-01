@@ -38,10 +38,16 @@ public class ChatRoomService {
 	private final MemberRepository memberRepository;
 
 
-	public RoomCreateRes creatRoom(RoomCreateReq roomReq, Member host){
+	public RoomCreateRes createRoom(RoomCreateReq roomReq, String membername) {
+		Member host = memberRepository.findByMembername(membername)
+			.orElseThrow(() -> new CatxiException(MemberErrorCode.MEMBER_NOT_FOUND));
+
 		HostNotInOtherRoom(host);
-		if(roomReq.startPoint().equals(roomReq.endPoint()))
+
+		if (roomReq.startPoint().equals(roomReq.endPoint())) {
 			throw new CatxiException(ChatRoomErrorCode.INVALID_CHATROOM_PARAMETER);
+		}
+
 		ChatRoom room = ChatRoom.builder()
 			.host(host)
 			.startPoint(roomReq.startPoint())
@@ -86,9 +92,8 @@ public class ChatRoomService {
 
 
 	//로그인 전이라 member 임시로 추가해둠.
-	public void leaveChatRoom(Long roomId,Long memberId) {
-		Member member = memberRepository.findById(memberId)
-			.orElseThrow(() -> new CatxiException(MemberErrorCode.MEMBER_NOT_FOUND));
+	public void leaveChatRoom(Long roomId, String membername) {
+		Member member = memberRepository.findByMembername(membername).orElseThrow(() -> new CatxiException(MemberErrorCode.MEMBER_NOT_FOUND));
 		ChatRoom chatRoom = chatRoomRepository.findById(roomId)
 			.orElseThrow(() -> new CatxiException(ChatRoomErrorCode.CHATROOM_NOT_FOUND));
 		ChatParticipant chatParticipant = chatParticipantRepository
@@ -103,17 +108,16 @@ public class ChatRoomService {
 		chatParticipant.setReady(false);
 	}
 
-	public void joinChatRoom(Long roomId, Long memberId) {
-
+	public void joinChatRoom(Long roomId, String membername) {
 		ChatRoom chatRoom = chatRoomRepository.findById(roomId)
 			.orElseThrow(() -> new CatxiException(ChatRoomErrorCode.CHATROOM_NOT_FOUND));
 
-		Member member = memberRepository.findById(memberId)
+		Member member = memberRepository.findByMembername(membername)
 			.orElseThrow(() -> new CatxiException(MemberErrorCode.MEMBER_NOT_FOUND));
 
 		HostNotInOtherRoom(member);
 
-		if(chatRoom.getStatus()!=RoomStatus.WAITING)
+		if(chatRoom.getStatus() != RoomStatus.WAITING)
 			throw new CatxiException(ChatRoomErrorCode.INVALID_CHATROOM_PARAMETER);
 
 		long current = chatParticipantRepository.countByChatRoomAndActiveTrue(chatRoom);
@@ -128,6 +132,7 @@ public class ChatRoomService {
 
 		chatParticipantRepository.save(chatParticipant);
 	}
+
 
 	private void HostNotInOtherRoom(Member host) {
 		boolean exists = chatParticipantRepository.existsByMemberAndActiveTrue(host);
