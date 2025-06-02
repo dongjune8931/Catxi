@@ -3,7 +3,9 @@ package com.project.catxi.member.dto;
 import com.project.catxi.member.domain.Member;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
 public class CustomUserDetails implements UserDetails {
@@ -18,15 +20,7 @@ public class CustomUserDetails implements UserDetails {
   @Override
   public Collection<? extends GrantedAuthority> getAuthorities() {
 
-    Collection<GrantedAuthority> collection = new ArrayList<>();
-
-    collection.add(new GrantedAuthority() {
-      @Override
-      public String getAuthority() {
-        return member.getMembername();
-      }
-    });
-    return collection;
+    return List.of(new SimpleGrantedAuthority("ROLE_USER"));
   }
 
   @Override
