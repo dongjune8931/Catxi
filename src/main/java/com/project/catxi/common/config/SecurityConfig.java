@@ -15,6 +15,9 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 @Configuration
 @EnableWebSecurity
@@ -44,6 +47,12 @@ public class SecurityConfig {
     //csrf disable
     http
         .csrf((auth) -> auth.disable());
+
+    //임시 CORS 설정
+    http
+        .cors(
+            cors -> cors.configurationSource(corsConfigurationSource())
+        );
 
     //Form 로그인 방식 disable -> Custom하게 설정
     http
@@ -81,6 +90,23 @@ public class SecurityConfig {
         );
 
     return http.build();
+  }
+
+  //모든 경로 대해 cors 요청 허용
+  public CorsConfigurationSource corsConfigurationSource() {
+    CorsConfiguration configuration = new CorsConfiguration();
+
+    configuration.addAllowedOriginPattern("*");
+
+    configuration.addAllowedHeader("*");
+    configuration.addAllowedMethod("*");
+
+    configuration.setAllowCredentials(true);
+
+    UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+    source.registerCorsConfiguration("/**", configuration);
+    return source;
+
   }
 
 
