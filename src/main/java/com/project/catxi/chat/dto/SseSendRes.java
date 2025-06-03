@@ -4,6 +4,6 @@ import java.time.LocalDateTime;
 
 public record SseSendRes(
 	String senderName,
-	Object data,
+	String data,
 	LocalDateTime timestamp
 ) { }

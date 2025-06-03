@@ -2,13 +2,11 @@ package com.project.catxi.chat.service;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import com.project.catxi.chat.dto.SseSendRes;
-import com.project.catxi.common.api.error.ChatRoomErrorCode;
 import com.project.catxi.common.api.error.SseErrorCode;
 import com.project.catxi.common.api.exception.CatxiException;
 
@@ -50,7 +48,7 @@ public class SseService {
 	/*
 	 * 채팅방 전체에게 sse 메시지 전송
 	 */
-	public void sendToClients(String roomId, String eventName, Object data) {
+	public void sendToClients(String roomId, String eventName, String data) {
 		Map<String, SseEmitter> sseEmitterList = sseEmitters.get(roomId);
 
 		if(sseEmitterList != null && !sseEmitterList.isEmpty()){
@@ -67,7 +65,7 @@ public class SseService {
 	/*
 	 * 방장에게 sse 메시지 전송
 	 */
-	public void sendToHost(String roomId, String senderName,String eventName, Object data) {
+	public void sendToHost(String roomId, String senderName,String eventName, String data) {
 		SseEmitter sseEmitter = hostEmitters.get(roomId);
 
 		if (sseEmitter == null) {
@@ -78,8 +76,8 @@ public class SseService {
 	}
 
 
-	public void sendToClient(String roomId, String senderName,  SseEmitter sseEmitter, String eventName, Object data, boolean isHost) {
-		SseSendRes sseSendRes = new SseSendRes(senderName, data, java.time.LocalDateTime.now());
+	public void sendToClient(String roomId, String senderName,  SseEmitter sseEmitter, String eventName, String message, boolean isHost) {
+		SseSendRes sseSendRes = new SseSendRes(senderName, message, java.time.LocalDateTime.now());
 
 		try {
 			sseEmitter.send(SseEmitter.event()
