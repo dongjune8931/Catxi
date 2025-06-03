@@ -141,6 +141,13 @@ public class ChatRoomService {
 
 	}
 
+	public boolean isHost(Long roomId, String membername){
+		Member member = memberRepository.findByMembername(membername)
+			.orElseThrow(() -> new CatxiException(MemberErrorCode.MEMBER_NOT_FOUND));
+		ChatRoom chatRoom = chatRoomRepository.findById(roomId)
+			.orElseThrow(() -> new CatxiException(ChatRoomErrorCode.CHATROOM_NOT_FOUND));
 
+		return chatRoom.getHost().equals(member);
+	}
 
 }
