@@ -33,11 +33,11 @@ public class ChatMessageService {
 	private final ChatMessageRepository chatMessageRepository;
 	private final ChatParticipantRepository chatParticipantRepository;
 
-	public void saveMessage(ChatMessageSendReq req) {
-		ChatRoom room = chatRoomRepository.findById(req.roomId())
+	public void saveMessage(Long roomId,ChatMessageSendReq req) {
+		ChatRoom room = chatRoomRepository.findById(roomId)
 			.orElseThrow(() -> new CatxiException(ChatRoomErrorCode.CHATROOM_NOT_FOUND));
 
-		Member sender = memberRepository.findById(req.senderId())
+		Member sender = memberRepository.findByMembername(req.membername())
 			.orElseThrow(() -> new CatxiException(MemberErrorCode.MEMBER_NOT_FOUND));
 
 		ChatMessage chatMsg = ChatMessage.builder()
