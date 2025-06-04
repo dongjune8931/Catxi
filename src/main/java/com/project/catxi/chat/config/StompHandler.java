@@ -7,59 +7,60 @@ import org.springframework.messaging.MessageChannel;
 import org.springframework.messaging.simp.stomp.StompCommand;
 import org.springframework.messaging.simp.stomp.StompHeaderAccessor;
 import org.springframework.messaging.support.ChannelInterceptor;
+import org.springframework.security.authentication.AuthenticationServiceException;
 import org.springframework.stereotype.Component;
 
-/*@Component
+
+import com.project.catxi.chat.service.ChatRoomService;
+import com.project.catxi.common.api.error.MemberErrorCode;
+import com.project.catxi.common.api.handler.MemberHandler;
+import com.project.catxi.common.jwt.JwtUtill;
+
+import io.jsonwebtoken.Claims;
+import lombok.RequiredArgsConstructor;
+
+
+@Component
+@RequiredArgsConstructor
 public class StompHandler implements ChannelInterceptor {
 
+	private final JwtUtill jwtUtill;
+	private final ChatRoomService chatRoomService;
 
-	@Value("${jwt.secretKey}")
-	private String secretKey;
 
 	@Override
 	public Message<?> preSend(Message<?> message, MessageChannel channel) {
-		final StompHeaderAccessor accessor=StompHeaderAccessor.wrap(message);
+		final StompHeaderAccessor accessor = StompHeaderAccessor.wrap(message);
 
-		if(StompCommand.CONNECT==accessor.getCommand()){
-			System.out.println("connect 요청시 토큰 유효성 검증");
-			String bearerToken=accessor.getFirstNativeHeader("Authorization");
-			String token=bearerToken.substring(7);
-			//토큰 검증
-			Jwts.parserBuilder()
-				.setSigningKey(secretKey)
-				.build()
-				.parseClaimsJws(token)
-				.getBody();
-			System.out.println("토큰 검증 완료");
+		if (StompCommand.CONNECT == accessor.getCommand()) {
+			String token = extractToken(accessor);
+			try {
+				jwtUtill.isExpired(token);
+				System.out.println("CONNECT - 토큰 유효성 검증 완료");
+			} catch (Exception e) {
+				throw new MemberHandler(MemberErrorCode.ACCESS_EXPIRED);
+			}
 		}
+
 		if (StompCommand.SUBSCRIBE == accessor.getCommand()) {
-			System.out.println("subscribe 검증");
-			String bearerToken=accessor.getFirstNativeHeader("Authorization");
-			String token=bearerToken.substring(7);
-			Claims claims=Jwts.parserBuilder()
-				.setSigningKey(secretKey)
-				.build()
-				.parseClaimsJws(token)
-				.getBody();
-			String email=claims.getSubject();
-			String roomId=accessor.getDestination().split("/")[2];
-			if(!chatService.isRoomParticipant(email,Long.parseLong(roomId))){
+			String token = extractToken(accessor);
+			String membername = jwtUtill.getMembername(token);
+			String roomId = accessor.getDestination().split("/")[2];
+			if (!chatRoomService.isRoomParticipant(membername, Long.parseLong(roomId))) {
 				throw new AuthenticationServiceException("해당 room에 권한이 없습니다");
 			}
 		}
 
-
 		return message;
 	}
 
-
-
-}*/
-
-@Component
-public class StompHandler implements ChannelInterceptor {
-	@Override
-	public Message<?> preSend(Message<?> message, MessageChannel channel) {
-		return message;
+	private String extractToken(StompHeaderAccessor accessor) {
+		String bearerToken = accessor.getFirstNativeHeader("Authorization");
+		if (bearerToken == null || !bearerToken.startsWith("Bearer ")) {
+			throw new AuthenticationServiceException("Authorization 헤더가 잘못되었습니다");
+		}
+		return bearerToken.substring(7).trim();
 	}
+
+
 }
