@@ -57,6 +57,7 @@ public class SecurityConfig {
     http
         .authorizeHttpRequests((auth)-> auth
             .requestMatchers("/swagger", "/swagger/", "/swagger-ui/**", "/v3/api-docs/**", "/swagger-resources/**", "/webjars/**").permitAll() // Swagger 허용
+            .requestMatchers("/connect/**").permitAll()
             .requestMatchers("/login","/","/signUp").permitAll()
             .requestMatchers("/actuator/**").permitAll()
             .requestMatchers("/admin").hasRole("ADMIN")
@@ -76,6 +77,7 @@ public class SecurityConfig {
     // JWT -> Session 항상 Stateless 상태로 둬야 함
     http
         .sessionManagement((session) -> session
+
             .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
         );
 
