@@ -53,16 +53,3 @@ spring:
 
 server:
   port: 8080
-
-# WebSocket 설정 추가
-websocket:
-  endpoint: "/ws"
-  allowed-origins: "*"
-
-# Redis Pub/Sub 채널 설정 추가
-chat:
-  redis:
-    channels:
-      message: "chatMessage"
-      join: "roomJoin"
-      exit: "roomExit"
