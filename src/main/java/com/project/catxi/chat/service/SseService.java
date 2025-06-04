@@ -1,5 +1,7 @@
 package com.project.catxi.chat.service;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -20,7 +22,7 @@ public class SseService {
 	/*
 	 * sse 구독 기능
 	 */
-	public SseEmitter subscribe(String roomId, String userId, boolean isHost) {
+	public SseEmitter subscribe(String roomId, String membername, boolean isHost) {
 		// 30분 동안 클라이언트와 연결 유지
 		SseEmitter emitter = new SseEmitter(TIMEOUT);
 		Map<String, SseEmitter> roomEmitters = sseEmitters.computeIfAbsent(roomId, k -> new ConcurrentHashMap<>());
@@ -34,13 +36,20 @@ public class SseService {
 		}
 		else{
 			// 방장이 아닐 경우 sseEmitters에 저장
-			roomEmitters.put(userId, emitter);
-			emitter.onCompletion(() -> {roomEmitters.remove(userId);});
-			emitter.onTimeout(() -> {roomEmitters.remove(userId);});
-			emitter.onError((e) -> {roomEmitters.remove(userId);});
+			roomEmitters.put(membername, emitter);
+			emitter.onCompletion(() -> {roomEmitters.remove(membername);});
+			emitter.onTimeout(() -> {roomEmitters.remove(membername);});
+			emitter.onError((e) -> {roomEmitters.remove(membername);});
 		}
 
-		sendToClient(roomId, "SERVER", emitter,"connected", "SSE connection completed", isHost);
+		try {
+			sendToClient("SERVER", emitter, "connected", "SSE connection completed");
+		} catch (Exception e) {
+			if (isHost)
+				hostEmitters.remove(roomId);
+			else
+				roomEmitters.remove(membername);
+		}
 
 		return emitter;
 	}
@@ -51,15 +60,24 @@ public class SseService {
 	public void sendToClients(String roomId, String eventName, String data) {
 		Map<String, SseEmitter> sseEmitterList = sseEmitters.get(roomId);
 
-		if(sseEmitterList != null && !sseEmitterList.isEmpty()){
-			// 채팅방에 연결된 모든 클라이언트에게 메시지 전송
-			for (Map.Entry<String, SseEmitter> entry : sseEmitterList.entrySet()) {
-				SseEmitter sseEmitter = entry.getValue();
-				sendToClient(roomId, "HOST", sseEmitter, eventName, data, false);
-			}
-		} else {
+		if (sseEmitterList == null || sseEmitterList.isEmpty()) {
 			throw new CatxiException(SseErrorCode.SSE_NOT_FOUND);
 		}
+
+		List<String> toRemove = new ArrayList<>();
+
+		for (Map.Entry<String, SseEmitter> entry : sseEmitterList.entrySet()) {
+			String userId = entry.getKey();
+			SseEmitter emitter = entry.getValue();
+
+			try {
+				sendToClient(userId, emitter, eventName, data);
+			} catch (Exception e) {
+				toRemove.add(userId);
+			}
+		}
+
+		toRemove.forEach(sseEmitterList::remove);
 	}
 
 	/*
@@ -72,28 +90,23 @@ public class SseService {
 			throw new CatxiException(SseErrorCode.SSE_NOT_FOUND);
 		}
 
-		sendToClient(roomId, senderName, sseEmitter, eventName, data, true);
+		try {
+			sendToClient(senderName, sseEmitter, eventName, data);
+		} catch (Exception e) {
+			hostEmitters.remove(roomId);
+		}
 	}
 
 
-	public void sendToClient(String roomId, String senderName,  SseEmitter sseEmitter, String eventName, String message, boolean isHost) {
+	private void sendToClient(String senderName,  SseEmitter sseEmitter, String eventName, String message) {
 		SseSendRes sseSendRes = new SseSendRes(senderName, message, java.time.LocalDateTime.now());
 
 		try {
 			sseEmitter.send(SseEmitter.event()
 				.name(eventName)
 				.data(sseSendRes));
-		} catch (Exception e) {
-			if (isHost) {
-				hostEmitters.remove(roomId);
-			} else {
-				Map<String, SseEmitter> roomEmitters = sseEmitters.get(roomId);
-				if (roomEmitters != null) {
-					roomEmitters.values().remove(sseEmitter);
-				}
-			}
-			throw new CatxiException(SseErrorCode.SERVER_SSE_ERROR);
-
+		} catch (Exception  e) {
+			throw new CatxiException(SseErrorCode.SSE_SEND_ERROR);
 		}
 	}
 
