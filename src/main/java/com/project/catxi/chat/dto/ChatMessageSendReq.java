@@ -1,7 +1,11 @@
 package com.project.catxi.chat.dto;
 
 public record ChatMessageSendReq(
-	Long   roomId,
-	Long   senderId,      // Member PK (or 이메일·닉네임으로 변경 가능)
+	Long roomId,
+	String membername,
 	String message
-) { }
+) {
+	public ChatMessageSendReq withRoomId(Long newRoomId) {
+		return new ChatMessageSendReq(newRoomId, this.membername, this.message);
+	}
+}
