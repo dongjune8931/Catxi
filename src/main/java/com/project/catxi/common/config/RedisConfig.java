@@ -5,6 +5,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 import org.springframework.data.redis.connection.RedisConnectionFactory;
+import org.springframework.data.redis.connection.RedisPassword;
 import org.springframework.data.redis.connection.RedisStandaloneConfiguration;
 import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -23,6 +24,9 @@ public class RedisConfig {
 	@Value("${spring.data.redis.port}")
 	private int port;
 
+	@Value("${spring.data.redis.password}")
+	private String password;
+
 	//연결 기본 객체
 	@Bean
 	@Qualifier("chatRedisConnectionFactory")
@@ -32,6 +36,7 @@ public class RedisConfig {
 		configuration.setPort(port);
 		//redis pub/sub 에서는 특정 데이터베이스에 의존적이지 않음.
 		//configuration.setDatabase(0);
+		configuration.setPassword(RedisPassword.of(password));
 		return new LettuceConnectionFactory(configuration);
 	}
 
