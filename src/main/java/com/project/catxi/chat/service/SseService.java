@@ -50,7 +50,11 @@ public class SseService {
 	/*
 	 * 채팅방 전체에게 sse 메시지 전송
 	 */
-	public void sendToClients(String roomId, String eventName, String data) {
+	public void sendToClients(String roomId, String eventName, String data, boolean isHost) {
+		if(!isHost){
+			throw new CatxiException(SseErrorCode.SSE_NOT_HOST);
+		}
+
 		Map<String, SseEmitter> sseEmitterList = sseEmitters.get(roomId);
 
 		if (sseEmitterList == null || sseEmitterList.isEmpty()) {
@@ -58,13 +62,11 @@ public class SseService {
 		}
 
 		roomReadyTime.putIfAbsent(roomId, System.currentTimeMillis());
-
 		List<String> toRemove = new ArrayList<>();
 
 		for (Map.Entry<String, SseEmitter> entry : sseEmitterList.entrySet()) {
 			String userId = entry.getKey();
 			SseEmitter emitter = entry.getValue();
-
 			try {
 				sendToClient("HOST", emitter, eventName, data);
 			} catch (Exception e) {

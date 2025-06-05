@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public enum SseErrorCode implements ErrorCode{
 
+	SSE_NOT_HOST(HttpStatus.FORBIDDEN, "SSE403", "해당 채팅방의 방장이 아닙니다."),
 	SSE_ROOM_BLOCKED(HttpStatus.FORBIDDEN, "SSE403", "해당 채팅방은 현재 입장이 불가능합니다."),
 	SSE_CONNECTION_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "SSE500", "SSE 연결에 문제가 발생했습니다."),
 	SSE_SEND_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "SSE500", "SSE 메시지 전송 중 오류가 발생했습니다."),

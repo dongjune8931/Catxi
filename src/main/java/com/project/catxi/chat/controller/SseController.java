@@ -35,8 +35,10 @@ public class SseController {
 
 	// 클라이언트로부터 메시지를 받아 해당 채팅방에 있는 모든 클라이언트에게 전송하는 엔드포인트
 	@PostMapping("/publish/{roomId}")
-	public ResponseEntity<ApiResponse<Void>> sendMessage(@PathVariable String roomId, @RequestBody SseSendReq sseSendReq) {
-		sseService.sendToClients(roomId, sseSendReq.eventName(), sseSendReq.data());
+	public ResponseEntity<ApiResponse<Void>> sendMessage(@PathVariable String roomId, @RequestBody SseSendReq sseSendReq,
+			@AuthenticationPrincipal CustomUserDetails userDetails) {
+		boolean isHost = chatRoomService.isHost(Long.valueOf(roomId), userDetails.getUsername());
+		sseService.sendToClients(roomId, sseSendReq.eventName(), sseSendReq.data(), isHost);
 		return ResponseEntity.ok(ApiResponse.successWithNoData());
 	}
 
