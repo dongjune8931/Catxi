@@ -4,6 +4,7 @@ import com.project.catxi.common.jwt.JwtFilter;
 import com.project.catxi.common.jwt.JwtUtill;
 import com.project.catxi.common.jwt.LoginFilter;
 import com.project.catxi.member.repository.MemberRepository;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -48,7 +49,7 @@ public class SecurityConfig {
     http
         .csrf((auth) -> auth.disable());
 
-    //임시 CORS 설정
+    //cors 설정
     http
         .cors(
             cors -> cors.configurationSource(corsConfigurationSource())
@@ -66,6 +67,7 @@ public class SecurityConfig {
     http
         .authorizeHttpRequests((auth)-> auth
             .requestMatchers("/swagger", "/swagger/", "/swagger-ui/**", "/v3/api-docs/**", "/swagger-resources/**", "/webjars/**").permitAll() // Swagger 허용
+            .requestMatchers("/connect/**").permitAll()
             .requestMatchers("/login","/","/signUp").permitAll()
             .requestMatchers("/actuator/**").permitAll()
             .requestMatchers("/admin").hasRole("ADMIN")
@@ -85,17 +87,18 @@ public class SecurityConfig {
     // JWT -> Session 항상 Stateless 상태로 둬야 함
     http
         .sessionManagement((session) -> session
+
             .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
         );
 
     return http.build();
   }
 
-  //모든 경로 대해 cors 요청 허용
+  //모든 경로 대해 cors 요청 허용Add commentMore actions
   public CorsConfigurationSource corsConfigurationSource() {
     CorsConfiguration configuration = new CorsConfiguration();
 
-    configuration.addAllowedOriginPattern("*");
+    configuration.setAllowedOrigins(List.of("http://localhost:5173","https://catxi.kro.kr"));
 
     configuration.addAllowedHeader("*");
     configuration.addAllowedMethod("*");
@@ -105,8 +108,6 @@ public class SecurityConfig {
     UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
     source.registerCorsConfiguration("/**", configuration);
     return source;
-
   }
-
 
 }

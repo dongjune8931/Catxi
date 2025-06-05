@@ -28,6 +28,13 @@ public class JwtFilter extends OncePerRequestFilter {
   @Override
   protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
 
+    String uri = request.getRequestURI();
+    // /connect로 시작하는 주소 예외처리
+    if (uri.startsWith("/connect")) {
+      filterChain.doFilter(request, response);
+      return;
+    }
+
     //토큰 검증
     // Request에서 Authorization 헤더를 찾음
     String authorization = request.getHeader("Authorization");

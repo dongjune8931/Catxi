@@ -1,6 +1,8 @@
 package com.project.catxi.chat.service;
 
 
+import java.util.List;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -31,7 +33,6 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 @Transactional
 public class ChatRoomService {
-
 
 	private final ChatRoomRepository chatRoomRepository;
 	private final ChatParticipantRepository chatParticipantRepository;
@@ -141,13 +142,29 @@ public class ChatRoomService {
 
 	}
 
+
 	public boolean isHost(Long roomId, String membername){
 		Member member = memberRepository.findByMembername(membername)
 			.orElseThrow(() -> new CatxiException(MemberErrorCode.MEMBER_NOT_FOUND));
 		ChatRoom chatRoom = chatRoomRepository.findById(roomId)
 			.orElseThrow(() -> new CatxiException(ChatRoomErrorCode.CHATROOM_NOT_FOUND));
-
 		return chatRoom.getHost().equals(member);
 	}
+
+	public boolean isRoomParticipant(String membername, Long roomId) {
+		ChatRoom chatRoom = chatRoomRepository.findById(roomId)
+			.orElseThrow(() -> new EntityNotFoundException("room not found"));
+		Member member = memberRepository.findByMembername(membername)
+			.orElseThrow(() -> new EntityNotFoundException("member not found"));
+		List<ChatParticipant> chatParticipants = chatParticipantRepository.findByChatRoom(chatRoom);
+		for (ChatParticipant c : chatParticipants) {
+			if (c.getMember().equals(member)) {
+				return true;
+			}
+		}
+		return false;
+
+	}
+
 
 }
