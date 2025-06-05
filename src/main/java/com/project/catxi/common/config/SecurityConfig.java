@@ -88,6 +88,7 @@ public class SecurityConfig {
     // JWT -> Session 항상 Stateless 상태로 둬야 함
     http
         .sessionManagement((session) -> session
+
             .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
         );
 
@@ -98,7 +99,7 @@ public class SecurityConfig {
   public CorsConfigurationSource corsConfigurationSource() {
     CorsConfiguration configuration = new CorsConfiguration();
 
-    configuration.setAllowedOrigins(List.of("http://localhost:5173","https://catxi.kro.kr"));
+    configuration.setAllowedOrigins(List.of("http://localhost:5173"));
 
     configuration.addAllowedHeader("*");
     configuration.addAllowedMethod("*");
@@ -109,4 +110,5 @@ public class SecurityConfig {
     source.registerCorsConfiguration("/**", configuration);
     return source;
   }
+
 }
