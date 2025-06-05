@@ -32,8 +32,7 @@ public class KakaoDTO {
     ) {
       public record Profile(
           String nickname,
-          String profile_image_url,
-          String thumbnail_image_url
+          String profile_image_url
       ) {}
     }
   }

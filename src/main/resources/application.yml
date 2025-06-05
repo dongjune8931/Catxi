@@ -66,6 +66,3 @@ chat:
       message: "chatMessage"
       join: "roomJoin"
       exit: "roomExit"
-
-kakao:
-  rest-api-key: ${KAKAO_REST_API_KEY}
