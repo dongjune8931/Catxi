@@ -17,6 +17,7 @@ public class SseService {
 	// thread-safe 한 컬렉션으로 sse emiiter 객체 관리
 	private final Map<String, Map<String, SseEmitter>> sseEmitters = new ConcurrentHashMap<>();
 	private final Map<String, SseEmitter> hostEmitters = new ConcurrentHashMap<>();
+	private final Map<String, Long> roomReadyTime = new ConcurrentHashMap<>();
 	private static final Long TIMEOUT = 30 * 60 * 1000L; // 30분
 
 	/*
@@ -26,6 +27,10 @@ public class SseService {
 		// 30분 동안 클라이언트와 연결 유지
 		SseEmitter emitter = new SseEmitter(TIMEOUT);
 		Map<String, SseEmitter> roomEmitters = sseEmitters.computeIfAbsent(roomId, k -> new ConcurrentHashMap<>());
+
+		if (isRoomBlocked(roomId)) {
+			throw new CatxiException(SseErrorCode.SSE_ROOM_BLOCKED);
+		}
 
 		if (isHost) {
 			registerEmitter(hostEmitters, roomId, emitter);
@@ -51,6 +56,8 @@ public class SseService {
 		if (sseEmitterList == null || sseEmitterList.isEmpty()) {
 			throw new CatxiException(SseErrorCode.SSE_NOT_FOUND);
 		}
+
+		roomReadyTime.putIfAbsent(roomId, System.currentTimeMillis());
 
 		List<String> toRemove = new ArrayList<>();
 
@@ -140,6 +147,25 @@ public class SseService {
 			emitter.complete();
 			emitterMap.remove(key);
 		}
+	}
+
+	public boolean isRoomBlocked(String roomId) {
+		long now = System.currentTimeMillis();
+		Long readyTime = roomReadyTime.get(roomId);
+
+		if (readyTime == null) {
+			return false;
+		}
+
+		long elapsed = now - readyTime;
+
+		if (elapsed < 10 * 1000) {
+			return true;
+		} else {
+			roomReadyTime.remove(roomId);
+		}
+
+		return false;
 	}
 
 
