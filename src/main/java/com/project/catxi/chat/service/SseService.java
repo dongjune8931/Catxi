@@ -27,28 +27,16 @@ public class SseService {
 		SseEmitter emitter = new SseEmitter(TIMEOUT);
 		Map<String, SseEmitter> roomEmitters = sseEmitters.computeIfAbsent(roomId, k -> new ConcurrentHashMap<>());
 
-		if(isHost){
-			// 방장일 경우 hostEmitters에 저장
-			hostEmitters.put(roomId, emitter);
-			emitter.onCompletion(() -> {hostEmitters.remove(roomId);});
-			emitter.onTimeout(() -> {hostEmitters.remove(roomId);});
-			emitter.onError((e) -> {hostEmitters.remove(roomId);});
-		}
-		else{
-			// 방장이 아닐 경우 sseEmitters에 저장
-			roomEmitters.put(membername, emitter);
-			emitter.onCompletion(() -> {roomEmitters.remove(membername);});
-			emitter.onTimeout(() -> {roomEmitters.remove(membername);});
-			emitter.onError((e) -> {roomEmitters.remove(membername);});
+		if (isHost) {
+			registerEmitter(hostEmitters, roomId, emitter);
+		} else {
+			registerEmitter(roomEmitters, membername, emitter);
 		}
 
 		try {
 			sendToClient("SERVER", emitter, "connected", "SSE connection completed");
 		} catch (Exception e) {
-			if (isHost)
-				hostEmitters.remove(roomId);
-			else
-				roomEmitters.remove(membername);
+			disconnect(roomId, membername, isHost);
 		}
 
 		return emitter;
@@ -71,13 +59,15 @@ public class SseService {
 			SseEmitter emitter = entry.getValue();
 
 			try {
-				sendToClient(userId, emitter, eventName, data);
+				sendToClient("HOST", emitter, eventName, data);
 			} catch (Exception e) {
 				toRemove.add(userId);
 			}
 		}
 
-		toRemove.forEach(sseEmitterList::remove);
+		for (String userId : toRemove) {
+			disconnect(roomId, userId, false);
+		}
 	}
 
 	/*
@@ -97,6 +87,26 @@ public class SseService {
 		}
 	}
 
+	/*
+	 * sse 연결 해제
+	 */
+	public void disconnect(String roomId, String membername, boolean isHost) {
+		if (isHost) {
+			deleteEmitter(hostEmitters, roomId);
+		} else {
+			Map<String, SseEmitter> roomEmitters = sseEmitters.get(roomId);
+
+			if (roomEmitters == null) {
+				throw new CatxiException(SseErrorCode.SSE_NOT_FOUND);
+			}
+			deleteEmitter(roomEmitters, membername);
+
+			if (roomEmitters.isEmpty()) {
+				sseEmitters.remove(roomId);
+			}
+		}
+	}
+
 
 	private void sendToClient(String senderName,  SseEmitter sseEmitter, String eventName, String message) {
 		SseSendRes sseSendRes = new SseSendRes(senderName, message, java.time.LocalDateTime.now());
@@ -109,5 +119,28 @@ public class SseService {
 			throw new CatxiException(SseErrorCode.SSE_SEND_ERROR);
 		}
 	}
+
+
+	private void registerEmitter(Map<String, SseEmitter> emitterMap, String key, SseEmitter emitter) {
+		SseEmitter existing = emitterMap.get(key);
+		if (existing != null) {
+			existing.complete();
+		}
+
+		emitterMap.put(key, emitter);
+
+		emitter.onCompletion(() -> emitterMap.remove(key));
+		emitter.onTimeout(() -> emitterMap.remove(key));
+		emitter.onError((e) -> emitterMap.remove(key));
+	}
+
+	private void deleteEmitter(Map<String, SseEmitter> emitterMap, String key) {
+		SseEmitter emitter = emitterMap.get(key);
+		if (emitter != null) {
+			emitter.complete();
+			emitterMap.remove(key);
+		}
+	}
+
 
 }

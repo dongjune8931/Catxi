@@ -2,6 +2,7 @@ package com.project.catxi.chat.controller;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -48,10 +49,12 @@ public class SseController {
 	}
 
 	// disconnect 이벤트를 처리하는 엔드포인트
-	/*@GetMapping("/disconnect/{roomId}")
+	@DeleteMapping("/disconnect/{roomId}")
 	public ResponseEntity<ApiResponse<Void>> disconnect(@PathVariable String roomId,
 			@AuthenticationPrincipal CustomUserDetails userDetails) {
-		sseService.disconnect(roomId, userDetails.getUsername());
+		boolean isHost = chatRoomService.isHost(Long.valueOf(roomId), userDetails.getUsername());
+		sseService.disconnect(roomId, userDetails.getUsername(), isHost);
+
 		return ResponseEntity.ok(ApiResponse.successWithNoData());
-	}*/
+	}
 }
