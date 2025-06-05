@@ -98,7 +98,7 @@ public class SecurityConfig {
   public CorsConfigurationSource corsConfigurationSource() {
     CorsConfiguration configuration = new CorsConfiguration();
 
-    configuration.setAllowedOrigins(List.of("http://localhost:5173"));
+    configuration.setAllowedOrigins(List.of("http://localhost:5173","https://catxi.kro.kr"));
 
     configuration.addAllowedHeader("*");
     configuration.addAllowedMethod("*");
