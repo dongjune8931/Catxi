@@ -66,3 +66,7 @@ chat:
       message: "chatMessage"
       join: "roomJoin"
       exit: "roomExit"
+
+discord:
+  webhook:
+    url: ${DISCORD_WEBHOOK_URL:}

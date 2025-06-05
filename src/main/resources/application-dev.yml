@@ -59,3 +59,10 @@ discord:
   webhook:
     url: ${DISCORD_WEBHOOK_URL:}
 
+# Redis Pub/Sub 채널
+chat:
+  redis:
+    channels:
+      message: "chatMessage"
+      join: "roomJoin"
+      exit: "roomExit"

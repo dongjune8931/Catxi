@@ -1,7 +1,5 @@
 package com.project.catxi.common.auth.service;
 
-import com.project.catxi.common.api.error.MemberErrorCode;
-import com.project.catxi.common.api.exception.CatxiException;
 import com.project.catxi.common.auth.kakao.KakaoDTO;
 import com.project.catxi.common.auth.kakao.KakaoUtill;
 import com.project.catxi.common.config.JwtConfig;
@@ -12,87 +10,55 @@ import com.project.catxi.member.repository.MemberRepository;
 import com.project.catxi.member.service.MemberService;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
-@Slf4j
 public class CustomOAuth2UserService {
 
   private final KakaoUtill kakaoUtill;
   private final JwtUtill jwtUtill;
+  private final WebConfig webConfig;
+  private final MemberService memberService;
   private final MemberRepository memberRepository;
   private final HttpServletResponse httpServletResponse;
 
   private final JwtConfig jwtConfig;
 
-  public Member oAuthLogin(String accessCode, HttpServletResponse response) {
-    // 카카오 토큰 요청
+  public void oAuthLogin(String accessCode, HttpServletResponse response) {
     KakaoDTO.kakaoToken kakaoToken = kakaoUtill.requestToken(accessCode);
-    // 사용자 정보 요청
     KakaoDTO.KakaoProfile kakaoProfile = kakaoUtill.requestProfile(kakaoToken);
-    // 이메일로 기존 사용자 조회
     String requestEmail = kakaoProfile.kakao_account().email();
-    Member user = memberRepository.findByEmail(requestEmail)
-                  .orElseGet(()->createNewUser(kakaoProfile));
 
-    // JWT 발급 후 응답 헤더에 추가
-    loginProcess(response, user);
-    log.info(">>> [카카오 프로필] email = {}", requestEmail);
-    return user;
+    Member byEmail = memberRepository.findByEmail(requestEmail)
+        .orElseGet(() -> createNewUser(kakaoProfile));
+
+    loginProcess(httpServletResponse, byEmail);
   }
 
   private Member createNewUser(KakaoDTO.KakaoProfile kakaoProfile) {
 
     String email = kakaoProfile.kakao_account().email();
-    //실제 닉네임아니고 멤버 이름
-    //동의항목에서 실명 제공 안해줌 Fuck you kakao
-    String name = kakaoProfile.kakao_account().profile().nickname();
+    String nickname = kakaoProfile.kakao_account().profile().nickname();
 
-    log.info(">> name: " + kakaoProfile.kakao_account().profile().nickname());
-    log.info(">> email: " + kakaoProfile.kakao_account().email());
-
-    //nickname, studentNo는 서비스 내부 로직으로 삽입
     Member newUser = Member.builder()
         .email(email)
-        .membername(name)
+        .nickname(nickname)
         //OAuth 쓰기 때문에 password 크게 의미 없음
-        .password("NO_PASSWORD")
-        .matchCount(0)
+        .password(null)
         .role("ROLE_USER")
         .build();
 
     return memberRepository.save(newUser);
   }
 
-  private void loginProcess(HttpServletResponse httpServletResponse,Member user) {
+  private void loginProcess(HttpServletResponse httpServletResponse,Member byEmail) {
+    String username = byEmail.getMembername();
 
-    String name = user.getMembername();
-    String email = user.getEmail();
-
-    String access = jwtUtill.createJwt(
-        "access",email,"ROLE_USER",jwtConfig.getAccessTokenValidityInSeconds());
+    String access = jwtUtill.createJwt("access",username,"ROLE_USER",jwtConfig.getAccessTokenValidityInSeconds());
 
     httpServletResponse.setHeader("access", access);
-  }
 
-  @Transactional
-  public void catxiSignup(String email, KakaoDTO.CatxiSignUp dto) {
-    log.info(">>> [추가 회원가입 요청] email = {}", email);
-    Member member = memberRepository.findByEmail(email)
-        .orElseThrow(() -> {
-          log.warn("❌ [조회 실패] email = {}", email);
-          return new CatxiException(MemberErrorCode.MEMBER_NOT_FOUND);
-        });
-
-    if (memberRepository.existsByStudentNo(dto.StudentNo())) {
-      throw new CatxiException(MemberErrorCode.DUPLICATE_MEMBER_STUDENTNO);
-    }
-
-    member.setNickname(dto.nickname());
-    member.setStudentNo(dto.StudentNo());
   }
 
   }

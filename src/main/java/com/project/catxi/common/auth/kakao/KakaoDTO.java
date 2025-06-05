@@ -1,10 +1,7 @@
 package com.project.catxi.common.auth.kakao;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import jakarta.validation.constraints.NotBlank;
 import java.util.Properties;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 
 public class KakaoDTO {
 
@@ -19,31 +16,32 @@ public class KakaoDTO {
   ){}
 
   //카카오 사용자 정보 응답
-  @JsonIgnoreProperties(ignoreUnknown = true)
   public record KakaoProfile(
       Long id,
       String connected_at,
+      Properties properties,
       KakaoAccount kakao_account
   ) {
-    //카카오 계정에서 추출할 내용
-    @JsonIgnoreProperties(ignoreUnknown = true)
+    public record Properties(
+        String nickname
+    ) {}
+
     public record KakaoAccount(
         String email,
         Profile profile
     ) {
-      @JsonIgnoreProperties(ignoreUnknown = true)
       public record Profile(
-          String nickname
+          String nickname,
+          String profile_image_url
       ) {}
     }
   }
 
-  // 추가 회원가입 폼용
-  public record CatxiSignUp(
-      @NotBlank
-      String nickname,
-      @NotBlank
-      Long StudentNo
+  //서비스용
+  public record KakaoUser(
+      Long id,
+      String email,
+      String nickname
   ) {}
 
 }

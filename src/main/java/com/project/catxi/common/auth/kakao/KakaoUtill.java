@@ -2,8 +2,6 @@ package com.project.catxi.common.auth.kakao;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import java.time.LocalDateTime;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -15,7 +13,6 @@ import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
 
 @Component
-@Slf4j
 public class KakaoUtill {
 
   @Value("${spring.security.oauth2.client.registration.kakao.client-id}")
@@ -29,12 +26,7 @@ public class KakaoUtill {
     RestTemplate restTemplate = new RestTemplate();
     HttpHeaders headers = new HttpHeaders();
 
-    log.info(">> [🚨RestTemplate 컨트롤러 호출] time = {}, code = {}", LocalDateTime.now(), accessCode);
-
-
     headers.add("Content-type", "application/x-www-form-urlencoded;charset=utf-8");
-
-    log.info(">> Used Redirect URI : " + redirect);
 
     // 인가코드, 카카오 REST_API키, redirect_uri,카카오 제공 인가 코드 요청하기 위한 파라미터
     MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
@@ -52,12 +44,6 @@ public class KakaoUtill {
         kakaoTokenRequest,
         String.class);
 
-    log.info(">> [Token Request Params]");
-    params.forEach((k, v) -> log.info("{} = {}", k, v));
-
-    System.out.println("Access Token Response: " + response.getBody());
-    System.out.println("Profile Response: " + response.getBody());
-
     ObjectMapper objectMapper = new ObjectMapper();
 
     //응답받은 JSON KakaoDTO.kakaoToken 클래스에 매핑
@@ -68,9 +54,6 @@ public class KakaoUtill {
     } catch (JsonProcessingException e) {
       throw new IllegalArgumentException("Invalid access token");
     }
-
-    log.warn(">> [🚨중복 시도 Fuck] accessCode = {}", accessCode);
-
     return kakaoToken;
   }
 
@@ -78,9 +61,12 @@ public class KakaoUtill {
     RestTemplate restTemplate2 = new RestTemplate();
     HttpHeaders headers2 = new HttpHeaders();
 
-    headers2.setBearerAuth(kakaoToken.access_token());
+    ObjectMapper objectMapper = new ObjectMapper();
 
-    HttpEntity<Void> kakaoProfileRequest = new HttpEntity<>(headers2);
+    headers2.add("Content-type", "application/x-www-form-urlencoded;charset=utf-8");
+    headers2.add("Authorization", "Bearer " + kakaoToken.access_token());
+
+    HttpEntity<MultiValueMap<String,String>> kakaoProfileRequest = new HttpEntity<>(headers2);
 
     //GET 요청으로 프로필 받아오기 위함
     ResponseEntity<String> response2 = restTemplate2.exchange(
@@ -89,16 +75,16 @@ public class KakaoUtill {
         kakaoProfileRequest,
         String.class);
 
-    System.out.println("Kakao Profile Raw Response: " + response2.getBody());
-
-    ObjectMapper objectMapper = new ObjectMapper();
+    //응답 JSON KakaoDTO.kakaoProfile에 매핑 -> nickname + 프사(이건 필요한지 모르겠음)
+    KakaoDTO.KakaoProfile kakaoProfile = null;
 
     try {
-      return objectMapper.readValue(response2.getBody(), KakaoDTO.KakaoProfile.class);
+      kakaoProfile = objectMapper.readValue(response2.getBody(), KakaoDTO.KakaoProfile.class);
     } catch (JsonProcessingException e) {
       throw new IllegalArgumentException("Invalid profile token");
     }
 
+    return kakaoProfile;
   }
 
 }
