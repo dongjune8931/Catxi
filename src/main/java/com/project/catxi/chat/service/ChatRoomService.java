@@ -98,15 +98,14 @@ public class ChatRoomService {
 		ChatRoom chatRoom = chatRoomRepository.findById(roomId)
 			.orElseThrow(() -> new CatxiException(ChatRoomErrorCode.CHATROOM_NOT_FOUND));
 		ChatParticipant chatParticipant = chatParticipantRepository
-			.findByChatRoomAndMemberAndActiveTrue(chatRoom, member)
+			.findByChatRoomAndMember(chatRoom, member)
 			.orElseThrow(() -> new CatxiException(ChatParticipantErrorCode.PARTICIPANT_NOT_FOUND));
 		if (chatParticipant.isHost()) {
 			chatRoomRepository.delete(chatRoom);
 			return;
 		}
 
-		chatParticipant.setActive(false);
-		chatParticipant.setReady(false);
+		chatParticipantRepository.delete(chatParticipant);
 	}
 
 	public void joinChatRoom(Long roomId, String membername) {
