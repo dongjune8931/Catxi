@@ -64,7 +64,6 @@ public class ChatRoomService {
 			.member(host)
 			.isHost(true)
 			.isReady(true)
-			.active(true)
 			.build();
 		chatParticipantRepository.save(hostPart);
 
@@ -120,14 +119,13 @@ public class ChatRoomService {
 		if(chatRoom.getStatus() != RoomStatus.WAITING)
 			throw new CatxiException(ChatRoomErrorCode.INVALID_CHATROOM_PARAMETER);
 
-		long current = chatParticipantRepository.countByChatRoomAndActiveTrue(chatRoom);
+		long current = chatParticipantRepository.countByChatRoom(chatRoom);
 		if (current >= chatRoom.getMaxCapacity())
 			throw new CatxiException(ChatRoomErrorCode.CHATROOM_FULL);
 
 		ChatParticipant chatParticipant = ChatParticipant.builder()
 			.chatRoom(chatRoom)
 			.member(member)
-			.active(true)
 			.build();
 
 		chatParticipantRepository.save(chatParticipant);
@@ -135,9 +133,9 @@ public class ChatRoomService {
 
 
 	private void HostNotInOtherRoom(Member host) {
-		boolean exists = chatParticipantRepository.existsByMemberAndActiveTrue(host);
+		boolean exists = chatParticipantRepository.existsByMember(host);
 		if (exists)
-			throw new CatxiException(ChatParticipantErrorCode.ALREADY_IN_ACTIVE_ROOM);
+			throw new CatxiException(ChatParticipantErrorCode.ALREADY_IN_ROOM);
 
 	}
 
