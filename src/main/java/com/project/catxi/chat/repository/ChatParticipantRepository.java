@@ -12,17 +12,17 @@ import com.project.catxi.member.domain.Member;
 
 public interface ChatParticipantRepository extends JpaRepository<ChatParticipant,Long> {
 
-	boolean existsByMemberAndActiveTrue(Member member);
+	boolean existsByMember(Member member);
 
 	List<ChatMessage> findByChatRoomOrderByCreatedTimeAsc(ChatRoom room);
 
 	boolean existsByChatRoomAndMember(ChatRoom room, Member member);
 
 
-	Optional<ChatParticipant> findByChatRoomAndMemberAndActiveTrue(ChatRoom room, Member member);
+	Optional<ChatParticipant> findByChatRoomAndMember(ChatRoom room, Member member);
 
 
-	long countByChatRoomAndActiveTrue(ChatRoom room);
+	long countByChatRoom(ChatRoom room);
 
 
 	List<ChatParticipant> findByChatRoom(ChatRoom chatRoom);
