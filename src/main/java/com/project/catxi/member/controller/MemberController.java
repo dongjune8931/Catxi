@@ -6,6 +6,7 @@ import com.project.catxi.common.jwt.JwtUtill;
 import com.project.catxi.member.DTO.AuthDTO;
 import com.project.catxi.member.DTO.AuthDTO.LoginResponse;
 import com.project.catxi.member.DTO.IdResponse;
+import com.project.catxi.member.DTO.MemberProfileDTO;
 import com.project.catxi.member.DTO.SignUpDTO;
 import com.project.catxi.member.domain.Member;
 import com.project.catxi.member.repository.MemberRepository;
@@ -19,10 +20,12 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.security.core.GrantedAuthority;
@@ -31,6 +34,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 @RestController
 @RequiredArgsConstructor
+@RequestMapping("/members")
 public class MemberController {
 
   private final MemberService memberService;
@@ -87,6 +91,15 @@ public class MemberController {
             )
         );
     return member.getStudentNo();
+  }
+
+  @Operation(summary = "회원 기본 정보 조회")
+  @GetMapping("/")
+  public ApiResponse<MemberProfileDTO> getMyProfile(@AuthenticationPrincipal UserDetails userDetails) {
+    //userDetails의 username -> email
+    String email = userDetails.getUsername();
+    MemberProfileDTO dto = memberService.getProfile(email);
+    return ApiResponse.success(dto);
   }
 
 }

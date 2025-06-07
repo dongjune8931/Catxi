@@ -29,8 +29,9 @@ public class CustomUserDetails implements UserDetails {
   }
 
   @Override
+  //로그인 식별자 Email로 교체
   public String getUsername() {
-    return member.getMembername();
+    return member.getEmail();
   }
 
 

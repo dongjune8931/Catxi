@@ -28,10 +28,15 @@ public class Member extends BaseTimeEntity {
 	@Column(nullable = false, length = 30)
 	private String nickname;
 
+	//이메일
+	@Column(nullable = false,length = 30)
+	private String email;
+
 	//학번
 	@Column(nullable = false, length = 20, unique = true)
 	private Long studentNo;
 
+	//조회 기록
 	@Column(nullable = false)
 	private int matchCount;
 
