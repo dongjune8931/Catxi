@@ -15,6 +15,7 @@ import com.project.catxi.chat.domain.ChatRoom;
 import com.project.catxi.chat.dto.ChatRoomRes;
 import com.project.catxi.chat.dto.RoomCreateReq;
 import com.project.catxi.chat.dto.RoomCreateRes;
+import com.project.catxi.chat.repository.ChatMessageRepository;
 import com.project.catxi.chat.repository.ChatParticipantRepository;
 import com.project.catxi.chat.repository.ChatRoomRepository;
 import com.project.catxi.common.api.error.ChatParticipantErrorCode;
@@ -37,6 +38,7 @@ public class ChatRoomService {
 	private final ChatRoomRepository chatRoomRepository;
 	private final ChatParticipantRepository chatParticipantRepository;
 	private final MemberRepository memberRepository;
+	private final ChatMessageRepository chatMessageRepository;
 
 
 	public RoomCreateRes createRoom(RoomCreateReq roomReq, String membername) {
@@ -64,7 +66,6 @@ public class ChatRoomService {
 			.member(host)
 			.isHost(true)
 			.isReady(true)
-			.active(true)
 			.build();
 		chatParticipantRepository.save(hostPart);
 
@@ -98,15 +99,15 @@ public class ChatRoomService {
 		ChatRoom chatRoom = chatRoomRepository.findById(roomId)
 			.orElseThrow(() -> new CatxiException(ChatRoomErrorCode.CHATROOM_NOT_FOUND));
 		ChatParticipant chatParticipant = chatParticipantRepository
-			.findByChatRoomAndMemberAndActiveTrue(chatRoom, member)
+			.findByChatRoomAndMember(chatRoom, member)
 			.orElseThrow(() -> new CatxiException(ChatParticipantErrorCode.PARTICIPANT_NOT_FOUND));
 		if (chatParticipant.isHost()) {
+			chatMessageRepository.deleteAllByChatRoom(chatRoom);
 			chatRoomRepository.delete(chatRoom);
 			return;
 		}
 
-		chatParticipant.setActive(false);
-		chatParticipant.setReady(false);
+		chatParticipantRepository.delete(chatParticipant);
 	}
 
 	public void joinChatRoom(Long roomId, String membername) {
@@ -121,14 +122,13 @@ public class ChatRoomService {
 		if(chatRoom.getStatus() != RoomStatus.WAITING)
 			throw new CatxiException(ChatRoomErrorCode.INVALID_CHATROOM_PARAMETER);
 
-		long current = chatParticipantRepository.countByChatRoomAndActiveTrue(chatRoom);
+		long current = chatParticipantRepository.countByChatRoom(chatRoom);
 		if (current >= chatRoom.getMaxCapacity())
 			throw new CatxiException(ChatRoomErrorCode.CHATROOM_FULL);
 
 		ChatParticipant chatParticipant = ChatParticipant.builder()
 			.chatRoom(chatRoom)
 			.member(member)
-			.active(true)
 			.build();
 
 		chatParticipantRepository.save(chatParticipant);
@@ -136,9 +136,9 @@ public class ChatRoomService {
 
 
 	private void HostNotInOtherRoom(Member host) {
-		boolean exists = chatParticipantRepository.existsByMemberAndActiveTrue(host);
+		boolean exists = chatParticipantRepository.existsByMember(host);
 		if (exists)
-			throw new CatxiException(ChatParticipantErrorCode.ALREADY_IN_ACTIVE_ROOM);
+			throw new CatxiException(ChatParticipantErrorCode.ALREADY_IN_ROOM);
 
 	}
 
