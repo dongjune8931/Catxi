@@ -2,13 +2,12 @@ package com.project.catxi.member.service;
 
 import com.project.catxi.common.api.error.MemberErrorCode;
 import com.project.catxi.common.api.exception.CatxiException;
-import com.project.catxi.member.DTO.MemberProfileDTO;
+import com.project.catxi.member.DTO.MemberProfileRes;
 import com.project.catxi.member.DTO.SignUpDTO;
 import com.project.catxi.member.converter.MemberConverter;
 import com.project.catxi.member.domain.Member;
 import com.project.catxi.member.repository.MemberRepository;
 import java.time.LocalDateTime;
-import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -46,7 +45,7 @@ public class MemberService {
     }
   }
 
-  public MemberProfileDTO getProfile(String email) {
+  public MemberProfileRes getProfile(String email) {
     Member member = memberRepository.findByEmail(email)
         .orElseThrow(() -> new CatxiException(MemberErrorCode.MEMBER_NOT_FOUND));
 

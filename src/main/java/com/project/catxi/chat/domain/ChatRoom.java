@@ -48,5 +48,18 @@ public class ChatRoom extends BaseTimeEntity {
 	@OneToMany(mappedBy = "chatRoom", cascade = CascadeType.ALL, orphanRemoval = true)
 	private final List<ChatParticipant> participants = new ArrayList<>();
 
+
+	@Column(nullable = false)
+	private LocalDateTime matchedAt;
+
+	//matched된 시점 기록
+	//matched되었다 다시 waiting으로 되돌아갈 수 있는가?
+	public void matchedStatus(RoomStatus newStatus) {
+		if (status == RoomStatus.MATCHED && this.matchedAt == null) {
+			this.matchedAt = LocalDateTime.now();
+		}
+		this.status = newStatus;
+	}
+
 }
 

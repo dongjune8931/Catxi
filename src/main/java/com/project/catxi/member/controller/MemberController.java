@@ -6,10 +6,12 @@ import com.project.catxi.common.jwt.JwtUtill;
 import com.project.catxi.member.DTO.AuthDTO;
 import com.project.catxi.member.DTO.AuthDTO.LoginResponse;
 import com.project.catxi.member.DTO.IdResponse;
-import com.project.catxi.member.DTO.MemberProfileDTO;
+import com.project.catxi.member.DTO.MatchHistoryRes;
+import com.project.catxi.member.DTO.MemberProfileRes;
 import com.project.catxi.member.DTO.SignUpDTO;
 import com.project.catxi.member.domain.Member;
 import com.project.catxi.member.repository.MemberRepository;
+import com.project.catxi.member.service.MatchHistoryService;
 import com.project.catxi.member.service.MemberService;
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
@@ -23,6 +25,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -38,6 +41,7 @@ import org.springframework.web.server.ResponseStatusException;
 public class MemberController {
 
   private final MemberService memberService;
+  private final MatchHistoryService matchHistoryService;
   private final JwtUtill jwtUtill;
   private final AuthenticationManager authenticationManager;
   private final JwtConfig jwtConfig;
@@ -95,11 +99,21 @@ public class MemberController {
 
   @Operation(summary = "회원 기본 정보 조회")
   @GetMapping("/")
-  public ApiResponse<MemberProfileDTO> getMyProfile(@AuthenticationPrincipal UserDetails userDetails) {
+  public ApiResponse<MemberProfileRes> getMyProfile(@AuthenticationPrincipal UserDetails userDetails) {
     //userDetails의 username -> email
     String email = userDetails.getUsername();
-    MemberProfileDTO dto = memberService.getProfile(email);
+    MemberProfileRes dto = memberService.getProfile(email);
     return ApiResponse.success(dto);
+  }
+
+  @Operation(summary = "이용 기록 단건 조회")
+  @GetMapping("/history/{historyId}")
+  public ResponseEntity<MatchHistoryRes> getMatchHistoryById(
+      @PathVariable Long historyId, @AuthenticationPrincipal UserDetails userDetails
+  ) {
+    String email = userDetails.getUsername();
+    MatchHistoryRes res = matchHistoryService.getHistoryById(historyId, email);
+    return ResponseEntity.ok(res);
   }
 
 }
