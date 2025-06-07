@@ -54,10 +54,7 @@ public class ChatRoomRepositoryCustomImpl implements ChatRoomRepositoryCustom {
 				chatRoom.startPoint,
 				chatRoom.endPoint,
 				chatRoom.maxCapacity,
-				new CaseBuilder()
-					.when(participant.active.isTrue()).then(1)
-					.otherwise(0)
-					.sum().longValue(),
+				participant.id.countDistinct(),
 				chatRoom.status,
 				chatRoom.departAt.stringValue(),
 				chatRoom.createdTime.stringValue()
