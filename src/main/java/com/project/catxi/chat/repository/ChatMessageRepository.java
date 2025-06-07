@@ -10,5 +10,6 @@ import com.project.catxi.chat.domain.ChatRoom;
 public interface ChatMessageRepository extends JpaRepository<ChatMessage, Long> {
 	List<ChatMessage> findByChatRoomOrderByCreatedTimeAsc(ChatRoom room);
 
+	void deleteAllByChatRoom(ChatRoom chatRoom);
 }
 

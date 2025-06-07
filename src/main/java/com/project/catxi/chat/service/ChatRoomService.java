@@ -15,6 +15,7 @@ import com.project.catxi.chat.domain.ChatRoom;
 import com.project.catxi.chat.dto.ChatRoomRes;
 import com.project.catxi.chat.dto.RoomCreateReq;
 import com.project.catxi.chat.dto.RoomCreateRes;
+import com.project.catxi.chat.repository.ChatMessageRepository;
 import com.project.catxi.chat.repository.ChatParticipantRepository;
 import com.project.catxi.chat.repository.ChatRoomRepository;
 import com.project.catxi.common.api.error.ChatParticipantErrorCode;
@@ -37,6 +38,7 @@ public class ChatRoomService {
 	private final ChatRoomRepository chatRoomRepository;
 	private final ChatParticipantRepository chatParticipantRepository;
 	private final MemberRepository memberRepository;
+	private final ChatMessageRepository chatMessageRepository;
 
 
 	public RoomCreateRes createRoom(RoomCreateReq roomReq, String membername) {
@@ -100,6 +102,7 @@ public class ChatRoomService {
 			.findByChatRoomAndMember(chatRoom, member)
 			.orElseThrow(() -> new CatxiException(ChatParticipantErrorCode.PARTICIPANT_NOT_FOUND));
 		if (chatParticipant.isHost()) {
+			chatMessageRepository.deleteAllByChatRoom(chatRoom);
 			chatRoomRepository.delete(chatRoom);
 			return;
 		}
