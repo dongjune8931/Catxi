@@ -44,6 +44,9 @@ public class KakaoUtill {
         kakaoTokenRequest,
         String.class);
 
+    System.out.println("Access Token Response: " + response.getBody());
+    System.out.println("Profile Response: " + response.getBody());
+
     ObjectMapper objectMapper = new ObjectMapper();
 
     //응답받은 JSON KakaoDTO.kakaoToken 클래스에 매핑

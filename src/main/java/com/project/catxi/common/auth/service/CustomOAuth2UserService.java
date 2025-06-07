@@ -18,8 +18,6 @@ public class CustomOAuth2UserService {
 
   private final KakaoUtill kakaoUtill;
   private final JwtUtill jwtUtill;
-  private final WebConfig webConfig;
-  private final MemberService memberService;
   private final MemberRepository memberRepository;
   private final HttpServletResponse httpServletResponse;
 
