@@ -3,6 +3,7 @@ package com.project.catxi.common.auth.controller;
 import com.project.catxi.common.api.ApiResponse;
 import com.project.catxi.common.api.error.MemberErrorCode;
 import com.project.catxi.common.api.exception.CatxiException;
+import com.project.catxi.common.auth.kakao.KakaoDTO;
 import com.project.catxi.common.auth.service.CustomOAuth2UserService;
 import com.project.catxi.common.auth.service.CustomUserDetailsService;
 import com.project.catxi.member.domain.Member;
@@ -10,6 +11,7 @@ import com.project.catxi.member.dto.CustomUserDetails;
 import com.project.catxi.member.repository.MemberRepository;
 import com.project.catxi.member.service.MemberService;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -26,8 +28,6 @@ import org.springframework.web.bind.annotation.RestController;
 public class OAuthController {
 
   private final CustomOAuth2UserService customOAuth2UserService;
-  private final MemberService memberService;
-  private final MemberRepository memberRepository;
 
   @GetMapping("/login/kakao")
   public ApiResponse<?> kakaoLogin(@RequestParam("code") String accessCode, HttpServletResponse response) {
@@ -36,22 +36,15 @@ public class OAuthController {
     return ApiResponse.success("로그인 성공");
   }
 
-  // 카카오 회원가입
+  //카카오 회원가입
 
-//  // 추가 회원가입 단계
-//  @PatchMapping("/signUp/catxi")
-//  public ResponseEntity<Void> catxiSignUp(@RequestBody ProfileUpdateDTO dto, @AuthenticationPrincipal CustomUserDetails user) {
-//    memberService.updateProfile(user.getEmail(), dto.getNickname(), dto.getStudentNo());
-//    return ResponseEntity.ok().build();
-//  }
-//
-//  public void updateProfile(String email, String nickname, Long studentNo) {
-//    Member member = memberRepository.findByEmail(email)
-//        .orElseThrow(() -> new CatxiException(MemberErrorCode.MEMBER_NOT_FOUND));
-//
-//    member.setNickname(nickname);
-//    member.setStudentNo(studentNo);
-//  }
+  // 추가 회원가입 단계
+  @PatchMapping("/signUp/catxi")
+  public ResponseEntity<?> completeSignup(@RequestBody @Valid KakaoDTO.CatxiSignUp dto, @AuthenticationPrincipal CustomUserDetails userDetails) {
+
+    customOAuth2UserService.catxiSignup(userDetails.getUsername(), dto);
+    return ResponseEntity.ok("추가 회원정보 등록 완료");
+  }
 
 
 }

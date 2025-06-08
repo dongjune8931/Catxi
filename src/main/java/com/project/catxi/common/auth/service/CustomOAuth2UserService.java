@@ -1,5 +1,7 @@
 package com.project.catxi.common.auth.service;
 
+import com.project.catxi.common.api.error.MemberErrorCode;
+import com.project.catxi.common.api.exception.CatxiException;
 import com.project.catxi.common.auth.kakao.KakaoDTO;
 import com.project.catxi.common.auth.kakao.KakaoUtill;
 import com.project.catxi.common.config.JwtConfig;
@@ -12,6 +14,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
@@ -69,6 +72,19 @@ public class CustomOAuth2UserService {
         "access",name,"ROLE_USER",jwtConfig.getAccessTokenValidityInSeconds());
 
     httpServletResponse.setHeader("access", access);
+  }
+
+  @Transactional
+  public void catxiSignup(String email, KakaoDTO.CatxiSignUp dto) {
+    Member member = memberRepository.findByEmail(email)
+        .orElseThrow(() -> new CatxiException(MemberErrorCode.MEMBER_NOT_FOUND));
+
+    if (memberRepository.existsByStudentNo(dto.StudentNo())) {
+      throw new CatxiException(MemberErrorCode.DUPLICATE_MEMBER_STUDENTNO);
+    }
+
+    member.setNickname(dto.nickname());
+    member.setStudentNo(dto.StudentNo());
   }
 
   }
