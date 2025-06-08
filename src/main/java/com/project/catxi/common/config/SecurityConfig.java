@@ -49,12 +49,6 @@ public class SecurityConfig {
     http
         .csrf((auth) -> auth.disable());
 
-    //cors 설정
-    http
-        .cors(
-            cors -> cors.configurationSource(corsConfigurationSource())
-        );
-
     //Form 로그인 방식 disable -> Custom하게 설정
     http
         .formLogin((auth) -> auth.disable());
@@ -88,7 +82,6 @@ public class SecurityConfig {
     // JWT -> Session 항상 Stateless 상태로 둬야 함
     http
         .sessionManagement((session) -> session
-
             .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
         );
 
@@ -110,5 +103,4 @@ public class SecurityConfig {
     source.registerCorsConfiguration("/**", configuration);
     return source;
   }
-
 }
