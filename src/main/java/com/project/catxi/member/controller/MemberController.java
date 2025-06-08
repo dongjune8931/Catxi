@@ -16,6 +16,7 @@ import com.project.catxi.member.service.MemberService;
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
 import java.net.URI;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -114,6 +115,16 @@ public class MemberController {
     String email = userDetails.getUsername();
     MatchHistoryRes res = matchHistoryService.getHistoryById(historyId, email);
     return ResponseEntity.ok(res);
+  }
+
+  @Operation(summary = "이용 기록 최신 2개 조회")
+  @GetMapping("/history/recent")
+  public ResponseEntity<List<MatchHistoryRes>> getRecentHistorySummary(
+      @AuthenticationPrincipal UserDetails userDetails
+  ) {
+    String email = userDetails.getUsername();
+    List<MatchHistoryRes> summaries = matchHistoryService.getRecentHistoryTop2(email);
+    return ResponseEntity.ok(summaries);
   }
 
 }
