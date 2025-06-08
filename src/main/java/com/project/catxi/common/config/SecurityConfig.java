@@ -4,6 +4,7 @@ import com.project.catxi.common.jwt.JwtFilter;
 import com.project.catxi.common.jwt.JwtUtill;
 import com.project.catxi.common.jwt.LoginFilter;
 import com.project.catxi.member.repository.MemberRepository;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -15,6 +16,9 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 @Configuration
 @EnableWebSecurity
@@ -45,6 +49,12 @@ public class SecurityConfig {
     http
         .csrf((auth) -> auth.disable());
 
+    //cors 설정
+    http
+        .cors(
+            cors -> cors.configurationSource(corsConfigurationSource())
+        );
+
     //Form 로그인 방식 disable -> Custom하게 설정
     http
         .formLogin((auth) -> auth.disable());
@@ -57,6 +67,7 @@ public class SecurityConfig {
     http
         .authorizeHttpRequests((auth)-> auth
             .requestMatchers("/swagger", "/swagger-ui/**", "/v3/api-docs/**", "/swagger-resources/**", "/webjars/**").permitAll() // Swagger 허용
+            .requestMatchers("/connect/**").permitAll()
             .requestMatchers("/login","/","/signUp").permitAll()
             .requestMatchers("/auth/login/kakao").permitAll()
             .requestMatchers("/actuator/**").permitAll()
@@ -83,5 +94,19 @@ public class SecurityConfig {
     return http.build();
   }
 
+  //모든 경로 대해 cors 요청 허용Add commentMore actions
+  public CorsConfigurationSource corsConfigurationSource() {
+    CorsConfiguration configuration = new CorsConfiguration();
 
+    configuration.setAllowedOrigins(List.of("http://localhost:5173","https://catxi.kro.kr"));
+
+    configuration.addAllowedHeader("*");
+    configuration.addAllowedMethod("*");
+
+    configuration.setAllowCredentials(true);
+
+    UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+    source.registerCorsConfiguration("/**", configuration);
+    return source;
+  }
 }

@@ -1,4 +1,5 @@
 spring:
+
   datasource:
     url: jdbc:mysql://${HOST}:${PORT}/catxi?allowPublicKeyRetrieval=true&useSSL=false
     username: ${USER}

@@ -25,7 +25,7 @@ public class Member extends BaseTimeEntity {
 	private String membername;
 
 	//닉네임
-	@Column(nullable = false, length = 30)
+	@Column(nullable = true, length = 30)
 	private String nickname;
 
 	//이메일
@@ -35,14 +35,11 @@ public class Member extends BaseTimeEntity {
 	private String role;
 
 	//학번
-	@Column(nullable = false, length = 20, unique = true)
+	@Column(nullable = true, length = 20, unique = true)
 	private Long studentNo;
 
 	@Column(nullable = false)
 	private int matchCount;
-
-	@Column(nullable = false, updatable = false)
-	private LocalDateTime createdAt;
 
 	@Column(nullable = false)
 	private String password;
@@ -50,9 +47,8 @@ public class Member extends BaseTimeEntity {
 	@Column(nullable = false)
 	private boolean isLogin;
 
+
 	// 로그인했음 표시
-	public void setLogin(boolean isLogin) {
-		this.isLogin = isLogin;
-	}
+	//public void setLogin(boolean isLogin) {this.isLogin = isLogin;}
 
 }

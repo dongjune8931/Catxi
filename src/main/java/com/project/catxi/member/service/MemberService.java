@@ -32,7 +32,6 @@ public class MemberService {
         .studentNo(dto.getStudentNo())
         .password(bCryptPasswordEncoder.encode(dto.getPassword()))
         .matchCount(0)
-        .createdAt(LocalDateTime.now())
         .build();
 
     try {

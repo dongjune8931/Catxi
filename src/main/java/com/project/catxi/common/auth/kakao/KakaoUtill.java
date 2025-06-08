@@ -64,12 +64,9 @@ public class KakaoUtill {
     RestTemplate restTemplate2 = new RestTemplate();
     HttpHeaders headers2 = new HttpHeaders();
 
-    ObjectMapper objectMapper = new ObjectMapper();
+    headers2.setBearerAuth(kakaoToken.access_token());
 
-    headers2.add("Content-type", "application/x-www-form-urlencoded;charset=utf-8");
-    headers2.add("Authorization", "Bearer " + kakaoToken.access_token());
-
-    HttpEntity<MultiValueMap<String,String>> kakaoProfileRequest = new HttpEntity<>(headers2);
+    HttpEntity<Void> kakaoProfileRequest = new HttpEntity<>(headers2);
 
     //GET 요청으로 프로필 받아오기 위함
     ResponseEntity<String> response2 = restTemplate2.exchange(
@@ -78,16 +75,16 @@ public class KakaoUtill {
         kakaoProfileRequest,
         String.class);
 
-    //응답 JSON KakaoDTO.kakaoProfile에 매핑 -> nickname + 프사(이건 필요한지 모르겠음)
-    KakaoDTO.KakaoProfile kakaoProfile = null;
+    System.out.println("Kakao Profile Raw Response: " + response2.getBody());
+
+    ObjectMapper objectMapper = new ObjectMapper();
 
     try {
-      kakaoProfile = objectMapper.readValue(response2.getBody(), KakaoDTO.KakaoProfile.class);
+      return objectMapper.readValue(response2.getBody(), KakaoDTO.KakaoProfile.class);
     } catch (JsonProcessingException e) {
       throw new IllegalArgumentException("Invalid profile token");
     }
 
-    return kakaoProfile;
   }
 
 }
