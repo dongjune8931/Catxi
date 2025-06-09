@@ -35,7 +35,9 @@ public class CustomOAuth2UserService {
     Member user = memberRepository.findByEmail(requestEmail).orElseGet(()->createNewUser(kakaoProfile));
 
     // JWT 발급 후 응답 헤더에 추가
-    loginProcess(response, user);
+    String jwt = loginProcess(response, user);
+
+    log.info("✅JWT 발급 : {}", jwt);
   }
 
   private Member createNewUser(KakaoDTO.KakaoProfile kakaoProfile) {
@@ -61,7 +63,7 @@ public class CustomOAuth2UserService {
     return memberRepository.save(newUser);
   }
 
-  private void loginProcess(HttpServletResponse httpServletResponse,Member member) {
+  private String loginProcess(HttpServletResponse httpServletResponse,Member member) {
 
     String name = member.getMembername();
 
@@ -69,6 +71,8 @@ public class CustomOAuth2UserService {
         "access",name,"ROLE_USER",jwtConfig.getAccessTokenValidityInSeconds());
 
     httpServletResponse.setHeader("access", access);
+
+    return access;
   }
 
   }
