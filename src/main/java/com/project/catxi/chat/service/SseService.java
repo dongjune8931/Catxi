@@ -107,6 +107,10 @@ public class SseService {
 	 */
 	public void disconnect(String roomId, String membername, boolean isHost) {
 		if (isHost) {
+			SseEmitter hostEmitter = hostEmitters.get(roomId);
+			if (hostEmitter == null) {
+				throw new CatxiException(SseErrorCode.SSE_NOT_FOUND);
+			}
 			deleteEmitter(hostEmitters, roomId);
 		} else {
 			Map<String, SseEmitter> roomEmitters = sseEmitters.get(roomId);
@@ -174,6 +178,18 @@ public class SseService {
 		}
 
 		return false;
+	}
+
+	public SseEmitter createErrorEmitter(String errorMessage) {
+		SseEmitter emitter = new SseEmitter(3000L);
+		try {
+			sendToClient("SERVER", emitter, "error", errorMessage);
+		} catch (Exception e) {
+			emitter.completeWithError(e);
+			return emitter;
+		}
+		emitter.complete();
+		return emitter;
 	}
 
 
