@@ -134,6 +134,28 @@ public class ChatRoomService {
 		chatParticipantRepository.save(chatParticipant);
 	}
 
+	public void kickUser(Long roomId, String requesterEmail, String targetEmail) {
+		ChatRoom room = chatRoomRepository.findById(roomId)
+			.orElseThrow(() -> new CatxiException(ChatRoomErrorCode.CHATROOM_NOT_FOUND));
+
+		Member requester = memberRepository.findByEmail(requesterEmail)
+			.orElseThrow(() -> new CatxiException(MemberErrorCode.MEMBER_NOT_FOUND));
+
+		Member target = memberRepository.findByEmail(targetEmail)
+			.orElseThrow(() -> new CatxiException(MemberErrorCode.MEMBER_NOT_FOUND));
+
+		if (!room.getHost().equals(requester)) {
+			throw new CatxiException(ChatRoomErrorCode.NOT_HOST);
+		}
+
+		ChatParticipant participant = chatParticipantRepository.findByChatRoomAndMember(room, target)
+			.orElseThrow(() -> new CatxiException(ChatParticipantErrorCode.PARTICIPANT_NOT_FOUND));
+
+		chatParticipantRepository.delete(participant);
+
+	}
+
+
 
 	private void HostNotInOtherRoom(Member host) {
 		boolean exists = chatParticipantRepository.existsByMember(host);
@@ -156,6 +178,8 @@ public class ChatRoomService {
 		return false;
 
 	}
+
+
 
 
 }
