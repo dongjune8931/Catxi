@@ -32,7 +32,6 @@ public class SseSubscriber implements MessageListener {
 
 	@Override
 	public void onMessage(Message message, byte[] pattern) {
-		//System.out.println("📩 Redis Message received: " + new String(message.getBody()));
 		String channel = new String(message.getChannel());
 		String payload = new String(message.getBody());
 
@@ -49,8 +48,8 @@ public class SseSubscriber implements MessageListener {
 				// 클라이언트에게 메시지를 전송하는 로직
 				sseService.sendToClients(roomId, sseSendReq.eventName(), sseSendReq.data(), true);
 			}
-		} catch (Exception e) {
-			throw new CatxiException(SseErrorCode.SSE_SEND_ERROR);
+		} catch (Exception e){
+			throw new RuntimeException(e);
 		}
 	}
 
