@@ -6,6 +6,7 @@ import com.project.catxi.common.api.handler.MemberHandler;
 import com.project.catxi.common.config.JwtConfig;
 import com.project.catxi.member.dto.AuthDTO;
 import com.project.catxi.member.domain.Member;
+import com.project.catxi.member.dto.CustomUserDetails;
 import com.project.catxi.member.repository.MemberRepository;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.http.HttpServletRequest;
@@ -66,8 +67,11 @@ public class LoginFilter extends UsernamePasswordAuthenticationFilter {
   protected void successfulAuthentication(HttpServletRequest request, HttpServletResponse response, FilterChain chain, Authentication authentication) throws IOException {
     log.info("로그인 성공");
 
+    CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
+
     // 유저 정보 가져오기 (authentication 객체에서 username 추출)
     String username = authentication.getName();
+    String email = userDetails.getUsername();
     log.info("유저 정보 가져오기");
 
     // 사용자 권한을 추출 -> 권한 부여는 따로 하지 않을 것이기 때문에 기본값 ROLE_USER 세팅
@@ -78,7 +82,7 @@ public class LoginFilter extends UsernamePasswordAuthenticationFilter {
     log.info("사용자 권한 추출");
 
     // JWT Access Token 생성 (Refresh Token,Cookie 설정 추가적으로 필요)
-    String access = jwtUtill.createJwt("access", username, role, jwtConfig.getAccessTokenValidityInSeconds());
+    String access = jwtUtill.createJwt("access",email,role, jwtConfig.getAccessTokenValidityInSeconds());
     log.info("Access Token 생성");
 
     // 응답 헤더에 토큰 설정

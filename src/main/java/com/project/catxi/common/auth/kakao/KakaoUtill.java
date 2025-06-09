@@ -69,7 +69,7 @@ public class KakaoUtill {
       throw new IllegalArgumentException("Invalid access token");
     }
 
-    log.warn(">> [🚨ㅆ1발 중복 시도] accessCode = {}", accessCode);
+    log.warn(">> [🚨중복 시도 Fuck] accessCode = {}", accessCode);
 
     return kakaoToken;
   }

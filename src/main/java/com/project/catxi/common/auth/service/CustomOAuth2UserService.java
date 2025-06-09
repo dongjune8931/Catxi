@@ -28,17 +28,20 @@ public class CustomOAuth2UserService {
 
   private final JwtConfig jwtConfig;
 
-  public void oAuthLogin(String accessCode, HttpServletResponse response) {
+  public Member oAuthLogin(String accessCode, HttpServletResponse response) {
     // 카카오 토큰 요청
     KakaoDTO.kakaoToken kakaoToken = kakaoUtill.requestToken(accessCode);
     // 사용자 정보 요청
     KakaoDTO.KakaoProfile kakaoProfile = kakaoUtill.requestProfile(kakaoToken);
     // 이메일로 기존 사용자 조회
     String requestEmail = kakaoProfile.kakao_account().email();
-    Member user = memberRepository.findByEmail(requestEmail).orElseGet(()->createNewUser(kakaoProfile));
+    Member user = memberRepository.findByEmail(requestEmail)
+                  .orElseGet(()->createNewUser(kakaoProfile));
 
     // JWT 발급 후 응답 헤더에 추가
     loginProcess(response, user);
+    log.info(">>> [카카오 프로필] email = {}", requestEmail);
+    return user;
   }
 
   private Member createNewUser(KakaoDTO.KakaoProfile kakaoProfile) {
@@ -64,20 +67,25 @@ public class CustomOAuth2UserService {
     return memberRepository.save(newUser);
   }
 
-  private void loginProcess(HttpServletResponse httpServletResponse,Member member) {
+  private void loginProcess(HttpServletResponse httpServletResponse,Member user) {
 
-    String name = member.getMembername();
+    String name = user.getMembername();
+    String email = user.getEmail();
 
     String access = jwtUtill.createJwt(
-        "access",name,"ROLE_USER",jwtConfig.getAccessTokenValidityInSeconds());
+        "access",email,"ROLE_USER",jwtConfig.getAccessTokenValidityInSeconds());
 
     httpServletResponse.setHeader("access", access);
   }
 
   @Transactional
   public void catxiSignup(String email, KakaoDTO.CatxiSignUp dto) {
+    log.info(">>> [추가 회원가입 요청] email = {}", email);
     Member member = memberRepository.findByEmail(email)
-        .orElseThrow(() -> new CatxiException(MemberErrorCode.MEMBER_NOT_FOUND));
+        .orElseThrow(() -> {
+          log.warn("❌ [조회 실패] email = {}", email);
+          return new CatxiException(MemberErrorCode.MEMBER_NOT_FOUND);
+        });
 
     if (memberRepository.existsByStudentNo(dto.StudentNo())) {
       throw new CatxiException(MemberErrorCode.DUPLICATE_MEMBER_STUDENTNO);
