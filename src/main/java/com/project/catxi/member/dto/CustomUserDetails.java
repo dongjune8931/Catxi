@@ -1,4 +1,4 @@
-package com.project.catxi.member.DTO;
+package com.project.catxi.member.dto;
 
 import com.project.catxi.member.domain.Member;
 import java.util.ArrayList;
@@ -30,7 +30,7 @@ public class CustomUserDetails implements UserDetails {
 
   @Override
   public String getUsername() {
-    return member.getMembername();
+    return member.getEmail();
   }
 
 

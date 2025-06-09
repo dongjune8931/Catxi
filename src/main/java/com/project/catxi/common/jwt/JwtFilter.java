@@ -3,7 +3,7 @@ package com.project.catxi.common.jwt;
 import com.project.catxi.common.api.error.MemberErrorCode;
 import com.project.catxi.common.api.handler.MemberHandler;
 import com.project.catxi.common.config.JwtConfig;
-import com.project.catxi.member.DTO.CustomUserDetails;
+import com.project.catxi.member.dto.CustomUserDetails;
 import com.project.catxi.member.domain.Member;
 import io.jsonwebtoken.ExpiredJwtException;
 import jakarta.servlet.FilterChain;
@@ -67,12 +67,12 @@ public class JwtFilter extends OncePerRequestFilter {
     }
 
     // jwtUtill 객체에서 username 받아옴
-    String membername = jwtUtill.getMembername(accessToken);
+    String email = jwtUtill.getEmail(accessToken);
 
     // Member를 생성하여 값 초기화
     // 비밀번호 값은 token에 담겨있지 않았음 -> 임시적으로 비밀번호 생성하여 넣어둠
     Member member = new Member();
-    member.setMembername(membername);
+    member.setEmail(email);
     member.setPassword("CatxiPassword");
 
     // UserDetails에 회원 정보 객체 담기
