@@ -51,13 +51,13 @@ public class MemberService {
         .orElseThrow(() -> new CatxiException(MemberErrorCode.MEMBER_NOT_FOUND));
 
     member.delete();
+  }
 
   public MemberProfileRes getProfile(String email) {
     Member member = memberRepository.findByEmail(email)
         .orElseThrow(() -> new CatxiException(MemberErrorCode.MEMBER_NOT_FOUND));
 
     return MemberConverter.toMemberProfileDTO(member);
-
   }
 
 }

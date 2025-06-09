@@ -113,7 +113,7 @@ public class MemberController {
 
     return ApiResponse.success("삭제 완료");
   }
-  
+
   @Operation(summary = "회원 기본 정보 조회")
   @GetMapping("/")
   public ApiResponse<MemberProfileRes> getMyProfile(@AuthenticationPrincipal UserDetails userDetails) {
