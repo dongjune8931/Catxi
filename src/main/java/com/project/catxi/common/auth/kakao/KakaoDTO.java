@@ -1,6 +1,7 @@
 package com.project.catxi.common.auth.kakao;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import jakarta.validation.constraints.NotBlank;
 import java.util.Properties;
 import lombok.Getter;
 
@@ -36,11 +37,12 @@ public class KakaoDTO {
     }
   }
 
-  //서비스용
-  public record KakaoUser(
-      Long id,
-      String email,
-      String nickname
+  // 추가 회원가입 폼용
+  public record CatxiSignUp(
+      @NotBlank
+      String nickname,
+      @NotBlank
+      Long StudentNo
   ) {}
 
 }
