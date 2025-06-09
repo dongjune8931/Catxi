@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.project.catxi.chat.dto.ChatMessageRes;
 import com.project.catxi.chat.dto.ChatRoomRes;
+import com.project.catxi.chat.dto.KickRequest;
 import com.project.catxi.chat.dto.RoomCreateReq;
 import com.project.catxi.chat.dto.RoomCreateRes;
 import com.project.catxi.chat.service.ChatMessageService;
@@ -90,6 +91,18 @@ public class ChatController {
 
 		String email = userDetails.getUsername();
 		chatRoomService.joinChatRoom(roomId, email);
+		return ResponseEntity.ok(ApiResponse.successWithNoData());
+	}
+
+	@PostMapping("/rooms/{roomId}/kick")
+	@Operation(summary = "채팅방 유저 강퇴 (방장만 가능)")
+	public ResponseEntity<ApiResponse<Void>> kickUser(
+		@PathVariable Long roomId,
+		@RequestBody KickRequest request,
+		@AuthenticationPrincipal CustomUserDetails userDetails
+	) {
+		String requesterEmail = userDetails.getUsername();
+		chatRoomService.kickUser(roomId, requesterEmail, request.targetEmail());
 		return ResponseEntity.ok(ApiResponse.successWithNoData());
 	}
 
