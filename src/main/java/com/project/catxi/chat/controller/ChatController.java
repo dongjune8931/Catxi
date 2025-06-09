@@ -40,8 +40,8 @@ public class ChatController {
 	@PostMapping("/room/create")
 	public ResponseEntity<ApiResponse<RoomCreateRes>> createRoom(@RequestBody RoomCreateReq roomCreateReq,
 		@AuthenticationPrincipal CustomUserDetails userDetails) {
-		String membername = userDetails.getUsername();
-		RoomCreateRes res = chatRoomService.createRoom(roomCreateReq, membername);
+		String email = userDetails.getUsername();
+		RoomCreateRes res = chatRoomService.createRoom(roomCreateReq, email);
 		return ResponseEntity.ok(ApiResponse.success(res));
 	}
 
@@ -51,8 +51,8 @@ public class ChatController {
 		@PathVariable Long roomId,
 		@AuthenticationPrincipal CustomUserDetails userDetails) {
 
-		String membername = userDetails.getUsername();
-		List<ChatMessageRes> history = chatMessageService.getChatHistory(roomId, membername);
+		String email = userDetails.getUsername();
+		List<ChatMessageRes> history = chatMessageService.getChatHistory(roomId, email);
 
 		return ResponseEntity.ok(ApiResponse.success(history));
 	}
@@ -73,8 +73,8 @@ public class ChatController {
 		@PathVariable Long roomId,
 		@AuthenticationPrincipal CustomUserDetails userDetails) {
 
-		String membername = userDetails.getUsername();
-		chatRoomService.leaveChatRoom(roomId, membername);
+		String email = userDetails.getUsername();
+		chatRoomService.leaveChatRoom(roomId, email);
 		return ResponseEntity.ok(ApiResponse.successWithNoData());
 	}
 
@@ -83,8 +83,8 @@ public class ChatController {
 		@PathVariable Long roomId,
 		@AuthenticationPrincipal CustomUserDetails userDetails) {
 
-		String membername = userDetails.getUsername();
-		chatRoomService.joinChatRoom(roomId, membername);
+		String email = userDetails.getUsername();
+		chatRoomService.joinChatRoom(roomId, email);
 		return ResponseEntity.ok(ApiResponse.successWithNoData());
 	}
 

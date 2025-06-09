@@ -16,13 +16,14 @@ public class RedisPubSubService implements MessageListener {
 	private final SimpMessageSendingOperations messageTemplate;
 	public final StringRedisTemplate stringRedisTemplate;
 
-	public RedisPubSubService(@Qualifier("chatPubSub")StringRedisTemplate stringRedisTemplate,SimpMessageSendingOperations messageTemplate) {
+	public RedisPubSubService(@Qualifier("chatPubSub") StringRedisTemplate stringRedisTemplate,
+		SimpMessageSendingOperations messageTemplate) {
 		this.messageTemplate = messageTemplate;
 		this.stringRedisTemplate = stringRedisTemplate;
 	}
 
-	public void publish(String channel,String message){
-		stringRedisTemplate.convertAndSend(channel,message);
+	public void publish(String channel, String message) {
+		stringRedisTemplate.convertAndSend(channel, message);
 	}
 
 	@Override
@@ -31,8 +32,8 @@ public class RedisPubSubService implements MessageListener {
 		String payload = new String(message.getBody());
 		ObjectMapper objectMapper = new ObjectMapper();
 		try {
-			ChatMessageSendReq chatMessageDto  = objectMapper.readValue(payload, ChatMessageSendReq.class);
-			messageTemplate.convertAndSend("/topic/"+chatMessageDto.roomId(), chatMessageDto);
+			ChatMessageSendReq chatMessageDto = objectMapper.readValue(payload, ChatMessageSendReq.class);
+			messageTemplate.convertAndSend("/topic/" + chatMessageDto.roomId(), chatMessageDto);
 		} catch (JsonProcessingException e) {
 			throw new RuntimeException(e);
 		}
