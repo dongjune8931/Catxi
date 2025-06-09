@@ -80,7 +80,7 @@ public class ReadyService {
 		ChatParticipant participant = chatParticipantRepository.findByChatRoomAndMember(room, member)
 			.orElseThrow(() -> new CatxiException(ChatParticipantErrorCode.PARTICIPANT_NOT_FOUND));
 
-		checkParticipant(participant);
+		checkParticipant(room,participant);
 
 		participant.setReady(true);
 		SseSendReq payload = new SseSendReq(
@@ -105,7 +105,7 @@ public class ReadyService {
 		ChatParticipant participant = chatParticipantRepository.findByChatRoomAndMember(room, member)
 			.orElseThrow(() -> new CatxiException(ChatParticipantErrorCode.PARTICIPANT_NOT_FOUND));
 
-		checkParticipant(participant);
+		checkParticipant(room,participant);
 
 		SseSendReq payload = new SseSendReq(
 			"READY REJECT",
@@ -124,7 +124,10 @@ public class ReadyService {
 
 	}
 
-	private void checkParticipant(ChatParticipant participant) {
+	private void checkParticipant(ChatRoom room, ChatParticipant participant) {
+		if(!room.getStatus().equals(RoomStatus.READY_LOCKED)) {
+			throw new CatxiException(ChatRoomErrorCode.CHATROOM_NOT_READY_LOCKED);
+		}
 		if(participant.isHost()) {
 			throw new CatxiException(ChatRoomErrorCode.INVALID_CHATROOM_PARAMETER);
 		}
