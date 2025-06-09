@@ -35,7 +35,7 @@ public class CustomOAuth2UserService {
     Member user = memberRepository.findByEmail(requestEmail).orElseGet(()->createNewUser(kakaoProfile));
 
     // JWT 발급 후 응답 헤더에 추가
-    loginProcess(httpServletResponse, user);
+    loginProcess(response, user);
   }
 
   private Member createNewUser(KakaoDTO.KakaoProfile kakaoProfile) {
