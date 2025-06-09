@@ -25,6 +25,7 @@ public class ReadyService {
 	private final ChatParticipantRepository chatParticipantRepository;
 	private final MemberRepository memberRepository;
 	private final ChatRoomRepository chatRoomRepository;
+	private final TimerService timerService;
 	private final SseService sseService;
 	private final SseSubscriber sseSubscriber;
 
@@ -62,6 +63,9 @@ public class ReadyService {
 			- True라면 MATCHED로 변경
 			- False라면 WAITING으로 변경
 		*/
+
+		timerService.scheduleReadyTimeout(roomId);
+
 
 	}
 
