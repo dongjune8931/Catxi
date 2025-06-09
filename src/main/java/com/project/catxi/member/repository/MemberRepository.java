@@ -1,6 +1,5 @@
 package com.project.catxi.member.repository;
 
-import com.project.catxi.common.domain.MemberStatus;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 
