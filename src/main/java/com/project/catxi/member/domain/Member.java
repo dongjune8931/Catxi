@@ -1,5 +1,6 @@
 package com.project.catxi.member.domain;
 
+import com.project.catxi.common.domain.MemberStatus;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -47,8 +48,17 @@ public class Member extends BaseTimeEntity {
 	@Column(nullable = false)
 	private boolean isLogin;
 
+	@Column(nullable = false)
+	@Enumerated(EnumType.STRING)
+	private MemberStatus status;
 
 	// 로그인했음 표시
 	//public void setLogin(boolean isLogin) {this.isLogin = isLogin;}
+
+	// 삭제 필드
+	public void delete() {
+		this.status = MemberStatus.INACTIVE;
+	}
+
 
 }
