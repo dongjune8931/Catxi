@@ -25,6 +25,8 @@ import com.project.catxi.common.api.CommonPageResponse;
 import com.project.catxi.member.dto.CustomUserDetails;
 import com.project.catxi.member.domain.Member;
 
+import io.swagger.v3.oas.annotations.Operation;
+
 @RestController
 @RequestMapping("/chat")
 public class ChatController {
@@ -37,6 +39,7 @@ public class ChatController {
 		this.chatRoomService = chatRoomService;
 	}
 
+	@Operation(summary = "채팅방 생성", description = "로그인한 사용자가 새로운 채팅방을 생성합니다.")
 	@PostMapping("/room/create")
 	public ResponseEntity<ApiResponse<RoomCreateRes>> createRoom(@RequestBody RoomCreateReq roomCreateReq,
 		@AuthenticationPrincipal CustomUserDetails userDetails) {
@@ -45,7 +48,7 @@ public class ChatController {
 		return ResponseEntity.ok(ApiResponse.success(res));
 	}
 
-
+	@Operation(summary = "채팅방 메시지 조회", description = "채팅방에 참여 중인 사용자가 해당 방의 메시지 이력을 조회합니다.")
 	@GetMapping("/{roomId}/messages")
 	public ResponseEntity<ApiResponse<List<ChatMessageRes>>> getHistory(
 		@PathVariable Long roomId,
@@ -57,6 +60,7 @@ public class ChatController {
 		return ResponseEntity.ok(ApiResponse.success(history));
 	}
 
+	@Operation(summary = "채팅방 목록 조회", description = "역 방향, 정류장, 정렬 기준, 페이지 정보를 기반으로 채팅방 목록을 조회합니다.")
 	@GetMapping("/rooms")
 	public ResponseEntity<ApiResponse<CommonPageResponse<ChatRoomRes>>> getRoomList(
 		@RequestParam("direction") String direction,
@@ -67,7 +71,7 @@ public class ChatController {
 		Page<ChatRoomRes> roomList = chatRoomService.getChatRoomList(direction, station, sort, page);
 		return ResponseEntity.ok(ApiResponse.success(CommonPageResponse.of(roomList)));
 	}
-
+	@Operation(summary = "채팅방 나가기", description = "로그인한 사용자가 해당 채팅방에서 나갑니다.")
 	@DeleteMapping("/{roomId}/leave")
 	public ResponseEntity<ApiResponse<Void>> leaveRoom(
 		@PathVariable Long roomId,
@@ -78,6 +82,7 @@ public class ChatController {
 		return ResponseEntity.ok(ApiResponse.successWithNoData());
 	}
 
+	@Operation(summary = "채팅방 참여", description = "로그인한 사용자가 지정한 채팅방에 참여합니다.")
 	@PostMapping("/rooms/{roomId}/join")
 	public ResponseEntity<ApiResponse<Void>> joinChatRoom(
 		@PathVariable Long roomId,
