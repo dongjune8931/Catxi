@@ -23,13 +23,19 @@ public class SseService {
 	/*
 	 * sse 구독 기능
 	 */
-	public SseEmitter subscribe(String roomId, String membername, boolean isHost) {
+	public SseEmitter subscribe(String roomId, String membername, boolean isHost, boolean isParticipant) {
 		// 30분 동안 클라이언트와 연결 유지
 		SseEmitter emitter = new SseEmitter(TIMEOUT);
 		Map<String, SseEmitter> roomEmitters = sseEmitters.computeIfAbsent(roomId, k -> new ConcurrentHashMap<>());
 
+		if (!isParticipant) {
+			sendToClient("SERVER", emitter, "error", "채팅방 참여자가 아닙니다");
+			emitter.complete();
+		}
+
 		if (isRoomBlocked(roomId)) {
-			throw new CatxiException(SseErrorCode.SSE_ROOM_BLOCKED);
+			sendToClient("SERVER", emitter, "error", "현재 채팅방에 연결이 불가합니다");
+			emitter.complete();
 		}
 
 		if (isHost) {
