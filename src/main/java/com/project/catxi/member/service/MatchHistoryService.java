@@ -114,6 +114,7 @@ public class MatchHistoryService {
         .createdAt(LocalDateTime.now())
         .matchedAt(chatRoom.getMatchedAt())
         .build();
+    matchHistoryRepository.save(matchHistory);
   }
 
 }
