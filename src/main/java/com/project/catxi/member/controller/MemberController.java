@@ -145,4 +145,15 @@ public class MemberController {
     return ResponseEntity.ok(slice);
   }
 
+  @Operation(summary = "매칭 기록 생성(방장만 이용 가능)")
+  @PostMapping("/history/{roomId}")
+  public ResponseEntity<ApiResponse<Void>> getMyMatchHistoryWithScroll(
+        @PathVariable Long roomId,
+        @AuthenticationPrincipal UserDetails userDetails
+  ) {
+    String email = userDetails.getUsername();
+    matchHistoryService.saveMatchHistory(roomId, email);
+    return ResponseEntity.ok(ApiResponse.successWithNoData());
+  }
+
 }
