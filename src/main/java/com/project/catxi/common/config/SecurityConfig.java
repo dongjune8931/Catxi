@@ -66,9 +66,10 @@ public class SecurityConfig {
     //경로별 인가 작업
     http
         .authorizeHttpRequests((auth)-> auth
-            .requestMatchers("/swagger", "/swagger/", "/swagger-ui/**", "/v3/api-docs/**", "/swagger-resources/**", "/webjars/**").permitAll() // Swagger 허용
+            .requestMatchers("/swagger", "/swagger-ui/**", "/v3/api-docs/**", "/swagger-resources/**", "/webjars/**").permitAll() // Swagger 허용
             .requestMatchers("/connect/**").permitAll()
             .requestMatchers("/login","/","/signUp").permitAll()
+            .requestMatchers("/auth/login/kakao").permitAll()
             .requestMatchers("/actuator/**").permitAll()
             .requestMatchers("/admin").hasRole("ADMIN")
             .anyRequest().authenticated()
@@ -87,7 +88,6 @@ public class SecurityConfig {
     // JWT -> Session 항상 Stateless 상태로 둬야 함
     http
         .sessionManagement((session) -> session
-
             .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
         );
 
@@ -109,5 +109,4 @@ public class SecurityConfig {
     source.registerCorsConfiguration("/**", configuration);
     return source;
   }
-
 }

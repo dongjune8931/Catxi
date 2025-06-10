@@ -1,16 +1,18 @@
 package com.project.catxi.member.controller;
 
 import com.project.catxi.common.api.ApiResponse;
+import com.project.catxi.common.auth.service.CustomOAuth2UserService;
 import com.project.catxi.common.config.JwtConfig;
 import com.project.catxi.common.jwt.JwtUtill;
-import com.project.catxi.member.DTO.AuthDTO;
-import com.project.catxi.member.DTO.AuthDTO.LoginResponse;
-import com.project.catxi.member.DTO.IdResponse;
-import com.project.catxi.member.DTO.SignUpDTO;
+import com.project.catxi.member.dto.AuthDTO;
+import com.project.catxi.member.dto.AuthDTO.LoginResponse;
+import com.project.catxi.member.dto.IdResponse;
+import com.project.catxi.member.dto.SignUpDTO;
 import com.project.catxi.member.domain.Member;
 import com.project.catxi.member.repository.MemberRepository;
 import com.project.catxi.member.service.MemberService;
 import io.swagger.v3.oas.annotations.Operation;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import java.net.URI;
 import lombok.RequiredArgsConstructor;
@@ -34,6 +36,7 @@ import org.springframework.web.server.ResponseStatusException;
 public class MemberController {
 
   private final MemberService memberService;
+  private final CustomOAuth2UserService customOAuth2UserService;
   private final JwtUtill jwtUtill;
   private final AuthenticationManager authenticationManager;
   private final JwtConfig jwtConfig;

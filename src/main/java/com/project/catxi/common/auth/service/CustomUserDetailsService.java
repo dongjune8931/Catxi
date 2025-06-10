@@ -1,6 +1,6 @@
 package com.project.catxi.common.auth.service;
 
-import com.project.catxi.member.DTO.CustomUserDetails;
+import com.project.catxi.member.dto.CustomUserDetails;
 import com.project.catxi.member.domain.Member;
 import com.project.catxi.member.repository.MemberRepository;
 import lombok.RequiredArgsConstructor;
@@ -17,10 +17,11 @@ public class CustomUserDetailsService implements UserDetailsService {
   @Override
   public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
 
-    Member member = memberRepository.findByMembername(username).orElse(null);
+    Member member = memberRepository.findByEmail(username).orElse(null);
 
     if (member != null) {
       return new CustomUserDetails(member);
     } throw new UsernameNotFoundException("회원이 존재하지 않습니다" + username);
   }
+
 }

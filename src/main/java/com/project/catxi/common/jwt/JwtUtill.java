@@ -21,11 +21,13 @@ public class JwtUtill {
     secretKey = new SecretKeySpec(secret.getBytes(StandardCharsets.UTF_8), Jwts.SIG.HS256.key().build().getAlgorithm());
   }
 
-  public String createJwt(String type, String membername, String role, Long expiredMs) {
+  public String createJwt(String type,String email, String role, Long expiredMs) {
 
     return Jwts.builder()
+        //이메일을 주 키로 사용하기 위함
+        .setSubject(email)
         .claim("type", type) //TokenType
-        .claim("membername", membername)
+        .claim("email", email)
         .claim("role", role)
         .issuedAt(new Date(System.currentTimeMillis()))
         .expiration(new Date(System.currentTimeMillis() + expiredMs*1000))
@@ -47,6 +49,10 @@ public class JwtUtill {
 
   public String getMembername(String token) {
     return parseJwt(token).get("membername", String.class);
+  }
+
+  public String getEmail(String token) {
+    return parseJwt(token).get("email", String.class);
   }
 
   public void isExpired(String token) throws ExpiredJwtException {
