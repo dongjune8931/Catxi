@@ -2,8 +2,10 @@ package com.project.catxi.member.service;
 
 import com.project.catxi.common.api.error.MemberErrorCode;
 import com.project.catxi.common.api.exception.CatxiException;
+import com.project.catxi.member.dto.MemberProfileRes;
 import com.project.catxi.member.dto.SignUpDTO;
 import com.project.catxi.member.domain.Member;
+import com.project.catxi.member.converter.MemberConverter;
 import com.project.catxi.member.repository.MemberRepository;
 import java.time.LocalDateTime;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -32,6 +34,7 @@ public class MemberService {
         .studentNo(dto.getStudentNo())
         .password(bCryptPasswordEncoder.encode(dto.getPassword()))
         .matchCount(0)
+        .createdAt(LocalDateTime.now())
         .build();
 
     try {
@@ -40,6 +43,13 @@ public class MemberService {
     } catch (DataIntegrityViolationException ex) {
       throw new CatxiException(MemberErrorCode.DUPLICATE_MEMBER_STUDENTNO);
     }
+  }
+
+  public MemberProfileRes getProfile(String email) {
+    Member member = memberRepository.findByEmail(email)
+        .orElseThrow(() -> new CatxiException(MemberErrorCode.MEMBER_NOT_FOUND));
+
+    return MemberConverter.toMemberProfileDTO(member);
   }
 
 }
