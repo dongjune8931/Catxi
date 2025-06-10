@@ -101,6 +101,8 @@ public class SecurityConfig {
     configuration.setAllowedOrigins(List.of("http://localhost:5173","https://catxi.kro.kr"));
 
     configuration.addAllowedHeader("*");
+    configuration.setExposedHeaders(List.of("access", "Authorization"));
+
     configuration.addAllowedMethod("*");
 
     configuration.setAllowCredentials(true);
