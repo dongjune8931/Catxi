@@ -28,7 +28,7 @@ public class ReportService {
 
     @Transactional
     public ReportCreateRes createReport(Long roomId, Long targetUserId, String reporterEmail, ReportCreateReq req) {
-        Member reporter = memberRepository.findByMembername(reporterEmail)
+        Member reporter = memberRepository.findByEmail(reporterEmail)
                 .orElseThrow(() -> new ReportExceptionHandler(CommonErrorCode.USER_NOT_FOUND));
 
         ChatRoom chatRoom = chatRoomRepository.findById(roomId)
