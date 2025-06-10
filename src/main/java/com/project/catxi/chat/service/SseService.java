@@ -23,7 +23,7 @@ public class SseService {
 	/*
 	 * sse 구독 기능
 	 */
-	public SseEmitter subscribe(String roomId, String membername, boolean isHost, boolean isParticipant) {
+	public SseEmitter subscribe(String roomId, String email, boolean isHost, boolean isParticipant) {
 		// 30분 동안 클라이언트와 연결 유지
 		SseEmitter emitter = new SseEmitter(TIMEOUT);
 		Map<String, SseEmitter> roomEmitters = sseEmitters.computeIfAbsent(roomId, k -> new ConcurrentHashMap<>());
@@ -41,13 +41,13 @@ public class SseService {
 		if (isHost) {
 			registerEmitter(hostEmitters, roomId, emitter);
 		} else {
-			registerEmitter(roomEmitters, membername, emitter);
+			registerEmitter(roomEmitters, email, emitter);
 		}
 
 		try {
 			sendToClient("SERVER", emitter, "connected", "SSE connection completed");
 		} catch (Exception e) {
-			disconnect(roomId, membername, isHost);
+			disconnect(roomId, email, isHost);
 		}
 
 		return emitter;
@@ -105,7 +105,7 @@ public class SseService {
 	/*
 	 * sse 연결 해제
 	 */
-	public void disconnect(String roomId, String membername, boolean isHost) {
+	public void disconnect(String roomId, String email, boolean isHost) {
 		if (isHost) {
 			SseEmitter hostEmitter = hostEmitters.get(roomId);
 			if (hostEmitter == null) {
@@ -118,7 +118,7 @@ public class SseService {
 			if (roomEmitters == null) {
 				throw new CatxiException(SseErrorCode.SSE_NOT_FOUND);
 			}
-			deleteEmitter(roomEmitters, membername);
+			deleteEmitter(roomEmitters, email);
 
 			if (roomEmitters.isEmpty()) {
 				sseEmitters.remove(roomId);
