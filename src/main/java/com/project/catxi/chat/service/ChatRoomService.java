@@ -41,8 +41,8 @@ public class ChatRoomService {
 	private final ChatMessageRepository chatMessageRepository;
 
 
-	public RoomCreateRes createRoom(RoomCreateReq roomReq, String membername) {
-		Member host = memberRepository.findByMembername(membername)
+	public RoomCreateRes createRoom(RoomCreateReq roomReq, String email) {
+		Member host = memberRepository.findByEmail(email)
 			.orElseThrow(() -> new CatxiException(MemberErrorCode.MEMBER_NOT_FOUND));
 
 		HostNotInOtherRoom(host);
@@ -94,8 +94,8 @@ public class ChatRoomService {
 
 
 	//로그인 전이라 member 임시로 추가해둠.
-	public void leaveChatRoom(Long roomId, String membername) {
-		Member member = memberRepository.findByMembername(membername).orElseThrow(() -> new CatxiException(MemberErrorCode.MEMBER_NOT_FOUND));
+	public void leaveChatRoom(Long roomId, String email) {
+		Member member = memberRepository.findByEmail(email).orElseThrow(() -> new CatxiException(MemberErrorCode.MEMBER_NOT_FOUND));
 		ChatRoom chatRoom = chatRoomRepository.findById(roomId)
 			.orElseThrow(() -> new CatxiException(ChatRoomErrorCode.CHATROOM_NOT_FOUND));
 		ChatParticipant chatParticipant = chatParticipantRepository
@@ -110,11 +110,11 @@ public class ChatRoomService {
 		chatParticipantRepository.delete(chatParticipant);
 	}
 
-	public void joinChatRoom(Long roomId, String membername) {
+	public void joinChatRoom(Long roomId, String email) {
 		ChatRoom chatRoom = chatRoomRepository.findById(roomId)
 			.orElseThrow(() -> new CatxiException(ChatRoomErrorCode.CHATROOM_NOT_FOUND));
 
-		Member member = memberRepository.findByMembername(membername)
+		Member member = memberRepository.findByEmail(email)
 			.orElseThrow(() -> new CatxiException(MemberErrorCode.MEMBER_NOT_FOUND));
 
 		HostNotInOtherRoom(member);
@@ -134,6 +134,28 @@ public class ChatRoomService {
 		chatParticipantRepository.save(chatParticipant);
 	}
 
+	public void kickUser(Long roomId, String requesterEmail, String targetEmail) {
+		ChatRoom room = chatRoomRepository.findById(roomId)
+			.orElseThrow(() -> new CatxiException(ChatRoomErrorCode.CHATROOM_NOT_FOUND));
+
+		Member requester = memberRepository.findByEmail(requesterEmail)
+			.orElseThrow(() -> new CatxiException(MemberErrorCode.MEMBER_NOT_FOUND));
+
+		Member target = memberRepository.findByEmail(targetEmail)
+			.orElseThrow(() -> new CatxiException(MemberErrorCode.MEMBER_NOT_FOUND));
+
+		if (!room.getHost().equals(requester)) {
+			throw new CatxiException(ChatRoomErrorCode.NOT_HOST);
+		}
+
+		ChatParticipant participant = chatParticipantRepository.findByChatRoomAndMember(room, target)
+			.orElseThrow(() -> new CatxiException(ChatParticipantErrorCode.PARTICIPANT_NOT_FOUND));
+
+		chatParticipantRepository.delete(participant);
+
+	}
+
+
 
 	private void HostNotInOtherRoom(Member host) {
 		boolean exists = chatParticipantRepository.existsByMember(host);
@@ -142,10 +164,10 @@ public class ChatRoomService {
 
 	}
 
-	public boolean isRoomParticipant(String membername, Long roomId) {
+	public boolean isRoomParticipant(String email, Long roomId) {
 		ChatRoom chatRoom = chatRoomRepository.findById(roomId)
 			.orElseThrow(() -> new EntityNotFoundException("room not found"));
-		Member member = memberRepository.findByMembername(membername)
+		Member member = memberRepository.findByEmail(email)
 			.orElseThrow(() -> new EntityNotFoundException("member not found"));
 		List<ChatParticipant> chatParticipants = chatParticipantRepository.findByChatRoom(chatRoom);
 		for (ChatParticipant c : chatParticipants) {
@@ -156,6 +178,8 @@ public class ChatRoomService {
 		return false;
 
 	}
+
+
 
 
 }

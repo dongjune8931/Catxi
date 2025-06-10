@@ -51,13 +51,14 @@ public class ChatRoomRepositoryCustomImpl implements ChatRoomRepositoryCustom {
 				host.id,
 				host.membername,
 				host.nickname,
+				host.matchCount,
 				chatRoom.startPoint,
 				chatRoom.endPoint,
 				chatRoom.maxCapacity,
 				participant.id.countDistinct(),
 				chatRoom.status,
-				chatRoom.departAt.stringValue(),
-				chatRoom.createdTime.stringValue()
+				chatRoom.departAt,
+				chatRoom.createdTime
 			))
 			.from(chatRoom)
 			.join(chatRoom.host, host)

@@ -27,8 +27,8 @@ public class ReportService {
     private final DiscordWebhookService discordWebhookService;
 
     @Transactional
-    public ReportCreateRes createReport(Long roomId, Long targetUserId, String reporterMembername, ReportCreateReq req) {
-        Member reporter = memberRepository.findByMembername(reporterMembername)
+    public ReportCreateRes createReport(Long roomId, Long targetUserId, String reporterEmail, ReportCreateReq req) {
+        Member reporter = memberRepository.findByEmail(reporterEmail)
                 .orElseThrow(() -> new ReportExceptionHandler(CommonErrorCode.USER_NOT_FOUND));
 
         ChatRoom chatRoom = chatRoomRepository.findById(roomId)

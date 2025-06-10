@@ -28,8 +28,8 @@ public class ReportController {
             @Valid @RequestBody ReportCreateReq request,
             @AuthenticationPrincipal CustomUserDetails userDetails) {
 
-        String reporterMembername = userDetails.getUsername();
-        ReportCreateRes response = reportService.createReport(roomId, targetUserId, reporterMembername, request);
+        String reporterEmail = userDetails.getUsername();
+        ReportCreateRes response = reportService.createReport(roomId, targetUserId, reporterEmail, request);
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.created(response));
     }
 }

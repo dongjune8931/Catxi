@@ -37,7 +37,7 @@ public class ChatMessageService {
 		ChatRoom room = chatRoomRepository.findById(roomId)
 			.orElseThrow(() -> new CatxiException(ChatRoomErrorCode.CHATROOM_NOT_FOUND));
 
-		Member sender = memberRepository.findByMembername(req.membername())
+		Member sender = memberRepository.findByEmail(req.email())
 			.orElseThrow(() -> new CatxiException(MemberErrorCode.MEMBER_NOT_FOUND));
 
 		ChatMessage chatMsg = ChatMessage.builder()
@@ -50,9 +50,9 @@ public class ChatMessageService {
 		chatMessageRepository.save(chatMsg);
 	}
 
-	public List<ChatMessageRes> getChatHistory(Long roomId, String membername) {
+	public List<ChatMessageRes> getChatHistory(Long roomId, String email) {
 
-		Member member = memberRepository.findByMembername(membername)
+		Member member = memberRepository.findByEmail(email)
 			.orElseThrow(() -> new CatxiException(MemberErrorCode.MEMBER_NOT_FOUND));
 
 		ChatRoom room = chatRoomRepository.findById(roomId)
