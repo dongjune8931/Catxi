@@ -1,5 +1,6 @@
 package com.project.catxi.member.repository;
 
+import com.project.catxi.common.domain.MemberStatus;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 
@@ -22,5 +23,5 @@ public interface MemberRepository   extends JpaRepository<Member, Long> {
   boolean existsByStudentNo(Long studentNo);
 
   //삭제된 회원 조회 불가
-  Optional<Member> findByEmailAndDeletedFalse(String email);
+  //Optional<Member> findByEmailAndDeletedFalse(String email, MemberStatus status);
 }
