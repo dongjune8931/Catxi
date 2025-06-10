@@ -51,6 +51,7 @@ public class ChatRoomRepositoryCustomImpl implements ChatRoomRepositoryCustom {
 				host.id,
 				host.membername,
 				host.nickname,
+				host.matchCount,
 				chatRoom.startPoint,
 				chatRoom.endPoint,
 				chatRoom.maxCapacity,

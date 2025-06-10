@@ -7,24 +7,35 @@ import com.project.catxi.common.jwt.JwtUtill;
 import com.project.catxi.member.dto.AuthDTO;
 import com.project.catxi.member.dto.AuthDTO.LoginResponse;
 import com.project.catxi.member.dto.IdResponse;
+import com.project.catxi.member.dto.MatchHistoryRes;
+import com.project.catxi.member.dto.MemberProfileRes;
 import com.project.catxi.member.dto.SignUpDTO;
 import com.project.catxi.member.domain.Member;
 import com.project.catxi.member.repository.MemberRepository;
+import com.project.catxi.member.service.MatchHistoryService;
 import com.project.catxi.member.service.MemberService;
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import java.net.URI;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Slice;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.security.core.GrantedAuthority;
@@ -33,9 +44,11 @@ import org.springframework.web.server.ResponseStatusException;
 
 @RestController
 @RequiredArgsConstructor
+@RequestMapping("/members")
 public class MemberController {
 
   private final MemberService memberService;
+  private final MatchHistoryService matchHistoryService;
   private final CustomOAuth2UserService customOAuth2UserService;
   private final JwtUtill jwtUtill;
   private final AuthenticationManager authenticationManager;
@@ -90,6 +103,46 @@ public class MemberController {
             )
         );
     return member.getStudentNo();
+  }
+
+  @Operation(summary = "회원 기본 정보 조회")
+  @GetMapping("/")
+  public ApiResponse<MemberProfileRes> getMyProfile(@AuthenticationPrincipal UserDetails userDetails) {
+    //userDetails의 username -> email
+    String email = userDetails.getUsername();
+    MemberProfileRes dto = memberService.getProfile(email);
+    return ApiResponse.success(dto);
+  }
+
+  @Operation(summary = "이용 기록 단건 조회")
+  @GetMapping("/history/{historyId}")
+  public ResponseEntity<MatchHistoryRes> getMatchHistoryById(
+      @PathVariable Long historyId, @AuthenticationPrincipal UserDetails userDetails
+  ) {
+    String email = userDetails.getUsername();
+    MatchHistoryRes res = matchHistoryService.getHistoryById(historyId, email);
+    return ResponseEntity.ok(res);
+  }
+
+  @Operation(summary = "이용 기록 최신 2개 조회")
+  @GetMapping("/history/recent")
+  public ResponseEntity<List<MatchHistoryRes>> getRecentHistorySummary(
+      @AuthenticationPrincipal UserDetails userDetails
+  ) {
+    String email = userDetails.getUsername();
+    List<MatchHistoryRes> summaries = matchHistoryService.getRecentHistoryTop2(email);
+    return ResponseEntity.ok(summaries);
+  }
+
+  @Operation(summary = "이용 기록 전부 조회")
+  @GetMapping("/history/all")
+  public ResponseEntity<Slice<MatchHistoryRes>> getMyMatchHistoryWithScroll(
+      @AuthenticationPrincipal UserDetails userDetails,
+      @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable
+  ) {
+    String email = userDetails.getUsername();
+    Slice<MatchHistoryRes> slice = matchHistoryService.getScrollHistory(email, pageable);
+    return ResponseEntity.ok(slice);
   }
 
 }

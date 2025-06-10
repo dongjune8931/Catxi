@@ -1,5 +1,6 @@
 package com.project.catxi.member.domain;
 
+import com.project.catxi.common.domain.MemberStatus;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -29,17 +30,21 @@ public class Member extends BaseTimeEntity {
 	private String nickname;
 
 	//이메일
-	@Column(nullable = false, length = 30)
+	@Column(nullable = false,length = 30)
 	private String email;
-
-	private String role;
 
 	//학번
 	@Column(nullable = true, length = 20, unique = true)
 	private Long studentNo;
 
+	private String role;
+
+	//조회 기록
 	@Column(nullable = false)
 	private int matchCount;
+
+	@Column(nullable = false, updatable = false)
+	private LocalDateTime createdAt;
 
 	@Column(nullable = false)
 	private String password;
@@ -47,8 +52,13 @@ public class Member extends BaseTimeEntity {
 	@Column(nullable = false)
 	private boolean isLogin;
 
+	@Column(nullable = false)
+	@Enumerated(EnumType.STRING)
+	private MemberStatus status;
 
 	// 로그인했음 표시
-	//public void setLogin(boolean isLogin) {this.isLogin = isLogin;}
+	public void setLogin(boolean isLogin) {
+		this.isLogin = isLogin;
+	}
 
 }

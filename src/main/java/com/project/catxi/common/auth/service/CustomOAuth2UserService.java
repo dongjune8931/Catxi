@@ -6,6 +6,7 @@ import com.project.catxi.common.auth.kakao.KakaoDTO;
 import com.project.catxi.common.auth.kakao.KakaoUtill;
 import com.project.catxi.common.config.JwtConfig;
 import com.project.catxi.common.config.WebConfig;
+import com.project.catxi.common.domain.MemberStatus;
 import com.project.catxi.common.jwt.JwtUtill;
 import com.project.catxi.member.domain.Member;
 import com.project.catxi.member.repository.MemberRepository;
@@ -41,6 +42,10 @@ public class CustomOAuth2UserService {
     // JWT 발급 후 응답 헤더에 추가
     String jwt = loginProcess(response, user);
 
+    // /signUp/catxi로 분기
+    boolean isNewUser = user.getStatus()==MemberStatus.PENDING;
+    response.setHeader("isNewUser", String.valueOf(isNewUser));
+
     log.info("[카카오 프로필] email = {}", requestEmail);
     log.info("✅JWT 발급 : {}", jwt);
 
@@ -65,6 +70,7 @@ public class CustomOAuth2UserService {
         .password("NO_PASSWORD")
         .matchCount(0)
         .role("ROLE_USER")
+        .status(MemberStatus.PENDING)
         .build();
 
     return memberRepository.save(newUser);
@@ -97,6 +103,7 @@ public class CustomOAuth2UserService {
 
     member.setNickname(dto.nickname());
     member.setStudentNo(dto.StudentNo());
+    member.setStatus(MemberStatus.ACTIVE);
   }
 
 
