@@ -37,6 +37,8 @@ public class Member extends BaseTimeEntity {
 	@Column(nullable = true, length = 20, unique = true)
 	private Long studentNo;
 
+	private String role;
+
 	//조회 기록
 	@Column(nullable = false)
 	private int matchCount;
