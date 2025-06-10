@@ -25,10 +25,16 @@ public class CustomUserDetailsService implements UserDetailsService {
         .orElseThrow(() -> new UsernameNotFoundException("회원이 존재하지 않습니다: " + username));
 
     // 탈퇴한 회원여부 조회
-    if (member.getStatus() == MemberStatus.INACTIVE) {
-      throw new DisabledException("탈퇴한 회원입니다.");
+    switch (member.getStatus()) {
+      case INACTIVE:
+        throw new DisabledException("탈퇴한 회원입니다.");
+      case PENDING:
+        // PENDING 상태도 인증은 허용
+        return new CustomUserDetails(member);
+      case ACTIVE:
+        return new CustomUserDetails(member);
+      default:
+        throw new DisabledException("유효하지 않은 회원 상태입니다.");
     }
-
-    return new CustomUserDetails(member);
   }
 }
