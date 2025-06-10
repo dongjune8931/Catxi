@@ -1,7 +1,7 @@
 package com.project.catxi.report.controller;
 
 import com.project.catxi.common.api.ApiResponse;
-import com.project.catxi.member.DTO.CustomUserDetails;
+import com.project.catxi.member.dto.CustomUserDetails;
 import com.project.catxi.report.dto.ReportCreateReq;
 import com.project.catxi.report.dto.ReportCreateRes;
 import com.project.catxi.report.service.ReportService;

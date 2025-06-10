@@ -1,4 +1,4 @@
-package com.project.catxi.member.DTO;
+package com.project.catxi.member.dto;
 
 import lombok.Getter;
 import lombok.Setter;

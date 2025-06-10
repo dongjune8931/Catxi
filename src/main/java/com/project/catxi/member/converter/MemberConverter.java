@@ -1,11 +1,13 @@
 package com.project.catxi.member.converter;
 
-import com.project.catxi.member.DTO.MatchHistoryRes;
-import com.project.catxi.member.DTO.MemberProfileRes;
+import com.project.catxi.member.dto.MatchHistoryRes;
+import com.project.catxi.member.dto.MemberProfileRes;
 import com.project.catxi.member.domain.MatchHistory;
 import com.project.catxi.member.domain.Member;
 import java.util.List;
+import org.springframework.stereotype.Component;
 
+@Component
 public class MemberConverter {
 
   public static MemberProfileRes toMemberProfileDTO(Member member) {

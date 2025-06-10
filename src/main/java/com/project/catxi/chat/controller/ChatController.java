@@ -22,7 +22,7 @@ import com.project.catxi.chat.service.ChatMessageService;
 import com.project.catxi.chat.service.ChatRoomService;
 import com.project.catxi.common.api.ApiResponse;
 import com.project.catxi.common.api.CommonPageResponse;
-import com.project.catxi.member.DTO.CustomUserDetails;
+import com.project.catxi.member.dto.CustomUserDetails;
 import com.project.catxi.member.domain.Member;
 
 @RestController

@@ -2,8 +2,8 @@ package com.project.catxi.member.service;
 
 import com.project.catxi.common.api.error.MemberErrorCode;
 import com.project.catxi.common.api.exception.CatxiException;
-import com.project.catxi.member.DTO.MemberProfileRes;
-import com.project.catxi.member.DTO.SignUpDTO;
+import com.project.catxi.member.dto.MemberProfileRes;
+import com.project.catxi.member.dto.SignUpDTO;
 import com.project.catxi.member.converter.MemberConverter;
 import com.project.catxi.member.domain.Member;
 import com.project.catxi.member.repository.MemberRepository;

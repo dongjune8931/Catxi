@@ -3,12 +3,12 @@ package com.project.catxi.member.controller;
 import com.project.catxi.common.api.ApiResponse;
 import com.project.catxi.common.config.JwtConfig;
 import com.project.catxi.common.jwt.JwtUtill;
-import com.project.catxi.member.DTO.AuthDTO;
-import com.project.catxi.member.DTO.AuthDTO.LoginResponse;
-import com.project.catxi.member.DTO.IdResponse;
-import com.project.catxi.member.DTO.MatchHistoryRes;
-import com.project.catxi.member.DTO.MemberProfileRes;
-import com.project.catxi.member.DTO.SignUpDTO;
+import com.project.catxi.member.dto.AuthDTO;
+import com.project.catxi.member.dto.AuthDTO.LoginResponse;
+import com.project.catxi.member.dto.IdResponse;
+import com.project.catxi.member.dto.MatchHistoryRes;
+import com.project.catxi.member.dto.MemberProfileRes;
+import com.project.catxi.member.dto.SignUpDTO;
 import com.project.catxi.member.domain.Member;
 import com.project.catxi.member.repository.MemberRepository;
 import com.project.catxi.member.service.MatchHistoryService;
@@ -18,6 +18,10 @@ import jakarta.validation.Valid;
 import java.net.URI;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Slice;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -125,6 +129,17 @@ public class MemberController {
     String email = userDetails.getUsername();
     List<MatchHistoryRes> summaries = matchHistoryService.getRecentHistoryTop2(email);
     return ResponseEntity.ok(summaries);
+  }
+
+  @Operation(summary = "이용 기록 전부 조회")
+  @GetMapping("/history/all")
+  public ResponseEntity<Slice<MatchHistoryRes>> getMyMatchHistoryWithScroll(
+      @AuthenticationPrincipal UserDetails userDetails,
+      @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable
+  ) {
+    String email = userDetails.getUsername();
+    Slice<MatchHistoryRes> slice = matchHistoryService.getScrollHistory(email, pageable);
+    return ResponseEntity.ok(slice);
   }
 
 }

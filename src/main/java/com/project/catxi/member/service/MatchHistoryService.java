@@ -2,12 +2,14 @@ package com.project.catxi.member.service;
 
 import com.project.catxi.common.api.error.MemberErrorCode;
 import com.project.catxi.common.api.exception.CatxiException;
-import com.project.catxi.member.DTO.MatchHistoryRes;
+import com.project.catxi.member.dto.MatchHistoryRes;
 import com.project.catxi.member.converter.MemberConverter;
 import com.project.catxi.member.domain.MatchHistory;
 import com.project.catxi.member.domain.Member;
 import com.project.catxi.member.repository.MatchHistoryRepository;
 import com.project.catxi.member.repository.MemberRepository;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Slice;
 import org.springframework.security.access.AccessDeniedException;
 import java.util.List;
 import org.springframework.stereotype.Service;
@@ -19,12 +21,10 @@ public class MatchHistoryService {
 
   private final MatchHistoryRepository matchHistoryRepository;
   private final MemberRepository memberRepository;
-  private final MemberConverter memberConverter;
 
   public MatchHistoryService(MatchHistoryRepository matchHistoryRepository, MemberRepository memberRepository,MemberConverter memberConverter) {
     this.matchHistoryRepository = matchHistoryRepository;
     this.memberRepository = memberRepository;
-    this.memberConverter = new MemberConverter();
   }
 
   //단 건 조회용
@@ -50,6 +50,15 @@ public class MatchHistoryService {
     return matchHistoryRepository.findTop2ByUserOrderByCreatedAtDesc(user).stream()
         .map(MemberConverter::toSingleResDTO)
         .toList();
+  }
+
+  public Slice<MatchHistoryRes> getScrollHistory(String email, Pageable pageable) {
+    Member user = memberRepository.findByEmail(email)
+        .orElseThrow(() -> new CatxiException(MemberErrorCode.MEMBER_NOT_FOUND));
+
+    Slice<MatchHistory> histories = matchHistoryRepository.findAllByUserOrderByCreatedAtDesc(user, pageable);
+
+    return histories.map(MemberConverter::toSingleResDTO);
   }
 
 }

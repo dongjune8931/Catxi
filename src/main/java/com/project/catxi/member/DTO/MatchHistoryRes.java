@@ -1,4 +1,4 @@
-package com.project.catxi.member.DTO;
+package com.project.catxi.member.dto;
 
 import java.time.LocalDateTime;
 import java.util.List;

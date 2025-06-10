@@ -63,5 +63,8 @@ public class MatchHistory extends BaseTimeEntity {
 	@Column(nullable = false)
 	private LocalDateTime matchedAt;
 
+	@Column(name = "created_at")
+	private LocalDateTime createdAt;
+
 	//사용일자 이력에 대한 얘기 필요
 }

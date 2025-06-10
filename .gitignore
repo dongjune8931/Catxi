@@ -39,6 +39,8 @@ out/
 
 ### application.properties ###
 src/main/resources/application-local.yml
+src/main/resources/application-dev.yml
+src/main/resources/application.yml
 
 ### QueryDSL ###
 /src/main/generated/
