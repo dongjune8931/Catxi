@@ -43,7 +43,7 @@ public class CustomOAuth2UserService {
     String jwt = loginProcess(response, user);
 
     // /signUp/catxi로 분기
-    boolean isNewUser = user.getStatus()==MemberStatus.ACTIVE;
+    boolean isNewUser = user.getStatus()==MemberStatus.PENDING;
     response.setHeader("isNewUser", String.valueOf(isNewUser));
 
     log.info("[카카오 프로필] email = {}", requestEmail);

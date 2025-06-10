@@ -6,12 +6,14 @@ import com.project.catxi.common.api.exception.CatxiException;
 import com.project.catxi.common.auth.kakao.KakaoDTO;
 import com.project.catxi.common.auth.service.CustomOAuth2UserService;
 import com.project.catxi.common.auth.service.CustomUserDetailsService;
+import com.project.catxi.common.domain.MemberStatus;
 import com.project.catxi.member.domain.Member;
 import com.project.catxi.member.dto.CustomUserDetails;
 import com.project.catxi.member.repository.MemberRepository;
 import com.project.catxi.member.service.MemberService;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import lombok.RequiredArgsConstructor;
@@ -43,13 +45,18 @@ public class OAuthController {
     }
 
     try {
-      customOAuth2UserService.oAuthLogin(accessCode, response);
-      return ApiResponse.success("로그인 성공");
+      Member user = customOAuth2UserService.oAuthLogin(accessCode, response);
+
+      if (user.getStatus() == MemberStatus.PENDING) {
+        return ApiResponse.success("isNewUser");
+      } else {
+        return ApiResponse.success("로그인 성공");
+      }
     } catch (Exception e) {
       log.error("[카카오 로그인 실패] code = {}, error = {}", accessCode, e.getMessage());
       // 실패한 경우 usedCodes에서 제거 (재시도 가능하게)
       usedCodes.remove(accessCode);
-      return ApiResponse.error(MemberErrorCode.ACCESS_EXPIRED); // 또는 적절한 에러 코드
+      return ApiResponse.error(MemberErrorCode.ACCESS_EXPIRED);
     }
   }
 
