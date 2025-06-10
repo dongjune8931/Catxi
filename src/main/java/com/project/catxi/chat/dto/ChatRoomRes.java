@@ -1,5 +1,9 @@
 package com.project.catxi.chat.dto;
 
+import java.time.LocalDateTime;
+
+import org.springframework.format.annotation.DateTimeFormat;
+
 import com.project.catxi.chat.domain.ChatRoom;
 import com.project.catxi.common.domain.Location;
 import com.project.catxi.common.domain.RoomStatus;
@@ -14,8 +18,10 @@ public record ChatRoomRes (
 	Long recruitSize,
 	Long currentSize,
 	RoomStatus status,
-	String departAt,
-	String createdTime
+	@DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
+	LocalDateTime departAt,
+	@DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
+	LocalDateTime createdTime
 ){
 	public static ChatRoomRes from (ChatRoom chatRoom){
 		return new ChatRoomRes(
@@ -28,8 +34,8 @@ public record ChatRoomRes (
 			chatRoom.getMaxCapacity(),
 			(long)chatRoom.getParticipants().size(),
 			chatRoom.getStatus(),
-			chatRoom.getDepartAt().toString(),
-			chatRoom.getCreatedTime().toString()
+			chatRoom.getDepartAt(),
+			chatRoom.getCreatedTime()
 		);
 	}
 }
