@@ -15,7 +15,7 @@ import com.project.catxi.chat.service.SseService;
 import com.project.catxi.common.api.ApiResponse;
 
 import com.project.catxi.common.api.exception.CatxiException;
-import com.project.catxi.member.DTO.CustomUserDetails;
+import com.project.catxi.member.dto.CustomUserDetails;
 
 import lombok.RequiredArgsConstructor;
 

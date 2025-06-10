@@ -165,8 +165,8 @@ public class ChatRoomService {
 	}
 
 
-	public boolean isHost(Long roomId, String membername){
-		Member member = memberRepository.findByMembername(membername)
+	public boolean isHost(Long roomId, String email){
+		Member member = memberRepository.findByEmail(email)
 			.orElseThrow(() -> new CatxiException(MemberErrorCode.MEMBER_NOT_FOUND));
 		ChatRoom chatRoom = chatRoomRepository.findById(roomId)
 			.orElseThrow(() -> new CatxiException(ChatRoomErrorCode.CHATROOM_NOT_FOUND));

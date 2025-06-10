@@ -30,11 +30,11 @@ public class ReadyService {
 	private final SseSubscriber sseSubscriber;
 
 	@Transactional
-	public void requestReady(String roomId, String membername) {
+	public void requestReady(String roomId, String email) {
 		ChatRoom room = chatRoomRepository.findById(Long.valueOf(roomId))
 			.orElseThrow(() -> new CatxiException(ChatRoomErrorCode.CHATROOM_NOT_FOUND));
 
-		Member member = memberRepository.findByMembername(membername)
+		Member member = memberRepository.findByEmail(email)
 			.orElseThrow(() -> new CatxiException(MemberErrorCode.MEMBER_NOT_FOUND));
 
 		ChatParticipant participant = chatParticipantRepository.findByChatRoomAndMember(room, member)
@@ -53,7 +53,7 @@ public class ReadyService {
 			"READY REQUEST",
 			"방장이 Ready 요청을 보냈습니다",
 			roomId,
-			membername,
+			member.getMembername(),
 			"CLIENT"
 		);
 		sseSubscriber.publish("sse:" + roomId, payload); // publish 호출
@@ -70,8 +70,8 @@ public class ReadyService {
 	}
 
 	@Transactional
-	public void acceptReady(String roomId, String membername) {
-		Member member = memberRepository.findByMembername(membername)
+	public void acceptReady(String roomId, String email) {
+		Member member = memberRepository.findByEmail(email)
 			.orElseThrow(() -> new CatxiException(MemberErrorCode.MEMBER_NOT_FOUND));
 
 		ChatRoom room = chatRoomRepository.findById(Long.valueOf(roomId))
@@ -87,7 +87,7 @@ public class ReadyService {
 			"READY ACCEPT",
 			"참여자가 Ready를 수락했습니다",
 			roomId,
-			membername,
+			member.getMembername(),
 			"HOST"
 		);
 		sseSubscriber.publish("sse:" + roomId, payload);
@@ -95,8 +95,8 @@ public class ReadyService {
 	}
 
 	@Transactional
-	public void rejectReady(String roomId, String membername) {
-		Member member = memberRepository.findByMembername(membername)
+	public void rejectReady(String roomId, String email) {
+		Member member = memberRepository.findByEmail(email)
 			.orElseThrow(() -> new CatxiException(MemberErrorCode.MEMBER_NOT_FOUND));
 
 		ChatRoom room = chatRoomRepository.findById(Long.valueOf(roomId))
@@ -111,7 +111,7 @@ public class ReadyService {
 			"READY REJECT",
 			"참여자가 Ready를 거절했습니다",
 			roomId,
-			membername,
+			member.getMembername(),
 			"HOST"
 		);
 
@@ -120,7 +120,7 @@ public class ReadyService {
 		 * sse 연결 해제
 		 */
 		sseSubscriber.publish("sse:" + roomId, payload);
-		sseService.disconnect(roomId, membername, false);
+		sseService.disconnect(roomId, email, false);
 
 	}
 
