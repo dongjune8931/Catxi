@@ -2,6 +2,7 @@ package com.project.catxi.common.api;
 
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.project.catxi.common.api.error.ErrorCode;
+import com.project.catxi.common.api.error.MemberErrorCode;
 import com.project.catxi.common.api.success.CommonSuccessCode;
 
 import lombok.AccessLevel;
@@ -36,6 +37,14 @@ public class ApiResponse<T> {
 	public static ApiResponse<Void> createdWithNoData() {
 		return new ApiResponse<>(true, CommonSuccessCode.CREATED.getCode(),
 			CommonSuccessCode.CREATED.getMessage(), null);
+	}
+
+	public static ApiResponse<Void> error(MemberErrorCode memberErrorCode) {
+		return new ApiResponse<>(false, memberErrorCode.getCode(), memberErrorCode.getMessage(), null);
+	}
+
+	public static ApiResponse<Void> error(MemberErrorCode memberErrorCode, String customMessage) {
+		return new ApiResponse<>(false, memberErrorCode.getCode(), customMessage, null);
 	}
 
 	public static ApiResponse<?> createFail(ErrorCode errorCode) {

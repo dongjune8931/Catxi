@@ -4,7 +4,9 @@ import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import com.project.catxi.member.domain.Member;
+import org.springframework.stereotype.Repository;
 
+@Repository
 public interface MemberRepository   extends JpaRepository<Member, Long> {
 
   Optional<Member> findByMembername(String membername);
@@ -16,4 +18,6 @@ public interface MemberRepository   extends JpaRepository<Member, Long> {
   // 이메일 중복검사
   boolean existsByEmail(String email);
 
+  //학번 검증용
+  boolean existsByStudentNo(Long studentNo);
 }
