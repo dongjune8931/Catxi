@@ -59,3 +59,9 @@ discord:
   webhook:
     url: ${DISCORD_WEBHOOK_URL:}
 
+logging:
+  level:
+      com.project.catxi.common.auth: DEBUG
+      org.springframework.web.client: DEBUG
+
+
