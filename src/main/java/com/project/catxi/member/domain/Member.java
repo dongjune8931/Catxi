@@ -43,9 +43,6 @@ public class Member extends BaseTimeEntity {
 	@Column(nullable = false)
 	private int matchCount;
 
-	@Column(name = "created_time", nullable = false, updatable = false)
-	private LocalDateTime createdAt;
-
 	@Column(nullable = false)
 	private String password;
 
