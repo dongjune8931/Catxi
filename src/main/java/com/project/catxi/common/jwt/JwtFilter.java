@@ -29,8 +29,8 @@ public class JwtFilter extends OncePerRequestFilter {
   protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
 
     String uri = request.getRequestURI();
-    // /connect로 시작하는 주소 예외처리
-    if (uri.startsWith("/connect")) {
+    // /connect, /auth/login/kakao로 시작하는 주소 예외처리
+    if (uri.startsWith("/connect") || uri.equals("/auth/login/kakao")) {
       filterChain.doFilter(request, response);
       return;
     }
