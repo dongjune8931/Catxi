@@ -83,7 +83,7 @@ public class CustomOAuth2UserService {
 
     String access = jwtUtill.createJwt(
         "access",email,"ROLE_USER",jwtConfig.getAccessTokenValidityInSeconds());
-    log.warn("❌ [조회 실패] email = {}", email);
+    log.info("✅ [헤더에 담은 JWT] access = {}", httpServletResponse.getHeader("access"));
     httpServletResponse.setHeader("access", access);
 
     return access;
