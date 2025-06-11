@@ -2,6 +2,7 @@ package com.project.catxi.common.auth.service;
 
 import com.project.catxi.common.api.error.MemberErrorCode;
 import com.project.catxi.common.api.exception.CatxiException;
+import com.project.catxi.common.api.handler.MemberHandler;
 import com.project.catxi.common.auth.kakao.KakaoDTO;
 import com.project.catxi.common.auth.kakao.KakaoUtill;
 import com.project.catxi.common.config.JwtConfig;
@@ -40,8 +41,10 @@ public class CustomOAuth2UserService {
     Member user = memberRepository.findByEmail(requestEmail)
         .orElseGet(()->createNewUser(kakaoProfile));
 
+    // 탈퇴한 회원 차단
+    log.info("🚨회원 Status = {}",user.getStatus());
     if (user.getStatus() == MemberStatus.INACTIVE) {
-      throw new DisabledException("탈퇴한 회원입니다.");
+      throw new MemberHandler(MemberErrorCode.ACCESS_FORBIDDEN);
     }
 
     // JWT 발급 후 응답 헤더에 추가
