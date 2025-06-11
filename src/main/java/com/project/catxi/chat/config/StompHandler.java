@@ -46,7 +46,17 @@ public class StompHandler implements ChannelInterceptor {
 			String token = extractToken(accessor);
 			String email = jwtUtill.getMembername(token);
 			String roomId = accessor.getDestination().split("/")[2];
-			if (!chatRoomService.isRoomParticipant(email, Long.parseLong(roomId))) {
+			if (roomId == null || !roomId.startsWith("/topic/")) {
+				throw new AuthenticationServiceException("잘못된 destination입니다.");
+			}
+
+			String[] parts = roomId.split("/");
+			if (parts.length < 3) {
+				throw new AuthenticationServiceException("destination 포맷 오류");
+			}
+
+			String roomId1 = parts[2];
+			if (!chatRoomService.isRoomParticipant(email, Long.parseLong(roomId1))) {
 				throw new AuthenticationServiceException("해당 room에 권한이 없습니다");
 			}
 		}
