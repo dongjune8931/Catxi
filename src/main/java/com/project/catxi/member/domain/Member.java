@@ -7,6 +7,7 @@ import lombok.*;
 import java.time.LocalDateTime;
 
 import com.project.catxi.common.domain.BaseTimeEntity;
+import org.hibernate.annotations.CreationTimestamp;
 
 @Getter
 @Setter
@@ -44,6 +45,7 @@ public class Member extends BaseTimeEntity {
 	private int matchCount;
 
 	@Column(nullable = false, updatable = false)
+	@CreationTimestamp
 	private LocalDateTime createdAt;
 
 	@Column(nullable = false)
