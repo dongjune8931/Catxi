@@ -105,6 +105,8 @@ public class SecurityConfig {
 
     configuration.addAllowedMethod("*");
 
+    configuration.setExposedHeaders(List.of("access"));
+
     configuration.setAllowCredentials(true);
 
     UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
