@@ -3,8 +3,10 @@ package com.project.catxi.common.jwt;
 import com.project.catxi.common.api.error.MemberErrorCode;
 import com.project.catxi.common.api.handler.MemberHandler;
 import com.project.catxi.common.config.JwtConfig;
+import com.project.catxi.common.domain.MemberStatus;
 import com.project.catxi.member.dto.CustomUserDetails;
 import com.project.catxi.member.domain.Member;
+import com.project.catxi.member.repository.MemberRepository;
 import io.jsonwebtoken.ExpiredJwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -24,6 +26,7 @@ public class JwtFilter extends OncePerRequestFilter {
 
   private final JwtUtill jwtUtill;
   private final JwtConfig jwtConfig;
+  private final MemberRepository memberRepository;
 
   @Override
   protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
@@ -74,11 +77,19 @@ public class JwtFilter extends OncePerRequestFilter {
     // jwtUtill 객체에서 username 받아옴
     String email = jwtUtill.getEmail(accessToken);
 
-    // Member를 생성하여 값 초기화
-    // 비밀번호 값은 token에 담겨있지 않았음 -> 임시적으로 비밀번호 생성하여 넣어둠
-    Member member = new Member();
-    member.setEmail(email);
-    member.setPassword("CatxiPassword");
+    // 실제 DB에서 회원 정보 조회 및 상태 확인
+    Member member = memberRepository.findByEmail(email).orElse(null);
+    if (member == null) {
+      response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+      response.getWriter().print("Member not found");
+      return;
+    }
+
+    // INACTIVE 회원 차단
+    if (member.getStatus() == MemberStatus.INACTIVE) {
+      log.info("✅ JWT 필터에서 INACTIVE 회원 차단: {}", email);
+      throw new MemberHandler(MemberErrorCode.ACCESS_FORBIDDEN);
+    }
 
     // UserDetails에 회원 정보 객체 담기
     CustomUserDetails customUserDetails = new CustomUserDetails(member);

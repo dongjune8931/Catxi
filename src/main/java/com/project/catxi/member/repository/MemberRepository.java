@@ -20,4 +20,7 @@ public interface MemberRepository   extends JpaRepository<Member, Long> {
 
   //학번 검증용
   boolean existsByStudentNo(Long studentNo);
+
+  //삭제된 회원 조회 불가
+  //Optional<Member> findByEmailAndDeletedFalse(String email, MemberStatus status);
 }
