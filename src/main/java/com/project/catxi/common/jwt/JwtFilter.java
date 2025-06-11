@@ -88,9 +88,7 @@ public class JwtFilter extends OncePerRequestFilter {
     // INACTIVE 회원 차단
     if (member.getStatus() == MemberStatus.INACTIVE) {
       log.info("✅ JWT 필터에서 INACTIVE 회원 차단: {}", email);
-      response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-      response.getWriter().print("차단된 회원");
-      return;
+      throw new MemberHandler(MemberErrorCode.ACCESS_FORBIDDEN);
     }
 
     // UserDetails에 회원 정보 객체 담기

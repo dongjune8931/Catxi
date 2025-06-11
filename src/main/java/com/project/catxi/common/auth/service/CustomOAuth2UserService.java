@@ -14,6 +14,7 @@ import com.project.catxi.member.service.MemberService;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.authentication.DisabledException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -38,6 +39,10 @@ public class CustomOAuth2UserService {
     String requestEmail = kakaoProfile.kakao_account().email();
     Member user = memberRepository.findByEmail(requestEmail)
         .orElseGet(()->createNewUser(kakaoProfile));
+
+    if (user.getStatus() == MemberStatus.INACTIVE) {
+      throw new DisabledException("탈퇴한 회원입니다.");
+    }
 
     // JWT 발급 후 응답 헤더에 추가
     String jwt = loginProcess(response, user);
