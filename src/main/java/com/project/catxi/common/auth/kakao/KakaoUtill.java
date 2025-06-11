@@ -25,17 +25,14 @@ public class KakaoUtill {
 
   // 인가 코드 -> accessToken 요청
   public KakaoDTO.kakaoToken requestToken(String accessCode) {
-    //HTTP 요청용
     RestTemplate restTemplate = new RestTemplate();
     HttpHeaders headers = new HttpHeaders();
 
-    log.info(">> [🚨RestTemplate 컨트롤러 호출] time = {}, code = {}", LocalDateTime.now(), accessCode);
+    log.info(">> [카카오 토큰 요청 시작] time = {}, code = {}", LocalDateTime.now(), accessCode);
+    log.info(">> [사용된 설정] client_id = {}, redirect_uri = {}", client, redirect);
 
     headers.add("Content-type", "application/x-www-form-urlencoded;charset=utf-8");
 
-    log.info(">> Used Redirect URI : " + redirect);
-
-    // 인가코드, 카카오 REST_API키, redirect_uri,카카오 제공 인가 코드 요청하기 위한 파라미터
     MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
     params.add("grant_type", "authorization_code");
     params.add("client_id", client);
@@ -44,30 +41,24 @@ public class KakaoUtill {
 
     HttpEntity<MultiValueMap<String, String>> kakaoTokenRequest = new HttpEntity<>(params, headers);
 
-    //accessToken 요청
-    ResponseEntity<String> response = restTemplate.exchange(
-        "https://kauth.kakao.com/oauth/token",
-        HttpMethod.POST,
-        kakaoTokenRequest,
-        String.class);
-
-    log.info(">> [Token Request Params]");
-    params.forEach((k, v) -> log.info("{} = {}", k, v));
-
-    ObjectMapper objectMapper = new ObjectMapper();
-
-    //응답받은 JSON KakaoDTO.kakaoToken 클래스에 매핑
-    KakaoDTO.kakaoToken kakaoToken = null;
-
     try {
-      kakaoToken = objectMapper.readValue(response.getBody(), KakaoDTO.kakaoToken.class);
-    } catch (JsonProcessingException e) {
-      throw new IllegalArgumentException("Invalid access token");
+      ResponseEntity<String> response = restTemplate.exchange(
+              "https://kauth.kakao.com/oauth/token",
+              HttpMethod.POST,
+              kakaoTokenRequest,
+              String.class);
+
+      log.info(">> [카카오 응답 성공] status = {}, body = {}",
+              response.getStatusCode(), response.getBody());
+
+      ObjectMapper objectMapper = new ObjectMapper();
+      return objectMapper.readValue(response.getBody(), KakaoDTO.kakaoToken.class);
+
+    } catch (Exception e) {
+      log.error(">> [카카오 토큰 요청 실패] error = {}", e.getMessage());
+      log.error(">> [요청 파라미터] params = {}", params);
+      throw new IllegalArgumentException("카카오 토큰 요청 실패: " + e.getMessage());
     }
-
-    log.warn("[🚨Fuck 중복 시도] accessCode = {}", accessCode);
-
-    return kakaoToken;
   }
 
   public KakaoDTO.KakaoProfile requestProfile(KakaoDTO.kakaoToken kakaoToken){
