@@ -63,4 +63,10 @@ public class Member extends BaseTimeEntity {
 		this.isLogin = isLogin;
 	}
 
+	// 삭제 필드
+	public void delete() {
+		this.status = MemberStatus.INACTIVE;
+	}
+
+
 }

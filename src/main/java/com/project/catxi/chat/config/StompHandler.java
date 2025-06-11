@@ -18,10 +18,11 @@ import com.project.catxi.common.jwt.JwtUtill;
 
 import io.jsonwebtoken.Claims;
 import lombok.RequiredArgsConstructor;
-
+import lombok.extern.slf4j.Slf4j;
 
 @Component
 @RequiredArgsConstructor
+@Slf4j
 public class StompHandler implements ChannelInterceptor {
 
 	private final JwtUtill jwtUtill;
@@ -43,11 +44,36 @@ public class StompHandler implements ChannelInterceptor {
 		}
 
 		if (StompCommand.SUBSCRIBE == accessor.getCommand()) {
+			log.info("SUBSCRIBE 진입");
+			log.info("Authorization Header: {}", accessor.getFirstNativeHeader("Authorization"));
+			log.info("Destination: {}", accessor.getDestination());
+
 			String token = extractToken(accessor);
-			String email = jwtUtill.getMembername(token);
-			String roomId = accessor.getDestination().split("/")[2];
-			if (!chatRoomService.isRoomParticipant(email, Long.parseLong(roomId))) {
-				throw new AuthenticationServiceException("해당 room에 권한이 없습니다");
+			String email = jwtUtill.getEmail(token);
+			log.info("Email from token: {}", email);
+
+			String destination = accessor.getDestination();
+			if (destination == null || !destination.startsWith("/topic/")) {
+				log.error("잘못된 destination: {}", destination);
+				throw new AuthenticationServiceException("잘못된 destination입니다.");
+			}
+
+			String[] parts = destination.split("/");
+			if (parts.length < 3) {
+				log.error("destination split 오류: {}", (Object) parts);
+				throw new AuthenticationServiceException("destination 파싱 오류");
+			}
+
+			try {
+				Long roomId = Long.parseLong(parts[2]);
+				log.info("Room ID: {}", roomId);
+				if (!chatRoomService.isRoomParticipant(email, roomId)) {
+					log.warn("Room 참가자 아님: {} not in room {}", email, roomId);
+					throw new AuthenticationServiceException("해당 room에 권한이 없습니다");
+				}
+			} catch (NumberFormatException e) {
+				log.error("roomId가 숫자 아님: {}", parts[2]);
+				throw new AuthenticationServiceException("roomId가 숫자가 아님");
 			}
 		}
 
