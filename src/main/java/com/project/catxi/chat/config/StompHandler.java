@@ -49,7 +49,7 @@ public class StompHandler implements ChannelInterceptor {
 			log.info("Destination: {}", accessor.getDestination());
 
 			String token = extractToken(accessor);
-			String email = jwtUtill.getMembername(token);
+			String email = jwtUtill.getEmail(token);
 			log.info("Email from token: {}", email);
 
 			String destination = accessor.getDestination();
