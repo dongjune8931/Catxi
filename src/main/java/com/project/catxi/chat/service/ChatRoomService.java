@@ -10,8 +10,12 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.project.catxi.chat.domain.ChatMessage;
 import com.project.catxi.chat.domain.ChatParticipant;
 import com.project.catxi.chat.domain.ChatRoom;
+import com.project.catxi.chat.dto.ChatMessageSendReq;
 import com.project.catxi.chat.dto.ChatRoomRes;
 import com.project.catxi.chat.dto.RoomCreateReq;
 import com.project.catxi.chat.dto.RoomCreateRes;
@@ -23,6 +27,7 @@ import com.project.catxi.common.api.error.ChatRoomErrorCode;
 import com.project.catxi.common.api.error.MemberErrorCode;
 import com.project.catxi.common.api.exception.CatxiException;
 import com.project.catxi.common.domain.Location;
+import com.project.catxi.common.domain.MessageType;
 import com.project.catxi.common.domain.RoomStatus;
 import com.project.catxi.member.domain.Member;
 import com.project.catxi.member.repository.MemberRepository;
@@ -39,7 +44,7 @@ public class ChatRoomService {
 	private final ChatParticipantRepository chatParticipantRepository;
 	private final MemberRepository memberRepository;
 	private final ChatMessageRepository chatMessageRepository;
-
+	private final RedisPubSubService redisPubSubService;
 
 	public RoomCreateRes createRoom(RoomCreateReq roomReq, String email) {
 		Member host = memberRepository.findByEmail(email)
@@ -94,7 +99,7 @@ public class ChatRoomService {
 
 
 	//로그인 전이라 member 임시로 추가해둠.
-	public void leaveChatRoom(Long roomId, String email) {
+	public void leaveChatRoom(Long roomId, String email) throws JsonProcessingException {
 		Member member = memberRepository.findByEmail(email).orElseThrow(() -> new CatxiException(MemberErrorCode.MEMBER_NOT_FOUND));
 		ChatRoom chatRoom = chatRoomRepository.findById(roomId)
 			.orElseThrow(() -> new CatxiException(ChatRoomErrorCode.CHATROOM_NOT_FOUND));
@@ -108,9 +113,22 @@ public class ChatRoomService {
 		}
 
 		chatParticipantRepository.delete(chatParticipant);
+
+		ChatMessage exitMessage = ChatMessage.builder()
+			.chatRoom(chatRoom)
+			.member(member)
+			.content(member.getNickname() + "님이 채팅에서 나갔습니다.")
+			.msgType(MessageType.EXIT)
+			.build();
+
+		chatMessageRepository.save(exitMessage);
+
+		ChatMessageSendReq msg = new ChatMessageSendReq(roomId, email, exitMessage.getContent(),exitMessage.getMsgType());
+		String json = new ObjectMapper().writeValueAsString(msg);
+		redisPubSubService.publish("chat", json);
 	}
 
-	public void joinChatRoom(Long roomId, String email) {
+	public void joinChatRoom(Long roomId, String email) throws JsonProcessingException {
 		ChatRoom chatRoom = chatRoomRepository.findById(roomId)
 			.orElseThrow(() -> new CatxiException(ChatRoomErrorCode.CHATROOM_NOT_FOUND));
 
@@ -132,9 +150,23 @@ public class ChatRoomService {
 			.build();
 
 		chatParticipantRepository.save(chatParticipant);
+
+		ChatMessage enterMessage = ChatMessage.builder()
+			.chatRoom(chatRoom)
+			.member(member)
+			.content(member.getNickname() + "님이 채팅에 참여했습니다.")
+			.msgType(MessageType.ENTER)
+			.build();
+		chatMessageRepository.save(enterMessage);
+
+		ChatMessageSendReq msg = new ChatMessageSendReq(roomId, email, enterMessage.getContent(),enterMessage.getMsgType());
+		String json = new ObjectMapper().writeValueAsString(msg);
+		redisPubSubService.publish("chat", json);
+
+
 	}
 
-	public void kickUser(Long roomId, String requesterEmail, String targetEmail) {
+	public void kickUser(Long roomId, String requesterEmail, String targetEmail) throws JsonProcessingException {
 		ChatRoom room = chatRoomRepository.findById(roomId)
 			.orElseThrow(() -> new CatxiException(ChatRoomErrorCode.CHATROOM_NOT_FOUND));
 
@@ -152,6 +184,19 @@ public class ChatRoomService {
 			.orElseThrow(() -> new CatxiException(ChatParticipantErrorCode.PARTICIPANT_NOT_FOUND));
 
 		chatParticipantRepository.delete(participant);
+
+		ChatMessage kickMessage = ChatMessage.builder()
+			.chatRoom(room)
+			.member(requester)
+			.content(target.getNickname() + "님이 방장에 의해 강퇴되었습니다.")
+			.msgType(MessageType.KICK)
+			.build();
+
+		chatMessageRepository.save(kickMessage);
+
+		ChatMessageSendReq msg = new ChatMessageSendReq(room.getRoomId(), requester.getEmail(), kickMessage.getContent(),kickMessage.getMsgType());
+		String json = new ObjectMapper().writeValueAsString(msg);
+		redisPubSubService.publish("chat", json);
 
 	}
 
