@@ -4,7 +4,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
@@ -12,13 +17,34 @@ import com.project.catxi.chat.dto.SseSendRes;
 import com.project.catxi.common.api.error.SseErrorCode;
 import com.project.catxi.common.api.exception.CatxiException;
 
+import jakarta.annotation.PostConstruct;
+
 @Service
 public class SseService {
+	private static final Logger log = LoggerFactory.getLogger(SseService.class);
 	// thread-safe 한 컬렉션으로 sse emiiter 객체 관리
 	private final Map<String, Map<String, SseEmitter>> sseEmitters = new ConcurrentHashMap<>();
 	private final Map<String, SseEmitter> hostEmitters = new ConcurrentHashMap<>();
 	private final Map<String, Long> roomReadyTime = new ConcurrentHashMap<>();
+	private final ScheduledExecutorService pingScheduler = Executors.newSingleThreadScheduledExecutor();
+	private final Map<String, SseEmitter> allEmitters = new ConcurrentHashMap<>(); // key: roomId_email 또는 host 키
+
 	private static final Long TIMEOUT = 30 * 60 * 1000L; // 30분
+
+
+	@PostConstruct
+	public void startPingScheduler() {
+		pingScheduler.scheduleAtFixedRate(() -> {
+			for (Map.Entry<String, SseEmitter> entry : allEmitters.entrySet()) {
+				try {
+					entry.getValue().send(SseEmitter.event().name("ping").data("ping"));
+				} catch (Exception e) {
+					log.warn("Ping 실패: key={}, error={}", entry.getKey(), e.getMessage());
+					removeEmitter(entry.getKey()); // 실패한 emitter 제거
+				}
+			}
+		}, 0, 60, TimeUnit.SECONDS);
+	}
 
 	/*
 	 * sse 구독 기능
@@ -50,6 +76,12 @@ public class SseService {
 			disconnect(roomId, email, isHost);
 		}
 
+		// emitter 개수 확인 로그
+		int hostCount = hostEmitters.containsKey(roomId) ? 1 : 0;
+		int clientCount = sseEmitters.getOrDefault(roomId, Map.of()).size();
+		log.info("SSE 연결됨 - roomId: {}, hostCount: {}, clientCount: {}, total: {}",
+			roomId, hostCount, clientCount, hostCount + clientCount);
+
 		return emitter;
 	}
 
@@ -64,7 +96,8 @@ public class SseService {
 		Map<String, SseEmitter> sseEmitterList = sseEmitters.get(roomId);
 
 		if (sseEmitterList == null || sseEmitterList.isEmpty()) {
-			throw new CatxiException(SseErrorCode.SSE_NOT_FOUND);
+			log.warn("Cannot send SSE message, emitter is null (event: {}, message: {})", eventName, data);
+			return;
 		}
 
 		roomReadyTime.putIfAbsent(roomId, System.currentTimeMillis());
@@ -92,7 +125,8 @@ public class SseService {
 		SseEmitter sseEmitter = hostEmitters.get(roomId);
 
 		if (sseEmitter == null) {
-			throw new CatxiException(SseErrorCode.SSE_NOT_FOUND);
+			log.warn("Cannot send SSE message, emitter is null (event: {}, message: {})", eventName, data);
+			return;
 		}
 
 		try {
@@ -128,6 +162,11 @@ public class SseService {
 
 
 	private void sendToClient(String senderName,  SseEmitter sseEmitter, String eventName, String message) {
+		if (sseEmitter == null) {
+			log.warn("Cannot send SSE message, emitter is null (event: {}, message: {})", eventName, message);
+			return;
+		}
+
 		SseSendRes sseSendRes = new SseSendRes(senderName, message, java.time.LocalDateTime.now());
 
 		try {
@@ -143,14 +182,30 @@ public class SseService {
 	private void registerEmitter(Map<String, SseEmitter> emitterMap, String key, SseEmitter emitter) {
 		SseEmitter existing = emitterMap.get(key);
 		if (existing != null) {
+			log.warn("SseEmitter가 이미 존재하여 제거 후 새로 연결합니다 key: {}", key);
 			existing.complete();
 		}
 
-		emitterMap.put(key, emitter);
+		if (emitter == null) {
+			log.error("SseEmitter가 비어 있어습니다 key: {}", key);
+			return;
+		}
 
-		emitter.onCompletion(() -> emitterMap.remove(key));
-		emitter.onTimeout(() -> emitterMap.remove(key));
-		emitter.onError((e) -> emitterMap.remove(key));
+		emitterMap.put(key, emitter);
+		allEmitters.put(key, emitter);
+
+		emitter.onCompletion(() -> {
+			log.info("SseEmitter 연결 정리 key: {}", key);
+			deleteEmitter(emitterMap, key);
+		});
+		emitter.onTimeout(() ->{
+			log.warn("SseEmitter 연결 타임아웃 key: {}", key);
+			deleteEmitter(emitterMap, key);
+		});
+		emitter.onError((e) -> {
+			log.error("SseEmitter 연결 에러 key: {}, error: {}", key, e.getMessage());
+			deleteEmitter(emitterMap, key);
+		});
 	}
 
 	private void deleteEmitter(Map<String, SseEmitter> emitterMap, String key) {
@@ -159,6 +214,7 @@ public class SseService {
 			emitter.complete();
 			emitterMap.remove(key);
 		}
+		allEmitters.remove(key);
 	}
 
 	public boolean isRoomBlocked(String roomId) {
@@ -192,5 +248,11 @@ public class SseService {
 		return emitter;
 	}
 
+	private void removeEmitter(String key) {
+		SseEmitter emitter = allEmitters.remove(key);
+		if (emitter != null) {
+			emitter.complete();
+		}
+	}
 
 }
