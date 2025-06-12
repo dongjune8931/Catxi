@@ -18,7 +18,7 @@ public class RedisPubSubService implements MessageListener {
 	public final StringRedisTemplate stringRedisTemplate;
 
 	public RedisPubSubService(@Qualifier("chatPubSub") StringRedisTemplate stringRedisTemplate,
-		@Lazy SimpMessageSendingOperations messageTemplate) {
+		SimpMessageSendingOperations messageTemplate) {
 		this.messageTemplate = messageTemplate;
 		this.stringRedisTemplate = stringRedisTemplate;
 	}
