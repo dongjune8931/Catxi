@@ -117,8 +117,14 @@ public class ChatController {
 		return ResponseEntity.ok(ApiResponse.successWithNoData());
 	}
 
-	@Operation(summary = "채팅방 삭제 (방장만 가능)")
+
 	@DeleteMapping("/{roomId}/remove")
+	@Operation(summary = "채팅방 삭제 (방장만 가능)", description = """
+ 			방장이 채팅방을 삭제합니다.
+ 			- 채팅방이 MATCHED가 아닐 경우, 매칭 기록을 저장하지 않고 채팅방을 삭제합니다.
+ 			- 채팅방 인원 수가 1명 이하일 경우, 매칭 기록을 저장하지 않고 채팅방을 삭제합니다.
+ 			- 방장이 아닐 경우 예외가 발생합니다.
+ 			""")
 	public ResponseEntity<ApiResponse<Void>> removeChatRoom(
 		@PathVariable Long roomId,
 		@AuthenticationPrincipal CustomUserDetails userDetails) {
