@@ -1,6 +1,7 @@
 package com.project.catxi.chat.service;
 
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.data.redis.connection.Message;
 import org.springframework.data.redis.connection.MessageListener;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -17,7 +18,7 @@ public class RedisPubSubService implements MessageListener {
 	public final StringRedisTemplate stringRedisTemplate;
 
 	public RedisPubSubService(@Qualifier("chatPubSub") StringRedisTemplate stringRedisTemplate,
-		SimpMessageSendingOperations messageTemplate) {
+		@Lazy SimpMessageSendingOperations messageTemplate) {
 		this.messageTemplate = messageTemplate;
 		this.stringRedisTemplate = stringRedisTemplate;
 	}
