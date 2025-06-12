@@ -77,7 +77,7 @@ public class SecurityConfig {
 
     // 로그인 필터 이전에 동작시킴
     http
-        .addFilterBefore(new JwtFilter(jwtUtill,jwtConfig), LoginFilter.class);
+        .addFilterBefore(new JwtFilter(jwtUtill,jwtConfig,memberRepository), LoginFilter.class);
 
     //Filter 등록 매개변수(필터 , 위치)
     //addFilterAt : 원하는 자리에 등록 , before: 해당 필터 전, after: 해당 필터 이후

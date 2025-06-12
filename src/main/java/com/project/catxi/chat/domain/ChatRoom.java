@@ -49,7 +49,7 @@ public class ChatRoom extends BaseTimeEntity {
 	private final List<ChatParticipant> participants = new ArrayList<>();
 
 
-	@Column(nullable = false)
+	@Column(nullable = true)
 	private LocalDateTime matchedAt;
 
 	//matched된 시점 기록

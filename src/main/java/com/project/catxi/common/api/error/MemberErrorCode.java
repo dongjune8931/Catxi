@@ -14,6 +14,7 @@ public enum MemberErrorCode implements ErrorCode{
 
 	ACCESS_EXPIRED(HttpStatus.BAD_REQUEST,"ACCESS401","액세스 토큰이 만료되었습니다"),
   DUPLICATE_AUTHORIZE_CODE(HttpStatus.BAD_REQUEST,"ACCESS402","인가 코드 중복 사용"),
+	ACCESS_FORBIDDEN(HttpStatus.FORBIDDEN,"ACCESS403","탈퇴한 회원입니다."),
 
 
   MATCH_NOT_FOUND(HttpStatus.NOT_FOUND,"MATCH404","이용내역을 찾을 수 없습니다.");

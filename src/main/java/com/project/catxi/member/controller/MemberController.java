@@ -32,6 +32,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -103,6 +104,14 @@ public class MemberController {
             )
         );
     return member.getStudentNo();
+  }
+
+  @Operation(summary = "회원삭제 API")
+  @PatchMapping("/delete")
+  public ApiResponse<String> delete(@AuthenticationPrincipal UserDetails userDetails) {
+    memberService.delete(userDetails.getUsername());
+
+    return ApiResponse.success("삭제 완료");
   }
 
   @Operation(summary = "회원 기본 정보 조회")
