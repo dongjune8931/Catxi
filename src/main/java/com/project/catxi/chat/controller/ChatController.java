@@ -14,7 +14,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.project.catxi.chat.dto.ChatMessageRes;
 import com.project.catxi.chat.dto.ChatRoomRes;
 import com.project.catxi.chat.dto.KickRequest;
@@ -88,7 +87,7 @@ public class ChatController {
 	@DeleteMapping("/{roomId}/leave")
 	public ResponseEntity<ApiResponse<Void>> leaveRoom(
 		@PathVariable Long roomId,
-		@AuthenticationPrincipal CustomUserDetails userDetails) throws JsonProcessingException {
+		@AuthenticationPrincipal CustomUserDetails userDetails) {
 
 		String email = userDetails.getUsername();
 		chatRoomService.leaveChatRoom(roomId, email);
@@ -99,7 +98,7 @@ public class ChatController {
 	@PostMapping("/rooms/{roomId}/join")
 	public ResponseEntity<ApiResponse<Void>> joinChatRoom(
 		@PathVariable Long roomId,
-		@AuthenticationPrincipal CustomUserDetails userDetails) throws JsonProcessingException {
+		@AuthenticationPrincipal CustomUserDetails userDetails) {
 
 		String email = userDetails.getUsername();
 		chatRoomService.joinChatRoom(roomId, email);
@@ -112,7 +111,7 @@ public class ChatController {
 		@PathVariable Long roomId,
 		@RequestBody KickRequest request,
 		@AuthenticationPrincipal CustomUserDetails userDetails
-	) throws JsonProcessingException {
+	) {
 		String requesterEmail = userDetails.getUsername();
 		chatRoomService.kickUser(roomId, requesterEmail, request.targetEmail());
 		return ResponseEntity.ok(ApiResponse.successWithNoData());
@@ -128,7 +127,7 @@ public class ChatController {
  			""")
 	public ResponseEntity<ApiResponse<Void>> removeChatRoom(
 		@PathVariable Long roomId,
-		@AuthenticationPrincipal CustomUserDetails userDetails) throws JsonProcessingException {
+		@AuthenticationPrincipal CustomUserDetails userDetails) {
 
 		String email = userDetails.getUsername();
 		try {
