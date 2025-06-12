@@ -114,5 +114,9 @@ public class CustomOAuth2UserService {
     member.setStatus(MemberStatus.ACTIVE);
   }
 
+  public boolean isNNDuplicate(String nickname) {
+        return memberRepository.existsByNickname(nickname);
+  }
+
 
 }

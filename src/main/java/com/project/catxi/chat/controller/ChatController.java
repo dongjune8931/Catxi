@@ -23,8 +23,10 @@ import com.project.catxi.chat.service.ChatMessageService;
 import com.project.catxi.chat.service.ChatRoomService;
 import com.project.catxi.common.api.ApiResponse;
 import com.project.catxi.common.api.CommonPageResponse;
+import com.project.catxi.common.api.exception.CatxiException;
 import com.project.catxi.member.dto.CustomUserDetails;
 import com.project.catxi.member.domain.Member;
+import com.project.catxi.member.service.MatchHistoryService;
 
 import io.swagger.v3.oas.annotations.Operation;
 
@@ -34,10 +36,12 @@ public class ChatController {
 
 	private final ChatMessageService chatMessageService;
 	private final ChatRoomService chatRoomService;
+	private final MatchHistoryService matchHistoryService;
 
-	public ChatController(ChatMessageService chatMessageService, ChatRoomService chatRoomService) {
+	public ChatController(ChatMessageService chatMessageService, ChatRoomService chatRoomService, MatchHistoryService matchHistoryService) {
 		this.chatMessageService = chatMessageService;
 		this.chatRoomService = chatRoomService;
+		this.matchHistoryService = matchHistoryService;
 	}
 
 	@Operation(summary = "채팅방 생성", description = "로그인한 사용자가 새로운 채팅방을 생성합니다.")
@@ -110,6 +114,28 @@ public class ChatController {
 	) {
 		String requesterEmail = userDetails.getUsername();
 		chatRoomService.kickUser(roomId, requesterEmail, request.targetEmail());
+		return ResponseEntity.ok(ApiResponse.successWithNoData());
+	}
+
+
+	@DeleteMapping("/{roomId}/remove")
+	@Operation(summary = "채팅방 삭제 (방장만 가능)", description = """
+ 			방장이 채팅방을 삭제합니다.
+ 			- 채팅방이 MATCHED가 아닐 경우, 매칭 기록을 저장하지 않고 채팅방을 삭제합니다.
+ 			- 채팅방 인원 수가 1명 이하일 경우, 매칭 기록을 저장하지 않고 채팅방을 삭제합니다.
+ 			- 방장이 아닐 경우 예외가 발생합니다.
+ 			""")
+	public ResponseEntity<ApiResponse<Void>> removeChatRoom(
+		@PathVariable Long roomId,
+		@AuthenticationPrincipal CustomUserDetails userDetails) {
+
+		String email = userDetails.getUsername();
+		try {
+			matchHistoryService.saveMatchHistory(roomId, email);
+		} catch (CatxiException e) {
+			throw e;
+		}
+		chatRoomService.leaveChatRoom(roomId, email);
 		return ResponseEntity.ok(ApiResponse.successWithNoData());
 	}
 

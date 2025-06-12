@@ -11,6 +11,8 @@ import com.project.catxi.member.domain.Member;
 import com.project.catxi.member.dto.CustomUserDetails;
 import com.project.catxi.member.repository.MemberRepository;
 import com.project.catxi.member.service.MemberService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import java.util.Map;
@@ -69,5 +71,12 @@ public class OAuthController {
       customOAuth2UserService.catxiSignup(userDetails.getUsername(), dto);
       return ResponseEntity.ok("추가 회원정보 등록 완료");
     }
+
+  @Operation(summary = "닉네임 중복 조회")
+  @GetMapping("/signUp/catxi/checkNN")
+  public ResponseEntity<?> checkNN(@RequestParam("nickname") String nickname) {
+    boolean isDuplicate = customOAuth2UserService.isNNDuplicate(nickname);
+    return ResponseEntity.ok(isDuplicate);
+  }
 
   }
