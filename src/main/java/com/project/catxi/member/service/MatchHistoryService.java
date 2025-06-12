@@ -84,10 +84,9 @@ public class MatchHistoryService {
       throw new CatxiException(ChatRoomErrorCode.NOT_HOST);
     }
 
-
     List<ChatParticipant> participants = chatParticipantRepository.findByChatRoom(room);
 
-    // 채팅방 상태가 MATCHED가 아니거나 참여자가 1명 이하인 경우 매치 기록을 저장하지 않음
+    // 채팅방 상태가 MATCHED가 아니거나 참여자가 1명 이하인 경우 매칭 기록을 저장하지 않음
     if(!room.getStatus().equals(RoomStatus.MATCHED) || participants.size()==1){
       return;
     }
@@ -102,9 +101,6 @@ public class MatchHistoryService {
       saveMatchHistory(room, part, fellas);
       memberRepository.save(part);
     }
-
-    chatMessageRepository.deleteAllByChatRoom(room);
-    chatRoomRepository.delete(room);
 
   }
 
