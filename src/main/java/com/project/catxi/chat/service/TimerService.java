@@ -39,7 +39,7 @@ public class TimerService {
 		long participantCount = chatParticipantRepository.countByChatRoom(room);
 
 		// Redis에 당시 참여자 수 저장
-		redisTemplate.opsForValue().set("ready:" + roomId, String.valueOf(participantCount));
+		redisTemplate.opsForValue().set("ready:" + roomId, String.valueOf(participantCount), Duration.ofSeconds(15));
 
 		// TaskScheduler로 10초 뒤 작업 예약
 		taskScheduler.schedule(() -> {
@@ -60,16 +60,23 @@ public class TimerService {
 
 		String savedCountStr = redisTemplate.opsForValue().get("ready:" + roomId);
 
+		if (room.getStatus() != RoomStatus.READY_LOCKED) {
+			return;
+		}
+
 		if (savedCountStr == null) {
 			// Redis 키가 사라졌거나 문제가 생긴 경우
+			chatParticipantRepository.updateIsReadyFalseExceptHost(room.getRoomId());
 			room.setStatus(RoomStatus.WAITING);
 		} else {
 			long savedCount = Long.parseLong(savedCountStr);
 			long currentCount = chatParticipantRepository.countByChatRoomAndIsReady(room, true);
 
 			if (savedCount == currentCount) {
-				room.setStatus(RoomStatus.MATCHED);
+				room.matchedStatus(RoomStatus.MATCHED);
 			} else {
+				chatParticipantRepository.deleteAllByChatRoomAndIsReadyFalse(room);
+				chatParticipantRepository.updateIsReadyFalseExceptHost(room.getRoomId());
 				room.setStatus(RoomStatus.WAITING);
 			}
 		}

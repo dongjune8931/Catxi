@@ -4,6 +4,9 @@ import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.project.catxi.chat.domain.ChatMessage;
 import com.project.catxi.chat.domain.ChatParticipant;
@@ -29,4 +32,11 @@ public interface ChatParticipantRepository extends JpaRepository<ChatParticipant
 
 	List<ChatParticipant> findByChatRoom(ChatRoom chatRoom);
 
+	@Modifying(clearAutomatically = true)
+	@Transactional
+	@Query("UPDATE ChatParticipant cp SET cp.isReady = false WHERE cp.chatRoom.roomId = :roomId AND cp.isHost = false")
+	void updateIsReadyFalseExceptHost(Long roomId);
+
+	@Transactional
+	void deleteAllByChatRoomAndIsReadyFalse(ChatRoom chatroom);
 }
