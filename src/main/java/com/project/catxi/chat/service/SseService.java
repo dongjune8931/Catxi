@@ -36,7 +36,7 @@ public class SseService {
 		this.redisTemplate = redisTemplate;
 	}
 
-	private static final Long TIMEOUT = 30 * 60 * 1000L; // 30분
+	private static final Long TIMEOUT = 10 * 60 * 1000L; // 10분
 
 
 	@PostConstruct
@@ -143,7 +143,7 @@ public class SseService {
 		try {
 			sendToClient(senderName, sseEmitter, eventName, data);
 		} catch (Exception e) {
-			hostEmitters.remove(roomId);
+			deleteEmitter(hostEmitters, roomId);
 		}
 	}
 
@@ -199,9 +199,11 @@ public class SseService {
 
 	private void registerEmitter(Map<String, SseEmitter> emitterMap, String key, SseEmitter emitter) {
 		SseEmitter existing = emitterMap.get(key);
+
 		if (existing != null) {
 			log.warn("SseEmitter가 이미 존재하여 제거 후 새로 연결합니다 key: {}", key);
 			existing.complete();
+			removeEmitter(key);
 		}
 
 		if (emitter == null) {
@@ -215,14 +217,17 @@ public class SseService {
 		emitter.onCompletion(() -> {
 			log.info("SseEmitter 연결 정리 key: {}", key);
 			deleteEmitter(emitterMap, key);
+			removeEmitter(key);
 		});
 		emitter.onTimeout(() ->{
 			log.warn("SseEmitter 연결 타임아웃 key: {}", key);
 			deleteEmitter(emitterMap, key);
+			removeEmitter(key);
 		});
 		emitter.onError((e) -> {
 			log.error("SseEmitter 연결 에러 key: {}, error: {}", key, e.getMessage());
 			deleteEmitter(emitterMap, key);
+			removeEmitter(key);
 		});
 	}
 
