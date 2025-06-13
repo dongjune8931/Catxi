@@ -65,6 +65,7 @@ public class ChatMessageService {
 		return chatMessageRepository.findByChatRoomOrderByCreatedTimeAsc(room)
 			.stream()
 			.map(m -> new ChatMessageRes(
+				m.getMember().getEmail(),
 				m.getId(),
 				room.getRoomId(),
 				m.getMember().getId(),
