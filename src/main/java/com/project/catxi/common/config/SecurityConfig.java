@@ -71,6 +71,7 @@ public class SecurityConfig {
             .requestMatchers("/login","/","/signUp").permitAll()
             .requestMatchers("/auth/login/kakao").permitAll()
             .requestMatchers("/actuator/**").permitAll()
+            //.requestMatchers("/sse/subscribe/**", "/sse/disconnect/**").permitAll()
             .requestMatchers("/admin").hasRole("ADMIN")
             .anyRequest().authenticated()
         );
@@ -84,6 +85,8 @@ public class SecurityConfig {
     http
         .addFilterBefore((new LoginFilter(authenticationManager(authenticationConfiguration), jwtUtill, jwtConfig,memberRepository)), UsernamePasswordAuthenticationFilter.class);
 
+    http
+        .addFilterAfter(new SseAuthenticationFilter(jwtUtill, memberRepository), JwtFilter.class);
     // 세션 설정
     // JWT -> Session 항상 Stateless 상태로 둬야 함
     http
