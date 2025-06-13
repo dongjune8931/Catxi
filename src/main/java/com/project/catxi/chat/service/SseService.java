@@ -50,7 +50,7 @@ public class SseService {
 					removeEmitter(entry.getKey()); // 실패한 emitter 제거
 				}
 			}
-		}, 0, 60, TimeUnit.SECONDS);
+		}, 0, 20, TimeUnit.SECONDS);
 	}
 
 	@PreDestroy
