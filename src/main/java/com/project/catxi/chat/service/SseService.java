@@ -1,5 +1,6 @@
 package com.project.catxi.chat.service;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -10,6 +11,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
@@ -26,9 +28,13 @@ public class SseService {
 	// thread-safe 한 컬렉션으로 sse emiiter 객체 관리
 	private final Map<String, Map<String, SseEmitter>> sseEmitters = new ConcurrentHashMap<>();
 	private final Map<String, SseEmitter> hostEmitters = new ConcurrentHashMap<>();
-	private final Map<String, String> lastReadyStatus = new ConcurrentHashMap<>();
 	private final ScheduledExecutorService pingScheduler = Executors.newSingleThreadScheduledExecutor();
 	private final Map<String, SseEmitter> allEmitters = new ConcurrentHashMap<>(); // key: roomId_email 또는 host 키
+	private final RedisTemplate<String, String> redisTemplate;
+
+	public SseService(RedisTemplate<String, String> redisTemplate) {
+		this.redisTemplate = redisTemplate;
+	}
 
 	private static final Long TIMEOUT = 30 * 60 * 1000L; // 30분
 
@@ -66,8 +72,8 @@ public class SseService {
 		} else {
 			registerEmitter(roomEmitters, email, emitter);
 
-			if (lastReadyStatus.containsKey(roomId)) {
-				String lastReadyData = lastReadyStatus.get(roomId);
+			String lastReadyData = redisTemplate.opsForValue().get("sse:ready:" + roomId);
+			if (lastReadyData != null) {
 				sendToClient("HOST", emitter, "ready", lastReadyData);
 			}
 		}
@@ -96,8 +102,7 @@ public class SseService {
 		}
 
 		if ("READY REQUEST".equals(eventName)) {
-			lastReadyStatus.put(roomId, data);
-
+			redisTemplate.opsForValue().set("sse:ready:" + roomId, data, Duration.ofSeconds(25));
 		}
 
 		Map<String, SseEmitter> sseEmitterList = sseEmitters.get(roomId);
@@ -168,7 +173,7 @@ public class SseService {
 
 		// 모든 emitter가 제거된 경우, lastReadyStatus도 제거
 		if (!sseEmitters.containsKey(roomId) && !hostEmitters.containsKey(roomId)) {
-			lastReadyStatus.remove(roomId);
+			redisTemplate.delete("sse:ready:" + roomId);
 			log.info("lastReadyStatus 제거됨 - roomId: {}", roomId);
 		}
 	}

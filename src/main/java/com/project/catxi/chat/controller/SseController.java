@@ -34,7 +34,7 @@ public class SseController {
 			@AuthenticationPrincipal CustomUserDetails userDetails) {
 	    try {
 			boolean isHost = chatRoomService.isHost(Long.valueOf(roomId), userDetails.getUsername());
-			chatRoomService.checkRoomStatusReadyLocked(Long.valueOf(roomId),userDetails.getUsername());
+			chatRoomService.checkRoomEnter(Long.valueOf(roomId),userDetails.getUsername());
 
 			return sseService.subscribe(roomId, userDetails.getUsername(), isHost);
 		} catch (CatxiException e) {
