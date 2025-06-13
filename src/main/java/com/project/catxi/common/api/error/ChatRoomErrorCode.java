@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public enum ChatRoomErrorCode implements ErrorCode{
 
+	CHATROOM_READY_LOCKED(HttpStatus.BAD_REQUEST, "CHATROOM400", "채팅방이 준비 요청 상태 입니다."),
 	CHATROOM_NOT_READY_LOCKED(HttpStatus.BAD_REQUEST, "CHATROOM400", "채팅방이 준비 요청 상태가 아닙니다."),
 	CHATROOM_NOT_WAITING(HttpStatus.BAD_REQUEST, "CHATROOM400", "채팅방이 대기 상태가 아닙니다."),
 	CHATROOM_NOT_MATCHED(HttpStatus.NOT_FOUND, "CHATROOM404", "채팅방이 매칭 상태가 아닙니다."),

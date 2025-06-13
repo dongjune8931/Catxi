@@ -39,7 +39,7 @@ public class TimerService {
 		long participantCount = chatParticipantRepository.countByChatRoom(room);
 
 		// Redis에 당시 참여자 수 저장
-		redisTemplate.opsForValue().set("ready:" + roomId, String.valueOf(participantCount), Duration.ofSeconds(15));
+		redisTemplate.opsForValue().set("ready:" + roomId, String.valueOf(participantCount), Duration.ofSeconds(25));
 
 		// TaskScheduler로 10초 뒤 작업 예약
 		taskScheduler.schedule(() -> {
@@ -49,7 +49,7 @@ public class TimerService {
 					log.error("Error checking and updating room status for roomId: {}", roomId, e);
 				}
 			},
-			Instant.now().plusSeconds(10)
+			Instant.now().plusSeconds(20)
 		);
 	}
 
