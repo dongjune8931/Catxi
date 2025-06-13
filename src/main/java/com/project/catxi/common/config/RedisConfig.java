@@ -8,18 +8,12 @@ import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.connection.RedisPassword;
 import org.springframework.data.redis.connection.RedisStandaloneConfiguration;
 import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.listener.PatternTopic;
 import org.springframework.data.redis.listener.RedisMessageListenerContainer;
 import org.springframework.data.redis.listener.adapter.MessageListenerAdapter;
-import org.springframework.data.redis.serializer.Jackson2JsonRedisSerializer;
-import org.springframework.data.redis.serializer.StringRedisSerializer;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.project.catxi.chat.dto.SseSendReq;
 import com.project.catxi.chat.service.RedisPubSubService;
-import com.project.catxi.chat.service.SseSubscriber;
 
 @Configuration
 public class RedisConfig {
@@ -54,33 +48,15 @@ public class RedisConfig {
 		return new StringRedisTemplate(redisConnectionFactory);
 	}
 
-	@Bean
-	@Qualifier("ssePubSub")
-	public RedisTemplate<String, String> redisTemplate(
-		@Qualifier("chatRedisConnectionFactory") RedisConnectionFactory redisConnectionFactory,
-		ObjectMapper objectMapper) {
-
-		RedisTemplate<String, String> redisTemplate = new RedisTemplate<>();
-		redisTemplate.setConnectionFactory(redisConnectionFactory);
-
-		redisTemplate.setKeySerializer(new StringRedisSerializer());
-		redisTemplate.setValueSerializer(new StringRedisSerializer());
-
-		redisTemplate.afterPropertiesSet();
-		return redisTemplate;
-	}
-
 	//subscribe 객체
 	@Bean
 	public RedisMessageListenerContainer redisMessageListenerContainer(
 		@Qualifier("chatRedisConnectionFactory") RedisConnectionFactory redisConnectionFactory,
-		MessageListenerAdapter messageListenerAdapter,
-		MessageListenerAdapter sseListenerAdapter
+		MessageListenerAdapter messageListenerAdapter
 	) {
 		RedisMessageListenerContainer container=new RedisMessageListenerContainer();
 		container.setConnectionFactory(redisConnectionFactory);
 		container.addMessageListener(messageListenerAdapter, new PatternTopic("chat"));
-		container.addMessageListener(sseListenerAdapter, new PatternTopic("sse:*"));
 		return container;
 	}
 
@@ -90,11 +66,5 @@ public class RedisConfig {
 	public MessageListenerAdapter messageListenerAdapter(RedisPubSubService redisPubSubService){
 		//RedisPubSubService의 특정 메서드가 수신된 메시지를 처리할 수 있도록 지정
 		return new MessageListenerAdapter(redisPubSubService,"onMessage");
-	}
-
-	@Bean
-	public MessageListenerAdapter sseListenerAdapter(SseSubscriber sseSubscriber) {
-		//RedisPubSubService의 특정 메서드가 수신된 메시지를 처리할 수 있도록 지정
-		return new MessageListenerAdapter(sseSubscriber, "onMessage");
 	}
 }
