@@ -71,7 +71,6 @@ public class SecurityConfig {
             .requestMatchers("/login","/","/signUp").permitAll()
             .requestMatchers("/auth/login/kakao").permitAll()
             .requestMatchers("/actuator/**").permitAll()
-            .requestMatchers("/sse/subscribe/**", "/sse/disconnect/**").permitAll()
             .requestMatchers("/admin").hasRole("ADMIN")
             .anyRequest().authenticated()
         );
