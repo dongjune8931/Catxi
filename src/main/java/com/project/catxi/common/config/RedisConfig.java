@@ -16,6 +16,7 @@ import org.springframework.data.redis.listener.adapter.MessageListenerAdapter;
 import org.springframework.data.redis.serializer.Jackson2JsonRedisSerializer;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.project.catxi.chat.dto.SseSendReq;
 import com.project.catxi.chat.service.RedisPubSubService;
 import com.project.catxi.chat.service.SseSubscriber;
@@ -55,15 +56,17 @@ public class RedisConfig {
 
 	@Bean
 	@Qualifier("ssePubSub")
-	public RedisTemplate<String, Object> redisTemplate(
-		@Qualifier("chatRedisConnectionFactory") RedisConnectionFactory redisConnectionFactory) {
-		RedisTemplate<String, Object> redisTemplate = new RedisTemplate<>();
+	public RedisTemplate<String, String> redisTemplate(
+		@Qualifier("chatRedisConnectionFactory") RedisConnectionFactory redisConnectionFactory,
+		ObjectMapper objectMapper) {
+
+		RedisTemplate<String, String> redisTemplate = new RedisTemplate<>();
 		redisTemplate.setConnectionFactory(redisConnectionFactory);
 
 		redisTemplate.setKeySerializer(new StringRedisSerializer());
-		Jackson2JsonRedisSerializer<SseSendReq> serializer = new Jackson2JsonRedisSerializer<>(SseSendReq.class);
-		redisTemplate.setValueSerializer(serializer);
+		redisTemplate.setValueSerializer(new StringRedisSerializer());
 
+		redisTemplate.afterPropertiesSet();
 		return redisTemplate;
 	}
 
