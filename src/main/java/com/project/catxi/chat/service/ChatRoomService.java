@@ -189,6 +189,15 @@ public class ChatRoomService {
 
 	}
 
+	public void checkRoomStatusReadyLocked(Long roomId, String email) {
+		ChatRoom chatRoom = chatRoomRepository.findById(roomId)
+			.orElseThrow(() -> new CatxiException(ChatRoomErrorCode.CHATROOM_NOT_FOUND));
+
+		if((chatRoom.getStatus()== RoomStatus.READY_LOCKED) && !isRoomParticipant(email, roomId)){
+			throw new CatxiException(ChatRoomErrorCode.CHATROOM_READY_LOCKED);
+		}
+	}
+
 
 
 

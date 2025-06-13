@@ -18,6 +18,7 @@ import com.project.catxi.common.api.error.SseErrorCode;
 import com.project.catxi.common.api.exception.CatxiException;
 
 import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
 
 @Service
 public class SseService {
@@ -25,7 +26,7 @@ public class SseService {
 	// thread-safe 한 컬렉션으로 sse emiiter 객체 관리
 	private final Map<String, Map<String, SseEmitter>> sseEmitters = new ConcurrentHashMap<>();
 	private final Map<String, SseEmitter> hostEmitters = new ConcurrentHashMap<>();
-	private final Map<String, Long> roomReadyTime = new ConcurrentHashMap<>();
+	private final Map<String, String> lastReadyStatus = new ConcurrentHashMap<>();
 	private final ScheduledExecutorService pingScheduler = Executors.newSingleThreadScheduledExecutor();
 	private final Map<String, SseEmitter> allEmitters = new ConcurrentHashMap<>(); // key: roomId_email 또는 host 키
 
@@ -46,28 +47,29 @@ public class SseService {
 		}, 0, 60, TimeUnit.SECONDS);
 	}
 
+	@PreDestroy
+	public void shutdownScheduler() {
+		pingScheduler.shutdownNow();
+		log.info("SSE pingScheduler 종료됨");
+	}
+
 	/*
 	 * sse 구독 기능
 	 */
-	public SseEmitter subscribe(String roomId, String email, boolean isHost, boolean isParticipant) {
+	public SseEmitter subscribe(String roomId, String email, boolean isHost) {
 		// 30분 동안 클라이언트와 연결 유지
 		SseEmitter emitter = new SseEmitter(TIMEOUT);
 		Map<String, SseEmitter> roomEmitters = sseEmitters.computeIfAbsent(roomId, k -> new ConcurrentHashMap<>());
-
-		if (!isParticipant) {
-			sendToClient("SERVER", emitter, "error", "채팅방 참여자가 아닙니다");
-			emitter.complete();
-		}
-
-		if (isRoomBlocked(roomId)) {
-			sendToClient("SERVER", emitter, "error", "현재 채팅방에 연결이 불가합니다");
-			emitter.complete();
-		}
 
 		if (isHost) {
 			registerEmitter(hostEmitters, roomId, emitter);
 		} else {
 			registerEmitter(roomEmitters, email, emitter);
+
+			if (lastReadyStatus.containsKey(roomId)) {
+				String lastReadyData = lastReadyStatus.get(roomId);
+				sendToClient("HOST", emitter, "ready", lastReadyData);
+			}
 		}
 
 		try {
@@ -93,14 +95,18 @@ public class SseService {
 			throw new CatxiException(SseErrorCode.SSE_NOT_HOST);
 		}
 
+		if ("READY REQUEST".equals(eventName)) {
+			lastReadyStatus.put(roomId, data);
+
+		}
+
 		Map<String, SseEmitter> sseEmitterList = sseEmitters.get(roomId);
 
 		if (sseEmitterList == null || sseEmitterList.isEmpty()) {
-			log.warn("Cannot send SSE message, emitter is null (event: {}, message: {})", eventName, data);
+			log.warn("SSE emitters not in this Server for roomId: {}", roomId);
 			return;
 		}
 
-		roomReadyTime.putIfAbsent(roomId, System.currentTimeMillis());
 		List<String> toRemove = new ArrayList<>();
 
 		for (Map.Entry<String, SseEmitter> entry : sseEmitterList.entrySet()) {
@@ -125,7 +131,7 @@ public class SseService {
 		SseEmitter sseEmitter = hostEmitters.get(roomId);
 
 		if (sseEmitter == null) {
-			log.warn("Cannot send SSE message, emitter is null (event: {}, message: {})", eventName, data);
+			log.warn("SSE emitter not in this Server for roomId: {}", roomId);
 			return;
 		}
 
@@ -143,7 +149,8 @@ public class SseService {
 		if (isHost) {
 			SseEmitter hostEmitter = hostEmitters.get(roomId);
 			if (hostEmitter == null) {
-				throw new CatxiException(SseErrorCode.SSE_NOT_FOUND);
+				log.warn("SSE emitter not in this Server for roomId: {}", roomId);
+				return;
 			}
 			deleteEmitter(hostEmitters, roomId);
 		} else {
@@ -158,12 +165,18 @@ public class SseService {
 				sseEmitters.remove(roomId);
 			}
 		}
+
+		// 모든 emitter가 제거된 경우, lastReadyStatus도 제거
+		if (!sseEmitters.containsKey(roomId) && !hostEmitters.containsKey(roomId)) {
+			lastReadyStatus.remove(roomId);
+			log.info("lastReadyStatus 제거됨 - roomId: {}", roomId);
+		}
 	}
 
 
 	private void sendToClient(String senderName,  SseEmitter sseEmitter, String eventName, String message) {
 		if (sseEmitter == null) {
-			log.warn("Cannot send SSE message, emitter is null (event: {}, message: {})", eventName, message);
+			log.warn("SSE emitter is null in this Server for senderName: {}", senderName);
 			return;
 		}
 
@@ -217,24 +230,7 @@ public class SseService {
 		allEmitters.remove(key);
 	}
 
-	public boolean isRoomBlocked(String roomId) {
-		long now = System.currentTimeMillis();
-		Long readyTime = roomReadyTime.get(roomId);
 
-		if (readyTime == null) {
-			return false;
-		}
-
-		long elapsed = now - readyTime;
-
-		if (elapsed < 10 * 1000) {
-			return true;
-		} else {
-			roomReadyTime.remove(roomId);
-		}
-
-		return false;
-	}
 
 	public SseEmitter createErrorEmitter(String errorMessage) {
 		SseEmitter emitter = new SseEmitter(3000L);

@@ -17,6 +17,7 @@ import com.project.catxi.common.api.ApiResponse;
 import com.project.catxi.common.api.exception.CatxiException;
 import com.project.catxi.member.dto.CustomUserDetails;
 
+import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 
 @RestController
@@ -33,11 +34,13 @@ public class SseController {
 			@AuthenticationPrincipal CustomUserDetails userDetails) {
 	    try {
 			boolean isHost = chatRoomService.isHost(Long.valueOf(roomId), userDetails.getUsername());
-			boolean isParticipant = chatRoomService.isRoomParticipant(userDetails.getUsername(), Long.valueOf(roomId));
+			chatRoomService.checkRoomStatusReadyLocked(Long.valueOf(roomId),userDetails.getUsername());
 
-			return sseService.subscribe(roomId, userDetails.getUsername(), isHost, isParticipant);
+			return sseService.subscribe(roomId, userDetails.getUsername(), isHost);
 		} catch (CatxiException e) {
 			return sseService.createErrorEmitter(e.getErrorCode().getMessage());
+		} catch (EntityNotFoundException e) {
+			return sseService.createErrorEmitter(e.getMessage());
 		}
 	}
 
