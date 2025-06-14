@@ -134,6 +134,16 @@ public class ChatRoomService {
 		chatParticipantRepository.save(chatParticipant);
 	}
 
+	public Long getMyChatRoomId(String email) {
+		Member member = memberRepository.findByEmail(email)
+			.orElseThrow(() -> new CatxiException(MemberErrorCode.MEMBER_NOT_FOUND));
+
+		ChatParticipant participant = chatParticipantRepository.findByMember(member)
+			.orElseThrow(() -> new CatxiException(ChatParticipantErrorCode.PARTICIPANT_NOT_FOUND));
+		Long myRoomId= participant.getChatRoom().getRoomId();
+		return myRoomId;
+	}
+
 	public void kickUser(Long roomId, String requesterEmail, String targetEmail) {
 		ChatRoom room = chatRoomRepository.findById(roomId)
 			.orElseThrow(() -> new CatxiException(ChatRoomErrorCode.CHATROOM_NOT_FOUND));

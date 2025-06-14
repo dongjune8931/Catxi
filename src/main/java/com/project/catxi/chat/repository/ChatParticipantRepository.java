@@ -38,4 +38,7 @@ public interface ChatParticipantRepository extends JpaRepository<ChatParticipant
 
 	@Transactional
 	void deleteAllByChatRoomAndIsReadyFalse(ChatRoom chatroom);
+
+	Optional<ChatParticipant> findByMember(Member member);
+
 }
