@@ -34,11 +34,9 @@ public class ReadyService {
 	private final MemberRepository memberRepository;
 	private final ChatRoomRepository chatRoomRepository;
 	private final TimerService timerService;
-	private final RedisPubSubService redisPubSubService;
-	private final ObjectMapper objectMapper;
 
 	@Transactional
-	public void requestReady(Long roomId, String email) throws JsonProcessingException {
+	public void requestReady(Long roomId, String email){
 		ChatRoom room = chatRoomRepository.findById(roomId)
 			.orElseThrow(() -> new CatxiException(ChatRoomErrorCode.CHATROOM_NOT_FOUND));
 
@@ -71,7 +69,7 @@ public class ReadyService {
 	}
 
 	@Transactional
-	public void acceptReady(Long roomId, String email) throws JsonProcessingException {
+	public void acceptReady(Long roomId, String email) {
 		Member member = memberRepository.findByEmail(email)
 			.orElseThrow(() -> new CatxiException(MemberErrorCode.MEMBER_NOT_FOUND));
 
@@ -91,7 +89,7 @@ public class ReadyService {
 	}
 
 	@Transactional
-	public void rejectReady(Long roomId, String email) throws JsonProcessingException {
+	public void rejectReady(Long roomId, String email) {
 		Member member = memberRepository.findByEmail(email)
 			.orElseThrow(() -> new CatxiException(MemberErrorCode.MEMBER_NOT_FOUND));
 
