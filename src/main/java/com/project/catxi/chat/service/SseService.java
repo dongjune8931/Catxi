@@ -45,12 +45,13 @@ public class SseService {
 			for (Map.Entry<String, SseEmitter> entry : allEmitters.entrySet()) {
 				try {
 					entry.getValue().send(SseEmitter.event().name("ping").data("ping"));
+					log.info("Ping 전송됨: key={}, 현재 연결 수: {}", entry.getKey(), allEmitters.size());
 				} catch (Exception e) {
 					log.warn("Ping 실패: key={}, error={}", entry.getKey(), e.getMessage());
 					removeEmitter(entry.getKey()); // 실패한 emitter 제거
 				}
 			}
-		}, 0, 60, TimeUnit.SECONDS);
+		}, 0, 30, TimeUnit.SECONDS);
 	}
 
 	@PreDestroy

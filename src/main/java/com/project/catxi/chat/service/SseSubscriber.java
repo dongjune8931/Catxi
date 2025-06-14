@@ -2,6 +2,8 @@ package com.project.catxi.chat.service;
 
 import java.nio.charset.StandardCharsets;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.redis.connection.Message;
 import org.springframework.data.redis.connection.MessageListener;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -18,6 +20,7 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class SseSubscriber implements MessageListener {
 
+	private static final Logger log = LoggerFactory.getLogger(SseSubscriber.class);
 	private final SseService sseService;
 	private final ObjectMapper objectMapper;
 
@@ -28,6 +31,7 @@ public class SseSubscriber implements MessageListener {
 			String payload = objectMapper.writeValueAsString(sseSendReq);
 			redisTemplate.convertAndSend(channel, payload);
 		} catch (Exception e) {
+			log.warn("[SSE ERROR] Redis publish 실패 - channel: {}, req: {}", channel, sseSendReq, e);
 			throw new CatxiException(SseErrorCode.SSE_SEND_ERROR);
 		}
 	}
@@ -50,7 +54,7 @@ public class SseSubscriber implements MessageListener {
 				sseService.sendToClients(roomId, sseSendReq.eventName(), sseSendReq.data(), true);
 			}
 		} catch (Exception e){
-			throw new RuntimeException(e);
+			log.warn("[SSE ERROR] Redis 구독 메시지 처리 실패 - channel: {}, payload: {}", channel, payload, e);
 		}
 	}
 
