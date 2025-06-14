@@ -3,30 +3,31 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-
 import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.connection.RedisPassword;
 import org.springframework.data.redis.connection.RedisStandaloneConfiguration;
 import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.listener.PatternTopic;
 import org.springframework.data.redis.listener.RedisMessageListenerContainer;
 import org.springframework.data.redis.listener.adapter.MessageListenerAdapter;
+import org.springframework.data.redis.serializer.Jackson2JsonRedisSerializer;
+import org.springframework.data.redis.serializer.StringRedisSerializer;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.project.catxi.chat.dto.SseSendReq;
 import com.project.catxi.chat.service.RedisPubSubService;
+import com.project.catxi.chat.service.SseSubscriber;
 
 @Configuration
 public class RedisConfig {
-
 	@Value("${spring.data.redis.host}")
 	private String host;
-
 	@Value("${spring.data.redis.port}")
 	private int port;
-
 	@Value("${spring.data.redis.password}")
 	private String password;
-
 	//연결 기본 객체
 	@Bean
 	@Qualifier("chatRedisConnectionFactory")
@@ -39,7 +40,6 @@ public class RedisConfig {
 		configuration.setPassword(RedisPassword.of(password));
 		return new LettuceConnectionFactory(configuration);
 	}
-
 	//publish 객체
 	@Bean
 	@Qualifier("chatPubSub")
@@ -48,23 +48,46 @@ public class RedisConfig {
 		return new StringRedisTemplate(redisConnectionFactory);
 	}
 
+	@Bean
+	@Qualifier("ssePubSub")
+	public RedisTemplate<String, String> redisTemplate(
+		@Qualifier("chatRedisConnectionFactory") RedisConnectionFactory redisConnectionFactory,
+		ObjectMapper objectMapper) {
+
+		RedisTemplate<String, String> redisTemplate = new RedisTemplate<>();
+		redisTemplate.setConnectionFactory(redisConnectionFactory);
+
+		redisTemplate.setKeySerializer(new StringRedisSerializer());
+		redisTemplate.setValueSerializer(new StringRedisSerializer());
+
+		redisTemplate.afterPropertiesSet();
+		return redisTemplate;
+	}
+
 	//subscribe 객체
 	@Bean
 	public RedisMessageListenerContainer redisMessageListenerContainer(
 		@Qualifier("chatRedisConnectionFactory") RedisConnectionFactory redisConnectionFactory,
-		MessageListenerAdapter messageListenerAdapter
+		MessageListenerAdapter messageListenerAdapter,
+		MessageListenerAdapter sseListenerAdapter
 	) {
 		RedisMessageListenerContainer container=new RedisMessageListenerContainer();
 		container.setConnectionFactory(redisConnectionFactory);
 		container.addMessageListener(messageListenerAdapter, new PatternTopic("chat"));
+		container.addMessageListener(sseListenerAdapter, new PatternTopic("sse:*"));
 		return container;
 	}
-
 
 	//redis에서 수신된 메시지를 처리하는 객체 생성
 	@Bean
 	public MessageListenerAdapter messageListenerAdapter(RedisPubSubService redisPubSubService){
 		//RedisPubSubService의 특정 메서드가 수신된 메시지를 처리할 수 있도록 지정
 		return new MessageListenerAdapter(redisPubSubService,"onMessage");
+	}
+
+	@Bean
+	public MessageListenerAdapter sseListenerAdapter(SseSubscriber sseSubscriber) {
+		//RedisPubSubService의 특정 메서드가 수신된 메시지를 처리할 수 있도록 지정
+		return new MessageListenerAdapter(sseSubscriber, "onMessage");
 	}
 }

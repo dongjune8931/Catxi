@@ -40,6 +40,7 @@ public class ChatRoom extends BaseTimeEntity {
 
 	@Enumerated(EnumType.STRING)
 	@Column(nullable = false)
+	@Setter
 	private RoomStatus status;
 
 	@Column(nullable = false)
