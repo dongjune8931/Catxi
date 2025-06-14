@@ -1,5 +1,7 @@
 package com.project.catxi.chat.controller;
 
+import java.time.LocalDateTime;
+
 import org.springframework.messaging.handler.annotation.DestinationVariable;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.SendTo;
@@ -35,8 +37,15 @@ public class StompController {
 		System.out.println(chatMessageSendReq.message());
 		chatMessageService.saveMessage(roomId, chatMessageSendReq);
 		//messageTemplate.convertAndSend("/topic/"+ roomId,chatMessageSendReq);
+
+		ChatMessageSendReq enriched = new ChatMessageSendReq(
+			chatMessageSendReq.roomId(),
+			chatMessageSendReq.email(),
+			chatMessageSendReq.message(),
+			LocalDateTime.now()
+		);
 		ObjectMapper objectMapper = new ObjectMapper();
-		String message = objectMapper.writeValueAsString(chatMessageSendReq);
+		String message = objectMapper.writeValueAsString(enriched);
 		pubSubService.publish("chat", message);
 	}
 }
