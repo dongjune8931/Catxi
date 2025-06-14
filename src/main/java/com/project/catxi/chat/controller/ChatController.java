@@ -139,4 +139,12 @@ public class ChatController {
 		return ResponseEntity.ok(ApiResponse.successWithNoData());
 	}
 
+	@Operation(summary = "나의 채팅방 ID 조회", description = "현재 참여 중인 채팅방의 ID를 반환합니다.")
+	@GetMapping("/rooms/myid")
+	public ResponseEntity<ApiResponse<Long>> getMyRoomId(@AuthenticationPrincipal CustomUserDetails userDetails) {
+		String email = userDetails.getUsername();
+		Long roomId = chatRoomService.getMyChatRoomId(email);
+		return ResponseEntity.ok(ApiResponse.success(roomId));
+	}
+
 }
