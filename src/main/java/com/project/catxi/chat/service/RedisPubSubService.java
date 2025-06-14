@@ -36,6 +36,8 @@ public class RedisPubSubService implements MessageListener {
 		String channel = new String(pattern);
 		String payload = new String(message.getBody());
 		ObjectMapper objectMapper = new ObjectMapper();
+		objectMapper.registerModule(new JavaTimeModule());
+		objectMapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
 		try {
 			if ("chat".equals(channel)) {
 			ChatMessageSendReq chatMessageDto = objectMapper.readValue(payload, ChatMessageSendReq.class);
