@@ -10,7 +10,10 @@ import org.springframework.stereotype.Service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.project.catxi.chat.dto.ChatMessageSendReq;
+import com.project.catxi.chat.dto.ReadyMessageRes;
 
 @Service
 public class RedisPubSubService implements MessageListener {
@@ -30,11 +33,18 @@ public class RedisPubSubService implements MessageListener {
 	@Override
 	//pattern 에는 topic의 이름의 패턴이 담겨있고 이 패턴을 기반으로 다이나믹한 코딩
 	public void onMessage(Message message, byte[] pattern) {
+		String channel = new String(pattern);
 		String payload = new String(message.getBody());
 		ObjectMapper objectMapper = new ObjectMapper();
 		try {
+			if ("chat".equals(channel)) {
 			ChatMessageSendReq chatMessageDto = objectMapper.readValue(payload, ChatMessageSendReq.class);
-			messageTemplate.convertAndSend("/topic/" + chatMessageDto.roomId(), chatMessageDto);
+				messageTemplate.convertAndSend("/topic/" + chatMessageDto.roomId(), chatMessageDto);
+			} else if (channel.startsWith("ready:")) {
+				ReadyMessageRes readyMessage = objectMapper.readValue(payload, ReadyMessageRes.class);
+				// ready 메시지는 별도의 토픽으로 보낼 수 있음 (예: /topic/ready/{roomId})
+				messageTemplate.convertAndSend("/topic/ready/" + readyMessage.roomId(), readyMessage);
+			}
 		} catch (JsonProcessingException e) {
 			throw new RuntimeException(e);
 		}
