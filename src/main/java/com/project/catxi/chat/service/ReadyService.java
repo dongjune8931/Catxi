@@ -1,17 +1,25 @@
 package com.project.catxi.chat.service;
 
 
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.project.catxi.chat.domain.ChatParticipant;
 import com.project.catxi.chat.domain.ChatRoom;
+import com.project.catxi.chat.dto.ReadyMessageEvent;
+import com.project.catxi.chat.dto.ReadyMessageRes;
 import com.project.catxi.chat.repository.ChatParticipantRepository;
 import com.project.catxi.chat.repository.ChatRoomRepository;
 import com.project.catxi.common.api.error.ChatParticipantErrorCode;
 import com.project.catxi.common.api.error.ChatRoomErrorCode;
 import com.project.catxi.common.api.error.MemberErrorCode;
 import com.project.catxi.common.api.exception.CatxiException;
+import com.project.catxi.common.domain.ReadyType;
 import com.project.catxi.common.domain.RoomStatus;
 import com.project.catxi.member.domain.Member;
 import com.project.catxi.member.repository.MemberRepository;
@@ -21,16 +29,17 @@ import lombok.RequiredArgsConstructor;
 @Service
 @RequiredArgsConstructor
 public class ReadyService {
+	private final ApplicationEventPublisher eventPublisher;
 	private final ChatParticipantRepository chatParticipantRepository;
 	private final MemberRepository memberRepository;
 	private final ChatRoomRepository chatRoomRepository;
 	private final TimerService timerService;
-	private final SseService sseService;
-	private final SseSubscriber sseSubscriber;
+	private final RedisPubSubService redisPubSubService;
+	private final ObjectMapper objectMapper;
 
 	@Transactional
-	public void requestReady(String roomId, String email) {
-		ChatRoom room = chatRoomRepository.findById(Long.valueOf(roomId))
+	public void requestReady(Long roomId, String email) throws JsonProcessingException {
+		ChatRoom room = chatRoomRepository.findById(roomId)
 			.orElseThrow(() -> new CatxiException(ChatRoomErrorCode.CHATROOM_NOT_FOUND));
 
 		Member member = memberRepository.findByEmail(email)
@@ -48,32 +57,25 @@ public class ReadyService {
 		}
 
 		room.setStatus(RoomStatus.READY_LOCKED);
-		SseSendReq payload = new SseSendReq(
-			"READY REQUEST",
-			"방장이 Ready 요청을 보냈습니다",
-			roomId,
-			member.getMembername(),
-			"CLIENT"
-		);
-		sseSubscriber.publish("sse:" + roomId, payload); // publish 호출
 
 		/*
 		레디 요청 10초 이후 (레디 요청 당시의 참여자 수 == 10초 이후 참여자 수)가
 			- True라면 MATCHED로 변경
 			- False라면 WAITING으로 변경
 		*/
+		ReadyMessageRes payload = ReadyMessageRes.readyRequest(roomId, member);
+		eventPublisher.publishEvent(new ReadyMessageEvent("ready:" + roomId, payload));
 
-		timerService.scheduleReadyTimeout(roomId);
-
+		timerService.scheduleReadyTimeout(roomId.toString());
 
 	}
 
 	@Transactional
-	public void acceptReady(String roomId, String email) {
+	public void acceptReady(Long roomId, String email) throws JsonProcessingException {
 		Member member = memberRepository.findByEmail(email)
 			.orElseThrow(() -> new CatxiException(MemberErrorCode.MEMBER_NOT_FOUND));
 
-		ChatRoom room = chatRoomRepository.findById(Long.valueOf(roomId))
+		ChatRoom room = chatRoomRepository.findById(roomId)
 			.orElseThrow(() -> new CatxiException(ChatRoomErrorCode.CHATROOM_NOT_FOUND));
 
 		ChatParticipant participant = chatParticipantRepository.findByChatRoomAndMember(room, member)
@@ -82,23 +84,18 @@ public class ReadyService {
 		checkParticipant(room,participant);
 
 		participant.setReady(true);
-		SseSendReq payload = new SseSendReq(
-			"READY ACCEPT",
-			"참여자가 Ready를 수락했습니다",
-			roomId,
-			member.getMembername(),
-			"HOST"
-		);
-		sseSubscriber.publish("sse:" + roomId, payload);
+
+		ReadyMessageRes payload = ReadyMessageRes.readyAccept(roomId, member);
+		eventPublisher.publishEvent(new ReadyMessageEvent("ready:" + roomId, payload));
 
 	}
 
 	@Transactional
-	public void rejectReady(String roomId, String email) {
+	public void rejectReady(Long roomId, String email) throws JsonProcessingException {
 		Member member = memberRepository.findByEmail(email)
 			.orElseThrow(() -> new CatxiException(MemberErrorCode.MEMBER_NOT_FOUND));
 
-		ChatRoom room = chatRoomRepository.findById(Long.valueOf(roomId))
+		ChatRoom room = chatRoomRepository.findById(roomId)
 			.orElseThrow(() -> new CatxiException(ChatRoomErrorCode.CHATROOM_NOT_FOUND));
 
 		ChatParticipant participant = chatParticipantRepository.findByChatRoomAndMember(room, member)
@@ -106,20 +103,9 @@ public class ReadyService {
 
 		checkParticipant(room,participant);
 
-		SseSendReq payload = new SseSendReq(
-			"READY REJECT",
-			"참여자가 Ready를 거절했습니다",
-			roomId,
-			member.getMembername(),
-			"HOST"
-		);
 
-		/*
-		 * 방장에게 Ready 거절 메시지 전송
-		 * sse 연결 해제
-		 */
-		sseSubscriber.publish("sse:" + roomId, payload);
-		sseService.disconnect(roomId, email, false);
+		ReadyMessageRes payload = ReadyMessageRes.readyDeny(roomId, member);
+		eventPublisher.publishEvent(new ReadyMessageEvent("ready:" + roomId, payload));
 
 	}
 

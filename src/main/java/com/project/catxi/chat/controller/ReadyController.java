@@ -7,6 +7,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.project.catxi.chat.service.ChatRoomService;
 import com.project.catxi.chat.service.ReadyService;
 import com.project.catxi.common.api.ApiResponse;
@@ -25,8 +26,8 @@ public class ReadyController {
 
 	// 클라이언트로부터 메시지를 받아 해당 채팅방에 있는 모든 클라이언트에게 전송하는 엔드포인트
 	@PostMapping("/request/{roomId}")
-	public ResponseEntity<ApiResponse<Void>> sendMessage(@PathVariable String roomId,
-		@AuthenticationPrincipal CustomUserDetails userDetails) {
+	public ResponseEntity<ApiResponse<Void>> sendMessage(@PathVariable Long roomId,
+		@AuthenticationPrincipal CustomUserDetails userDetails) throws JsonProcessingException {
 		readyService.requestReady(roomId, userDetails.getUsername());
 
 		return ResponseEntity.ok(ApiResponse.successWithNoData());
@@ -34,18 +35,18 @@ public class ReadyController {
 
 	// 클라이언트로부터 메시지를 받아 해당 채팅방의 방장에게 전송하는 엔드포인트
 	@PostMapping("/accept/{roomId}")
-	public ResponseEntity<ApiResponse<Void>> sendMessageToHost(@PathVariable String roomId,
-		@AuthenticationPrincipal CustomUserDetails userDetails) {
+	public ResponseEntity<ApiResponse<Void>> sendMessageToHost(@PathVariable Long roomId,
+		@AuthenticationPrincipal CustomUserDetails userDetails) throws JsonProcessingException {
 		readyService.acceptReady(roomId, userDetails.getUsername());
 
 		return ResponseEntity.ok(ApiResponse.successWithNoData());
 	}
 
 	@PostMapping("/reject/{roomId}")
-	public ResponseEntity<ApiResponse<Void>> rejectReady(@PathVariable String roomId,
-		@AuthenticationPrincipal CustomUserDetails userDetails) {
+	public ResponseEntity<ApiResponse<Void>> rejectReady(@PathVariable Long roomId,
+		@AuthenticationPrincipal CustomUserDetails userDetails) throws JsonProcessingException {
 		readyService.rejectReady(roomId, userDetails.getUsername());
-		chatRoomService.leaveChatRoom(Long.valueOf(roomId), userDetails.getUsername());
+		chatRoomService.leaveChatRoom(roomId, userDetails.getUsername());
 
 		return ResponseEntity.ok(ApiResponse.successWithNoData());
 	}
