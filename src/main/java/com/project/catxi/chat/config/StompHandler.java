@@ -64,8 +64,9 @@ public class StompHandler implements ChannelInterceptor {
 				throw new AuthenticationServiceException("destination 파싱 오류");
 			}
 
+			String roomIdStr = parts[parts.length - 1];
 			try {
-				Long roomId = Long.parseLong(parts[2]);
+				Long roomId = Long.parseLong(roomIdStr);
 				log.info("Room ID: {}", roomId);
 				if (!chatRoomService.isRoomParticipant(email, roomId)) {
 					log.warn("Room 참가자 아님: {} not in room {}", email, roomId);
