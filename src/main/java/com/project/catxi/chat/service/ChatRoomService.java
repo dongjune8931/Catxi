@@ -164,14 +164,6 @@ public class ChatRoomService {
 
 	}
 
-	public boolean isHost(Long roomId, String email){
-		Member member = memberRepository.findByEmail(email)
-			.orElseThrow(() -> new CatxiException(MemberErrorCode.MEMBER_NOT_FOUND));
-		ChatRoom chatRoom = chatRoomRepository.findById(roomId)
-			.orElseThrow(() -> new CatxiException(ChatRoomErrorCode.CHATROOM_NOT_FOUND));
-		return chatRoom.getHost().equals(member);
-	}
-
 	public boolean isRoomParticipant(String email, Long roomId) {
 		ChatRoom chatRoom = chatRoomRepository.findById(roomId)
 			.orElseThrow(() -> new EntityNotFoundException("room not found"));
@@ -187,17 +179,7 @@ public class ChatRoomService {
 
 	}
 
-	public void checkRoomEnter(Long roomId, String email) {
-		ChatRoom chatRoom = chatRoomRepository.findById(roomId)
-			.orElseThrow(() -> new CatxiException(ChatRoomErrorCode.CHATROOM_NOT_FOUND));
-		if(!isRoomParticipant(email, roomId)){
-			throw new CatxiException(ChatParticipantErrorCode.PARTICIPANT_NOT_FOUND);
-		}
 
-		if((chatRoom.getStatus()== RoomStatus.READY_LOCKED) && !isRoomParticipant(email, roomId)){
-			throw new CatxiException(ChatRoomErrorCode.CHATROOM_READY_LOCKED);
-		}
-	}
 
 
 }
