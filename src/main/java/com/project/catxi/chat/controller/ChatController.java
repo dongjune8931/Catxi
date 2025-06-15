@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.project.catxi.chat.dto.ChatMessageRes;
+import com.project.catxi.chat.dto.ChatRoomInfoRes;
 import com.project.catxi.chat.dto.ChatRoomRes;
 import com.project.catxi.chat.dto.KickRequest;
 import com.project.catxi.chat.dto.RoomCreateReq;
@@ -145,6 +146,17 @@ public class ChatController {
 		String email = userDetails.getUsername();
 		Long roomId = chatRoomService.getMyChatRoomId(email);
 		return ResponseEntity.ok(ApiResponse.success(roomId));
+	}
+
+	@Operation(summary = "채팅방 정보 조회", description = "채팅방 ID를 통해 채팅방의 정보를 조회합니다.")
+	@GetMapping("/rooms/{roomId}")
+	public ResponseEntity<ApiResponse<ChatRoomInfoRes>> getChatRoomInfo(
+		@PathVariable Long roomId,
+		@AuthenticationPrincipal CustomUserDetails userDetails) {
+
+		String email = userDetails.getUsername();
+		ChatRoomInfoRes chatRoomRes = chatRoomService.getChatRoomInfo(roomId, email);
+		return ResponseEntity.ok(ApiResponse.success(chatRoomRes));
 	}
 
 }
