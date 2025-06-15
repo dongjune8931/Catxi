@@ -211,9 +211,15 @@ public class ChatRoomService {
 		}
 	}
 
-	public ChatRoomInfoRes getChatRoomInfo(Long roomId) {
+	public ChatRoomInfoRes getChatRoomInfo(Long roomId, String email) {
 		ChatRoom chatRoom = chatRoomRepository.findById(roomId)
 			.orElseThrow(() -> new CatxiException(ChatRoomErrorCode.CHATROOM_NOT_FOUND));
+
+		boolean isParticipant = isRoomParticipant(email, roomId);
+
+		if (!isParticipant) {
+			throw new CatxiException(ChatParticipantErrorCode.PARTICIPANT_NOT_FOUND);
+		}
 
 		List<String> participantEmails = chatParticipantRepository.findParticipantEmailsByChatRoom(chatRoom);
 		List<String> participantNicknames = chatParticipantRepository.findParticipantNicknamesByChatRoom(chatRoom);

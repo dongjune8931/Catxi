@@ -155,7 +155,7 @@ public class ChatController {
 		@AuthenticationPrincipal CustomUserDetails userDetails) {
 
 		String email = userDetails.getUsername();
-		ChatRoomInfoRes chatRoomRes = chatRoomService.getChatRoomInfo(roomId);
+		ChatRoomInfoRes chatRoomRes = chatRoomService.getChatRoomInfo(roomId, email);
 		return ResponseEntity.ok(ApiResponse.success(chatRoomRes));
 	}
 
