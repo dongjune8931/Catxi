@@ -56,7 +56,7 @@ public class ChatRoom extends BaseTimeEntity {
 	//matched된 시점 기록
 	//matched되었다 다시 waiting으로 되돌아갈 수 있는가?
 	public void matchedStatus(RoomStatus newStatus) {
-		if (status == RoomStatus.MATCHED && this.matchedAt == null) {
+		if (status == RoomStatus.READY_LOCKED && this.matchedAt == null) {
 			this.matchedAt = LocalDateTime.now();
 		}
 		this.status = newStatus;
