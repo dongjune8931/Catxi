@@ -12,6 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.project.catxi.chat.domain.ChatParticipant;
 import com.project.catxi.chat.domain.ChatRoom;
+import com.project.catxi.chat.dto.ChatRoomInfoRes;
 import com.project.catxi.chat.dto.ChatRoomRes;
 import com.project.catxi.chat.dto.RoomCreateReq;
 import com.project.catxi.chat.dto.RoomCreateRes;
@@ -210,7 +211,18 @@ public class ChatRoomService {
 		}
 	}
 
+	public ChatRoomInfoRes getChatRoomInfo(Long roomId) {
+		ChatRoom chatRoom = chatRoomRepository.findById(roomId)
+			.orElseThrow(() -> new CatxiException(ChatRoomErrorCode.CHATROOM_NOT_FOUND));
 
+		List<String> participantEmails = chatParticipantRepository.findParticipantEmailsByChatRoom(chatRoom);
+		List<String> participantNicknames = chatParticipantRepository.findParticipantNicknamesByChatRoom(chatRoom);
+
+		return ChatRoomInfoRes.from(chatRoom,
+			participantEmails.toArray(new String[0]),
+			participantNicknames.toArray(new String[0]));
+
+	}
 
 
 }
