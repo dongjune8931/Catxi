@@ -47,7 +47,7 @@ public class ReadyService {
 			.orElseThrow(() -> new CatxiException(ChatParticipantErrorCode.PARTICIPANT_NOT_FOUND));
 
 		if (!participant.isHost()) {
-			throw new CatxiException(ChatRoomErrorCode.NOT_OWNED_CHATROOM);
+			throw new CatxiException(ChatRoomErrorCode.NOT_HOST);
 		}
 
 		if (!room.getStatus().equals(RoomStatus.WAITING)) {
