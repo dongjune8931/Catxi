@@ -218,9 +218,7 @@ public class ChatRoomService {
 		List<String> participantEmails = chatParticipantRepository.findParticipantEmailsByChatRoom(chatRoom);
 		List<String> participantNicknames = chatParticipantRepository.findParticipantNicknamesByChatRoom(chatRoom);
 
-		return ChatRoomInfoRes.from(chatRoom,
-			participantEmails.toArray(new String[0]),
-			participantNicknames.toArray(new String[0]));
+		return ChatRoomInfoRes.from(chatRoom, participantEmails, participantNicknames);
 
 	}
 

@@ -1,6 +1,7 @@
 package com.project.catxi.chat.dto;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 import com.project.catxi.chat.domain.ChatRoom;
 import com.project.catxi.common.domain.Location;
@@ -12,13 +13,13 @@ public record ChatRoomInfoRes(
 	RoomStatus roomStatus, // 방상태
 	String hostEmail, // hostEmail
 	String hostNickname, // hostNickname
-	String[] participantEmails, // 참가자들 email
-	String[] participantNicknames, // 참가자들Nickname
+	List<String> participantEmails, // 참가자들 email
+	List<String> participantNicknames, // 참가자들Nickname
 	Location startPoint, // startPoint
 	Location endPoint, // endPioint
 	LocalDateTime departAt // departAt
 ) {
-	public static ChatRoomInfoRes from(ChatRoom chatRoom, String[] participantEmails, String[] participantNicknames) {
+	public static ChatRoomInfoRes from(ChatRoom chatRoom, List<String> participantEmails, List<String> participantNicknames) {
 		return new ChatRoomInfoRes(
 			(long) chatRoom.getParticipants().size(), // 현재 참가자수
 			chatRoom.getMaxCapacity(), // 모집 인원수
