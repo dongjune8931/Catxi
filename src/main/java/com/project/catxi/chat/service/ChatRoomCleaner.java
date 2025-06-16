@@ -1,5 +1,7 @@
 package com.project.catxi.chat.service;
 
+import static com.project.catxi.chat.domain.QChatRoom.*;
+
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -7,6 +9,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import com.project.catxi.chat.domain.ChatRoom;
+import com.project.catxi.chat.repository.ChatMessageRepository;
 import com.project.catxi.chat.repository.ChatRoomRepository;
 
 import lombok.RequiredArgsConstructor;
@@ -18,6 +21,7 @@ import lombok.extern.slf4j.Slf4j;
 public class ChatRoomCleaner {
 
 	private final ChatRoomRepository chatRoomRepository;
+	private final ChatMessageRepository chatMessageRepository;
 
 	@Scheduled(cron = "0 0 * * * *") // 매 정시마다 실행
 	public void deleteExpiredChatRooms() {
@@ -26,6 +30,10 @@ public class ChatRoomCleaner {
 
 		if (!expiredRooms.isEmpty()) {
 			log.info("만료된 채팅방 {}개 삭제 시작", expiredRooms.size());
+			for (ChatRoom expiredRoom : expiredRooms) {
+				chatMessageRepository.deleteAllByChatRoom(expiredRoom);
+			}
+			log.info("만료된 채팅방 메시지 삭제 완료");
 			chatRoomRepository.deleteAll(expiredRooms);
 			log.info("만료된 채팅방 삭제 완료");
 		} else {
