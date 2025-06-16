@@ -126,7 +126,7 @@ public class MemberController {
   @Operation(summary = "이용 기록 단건 조회")
   @GetMapping("/history/{historyId}")
   public ResponseEntity<MatchHistoryRes> getMatchHistoryById(
-      @PathVariable Long historyId, @AuthenticationPrincipal UserDetails userDetails
+      @PathVariable("historyId") Long historyId, @AuthenticationPrincipal UserDetails userDetails
   ) {
     String email = userDetails.getUsername();
     MatchHistoryRes res = matchHistoryService.getHistoryById(historyId, email);
