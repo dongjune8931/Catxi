@@ -52,9 +52,6 @@ spring:
           max-idle: 8
           min-idle: 0
 
-  jackson:
-    time-zone: Asia/Seoul
-
 server:
   port: 8080
 
