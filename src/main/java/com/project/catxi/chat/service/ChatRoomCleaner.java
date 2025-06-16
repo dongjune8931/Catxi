@@ -23,21 +23,12 @@ public class ChatRoomCleaner {
 	private final ChatRoomRepository chatRoomRepository;
 	private final ChatMessageRepository chatMessageRepository;
 
-	@Scheduled(cron = "0 0 * * * *") 
-	public void deleteExpiredChatRooms() {
-		LocalDateTime now = LocalDateTime.now();
-		List<ChatRoom> expiredRooms = chatRoomRepository.findByDepartAtBefore(now);
+	private final ChatRoomCleanupService cleanupService;
 
-		if (!expiredRooms.isEmpty()) {
-			log.info("만료된 채팅방 {}개 삭제 시작", expiredRooms.size());
-			for (ChatRoom expiredRoom : expiredRooms) {
-				chatMessageRepository.deleteAllByChatRoom(expiredRoom);
-			}
-			log.info("만료된 채팅방 메시지 삭제 완료");
-			chatRoomRepository.deleteAll(expiredRooms);
-			log.info("만료된 채팅방 삭제 완료");
-		} else {
-			log.info("삭제할 만료 채팅방 없음");
-		}
+	@Scheduled(cron = "0 24 * * * *", zone = "Asia/Seoul")
+	public void runCleanup() {
+		log.info("🧹 [ChatRoomCleaner] 스케줄러 실행됨");
+		cleanupService.deleteExpiredChatRooms(); // ✨ 트랜잭션 적용 메서드 호출
+
 	}
 }
