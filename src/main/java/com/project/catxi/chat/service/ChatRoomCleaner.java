@@ -23,8 +23,7 @@ public class ChatRoomCleaner {
 	private final ChatRoomRepository chatRoomRepository;
 	private final ChatMessageRepository chatMessageRepository;
 
-	@Scheduled(cron = "0 17 * * * *") // 매 정시마다 실행
-	@Transactional
+	@Scheduled(cron = "0 0 * * * *") 
 	public void deleteExpiredChatRooms() {
 		LocalDateTime now = LocalDateTime.now();
 		List<ChatRoom> expiredRooms = chatRoomRepository.findByDepartAtBefore(now);
