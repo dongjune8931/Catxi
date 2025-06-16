@@ -69,9 +69,10 @@ public class MatchHistoryService {
     Member user = memberRepository.findByEmail(email)
         .orElseThrow(() -> new CatxiException(MemberErrorCode.MEMBER_NOT_FOUND));
 
-    Slice<MatchHistory> histories = matchHistoryRepository.findAllByUserOrderByCreatedAtDesc(user, pageable);
+    String nickname = user.getNickname();
+    Slice<MatchHistory> histories = matchHistoryRepository.findHistoriesByUserOrFella(email, nickname, pageable);
 
-    return histories.map(MemberConverter::toSingleResDTO);
+    return histories.map(history->MemberConverter.toAllResDTO(history,nickname));
   }
 
   //매치 히스토리 저장 : 채팅방, 채팅내역, 채팅 참가자 제거

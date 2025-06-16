@@ -4,6 +4,7 @@ import com.project.catxi.member.dto.MatchHistoryRes;
 import com.project.catxi.member.dto.MemberProfileRes;
 import com.project.catxi.member.domain.MatchHistory;
 import com.project.catxi.member.domain.Member;
+import java.util.ArrayList;
 import java.util.List;
 import org.springframework.stereotype.Component;
 
@@ -25,6 +26,28 @@ public class MemberConverter {
         history.getStartPoint().name(),
         history.getEndPoint().name(),
         maskFellas(history.getFellas())
+    );
+  }
+
+  public static MatchHistoryRes toAllResDTO(MatchHistory history, String CurrentUserNickname) {
+
+    List<String> total = new ArrayList<>();
+    total.add(history.getUser().getNickname());
+    total.addAll(history.getFellas());
+
+    // 중복 제거 (현재 유저 제외)
+    List<String> others = total.stream()
+        .distinct()
+        .filter(name -> !name.equals(CurrentUserNickname))  // 로그인한 사용자 제외
+        .map(MemberConverter::maskName)
+        .toList();
+
+    return new MatchHistoryRes(
+        history.getId(),
+        history.getMatchedAt(),
+        history.getStartPoint().name(),
+        history.getEndPoint().name(),
+        others
     );
   }
 

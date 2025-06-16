@@ -147,7 +147,7 @@ public class MemberController {
   @GetMapping("/history/all")
   public ResponseEntity<Slice<MatchHistoryRes>> getMyMatchHistoryWithScroll(
       @AuthenticationPrincipal UserDetails userDetails,
-      @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable
+      @PageableDefault(size = 2, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable
   ) {
     String email = userDetails.getUsername();
     Slice<MatchHistoryRes> slice = matchHistoryService.getScrollHistory(email, pageable);
