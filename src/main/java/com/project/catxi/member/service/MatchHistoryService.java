@@ -15,6 +15,7 @@ import com.project.catxi.member.domain.MatchHistory;
 import com.project.catxi.member.domain.Member;
 import com.project.catxi.member.repository.MatchHistoryRepository;
 import com.project.catxi.member.repository.MemberRepository;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;
 import org.springframework.security.access.AccessDeniedException;
@@ -29,6 +30,7 @@ import lombok.RequiredArgsConstructor;
 @Service
 @Transactional
 @RequiredArgsConstructor
+@Slf4j
 public class MatchHistoryService {
 
   private final MatchHistoryRepository matchHistoryRepository;
@@ -49,7 +51,7 @@ public class MatchHistoryService {
     if (!history.getUser().equals(user)) {
       throw new AccessDeniedException("본인의 이력만 조회할 수 있습니다.");
     }
-
+    log.info("Fellas: {}", history.getFellas());
     return MemberConverter.toSingleResDTO(history);
   }
 

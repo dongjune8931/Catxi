@@ -36,9 +36,8 @@ public class MemberConverter {
 
   private static String maskName(String name) {
     if (name == null || name.isBlank()) return "";
-    return name.length() >= 2
-        ? name.substring(0, 1) + "*".repeat(name.length() - 1)
-        : name;
+    if (name.length() == 1) return name;
+    return name.charAt(0) + "*".repeat(name.length() - 1);
   }
 
 }
