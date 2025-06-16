@@ -124,7 +124,7 @@ public class ChatRoomService {
 			throw new CatxiException(ChatRoomErrorCode.INVALID_CHATROOM_PARAMETER);
 
 		long current = chatParticipantRepository.countByChatRoom(chatRoom);
-		if (current >= chatRoom.getMaxCapacity())
+		if (current >= chatRoom.getMaxCapacity() + 1)
 			throw new CatxiException(ChatRoomErrorCode.CHATROOM_FULL);
 
 		ChatParticipant chatParticipant = ChatParticipant.builder()
