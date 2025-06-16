@@ -58,7 +58,7 @@ public class DiscordWebhookService {
                         접수 시각    : %s
                         ```""",
                 report.getId(),
-                report.getChatRoom().getRoomId(),
+                report.getRoomId(),
                 report.getReporter().getMembername(),
                 report.getReporter().getNickname(),
                 report.getReporter().getStudentNo(),

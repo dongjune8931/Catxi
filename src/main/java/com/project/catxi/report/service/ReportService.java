@@ -31,6 +31,7 @@ public class ReportService {
         Member reporter = memberRepository.findByEmail(reporterEmail)
                 .orElseThrow(() -> new ReportExceptionHandler(CommonErrorCode.USER_NOT_FOUND));
 
+        // ChatRoom 존재 여부만 확인
         ChatRoom chatRoom = chatRoomRepository.findById(roomId)
                 .orElseThrow(() -> new ReportExceptionHandler(CommonErrorCode.RESOURCE_NOT_FOUND));
 
@@ -40,14 +41,13 @@ public class ReportService {
         validateReport(chatRoom, reporter, reportedMember);
 
         Report report = Report.builder()
-                .chatRoom(chatRoom)
+                .roomId(roomId) // ChatRoom 엔티티 대신 roomId 직접 저장
                 .reporter(reporter)
                 .reportedMember(reportedMember)
                 .reason(req.reason())
                 .build();
 
         Report savedReport = reportRepository.save(report);
-
         discordWebhookService.sendReportNotification(savedReport);
 
         return ReportCreateRes.from(savedReport);

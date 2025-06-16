@@ -9,6 +9,6 @@ import java.util.Optional;
 
 public interface ReportRepository extends JpaRepository<Report, Long> {
 
-    @Query("SELECT r FROM Report r WHERE r.chatRoom.roomId = :roomId AND r.reporter.id = :reporterId AND r.reportedMember.id = :reportedMemberId")
+    @Query("SELECT r FROM Report r WHERE r.roomId = :roomId AND r.reporter.id = :reporterId AND r.reportedMember.id = :reportedMemberId")
     Optional<Report> findDuplicateReport(@Param("roomId") Long roomId, @Param("reporterId") Long reporterId, @Param("reportedMemberId") Long reportedMemberId);
 }

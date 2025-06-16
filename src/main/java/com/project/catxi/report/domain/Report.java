@@ -1,6 +1,5 @@
 package com.project.catxi.report.domain;
 
-import com.project.catxi.chat.domain.ChatRoom;
 import com.project.catxi.common.domain.BaseTimeEntity;
 import com.project.catxi.member.domain.Member;
 import jakarta.persistence.*;
@@ -20,9 +19,8 @@ public class Report extends BaseTimeEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "room_id", referencedColumnName = "roomId")
-    private ChatRoom chatRoom;
+    @Column(name = "room_id", nullable = false)
+    private Long roomId;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "reporter_id")
