@@ -1,7 +1,7 @@
 spring:
 
   datasource:
-    url: jdbc:mysql://${HOST}:${PORT}/catxi?allowPublicKeyRetrieval=true&useSSL=false
+    url: jdbc:mysql://${HOST}:${PORT}/catxi?allowPublicKeyRetrieval=true&useSSL=false&serverTimezone=Asia/Seoul
     username: ${USER}
     password: ${PW}
     driver-class-name: com.mysql.cj.jdbc.Driver
