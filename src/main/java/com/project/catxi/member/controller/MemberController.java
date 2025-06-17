@@ -133,15 +133,15 @@ public class MemberController {
     return ResponseEntity.ok(res);
   }
 
-  @Operation(summary = "이용 기록 최신 2개 조회")
-  @GetMapping("/history/recent")
-  public ResponseEntity<List<MatchHistoryRes>> getRecentHistorySummary(
-      @AuthenticationPrincipal UserDetails userDetails
-  ) {
-    String email = userDetails.getUsername();
-    List<MatchHistoryRes> summaries = matchHistoryService.getRecentHistoryTop2(email);
-    return ResponseEntity.ok(summaries);
-  }
+//  @Operation(summary = "이용 기록 최신 2개 조회")
+//  @GetMapping("/history/recent")
+//  public ResponseEntity<List<MatchHistoryRes>> getRecentHistorySummary(
+//      @AuthenticationPrincipal UserDetails userDetails
+//  ) {
+//    String email = userDetails.getUsername();
+//    List<MatchHistoryRes> summaries = matchHistoryService.getRecentHistoryTop2(email);
+//    return ResponseEntity.ok(summaries);
+//  }
 
   @Operation(summary = "이용 기록 전부 조회")
   @GetMapping("/history/all")

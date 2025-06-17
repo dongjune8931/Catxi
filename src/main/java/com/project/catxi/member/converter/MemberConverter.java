@@ -6,9 +6,11 @@ import com.project.catxi.member.domain.MatchHistory;
 import com.project.catxi.member.domain.Member;
 import java.util.ArrayList;
 import java.util.List;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 @Component
+@Slf4j
 public class MemberConverter {
 
   public static MemberProfileRes toMemberProfileDTO(Member member) {
@@ -19,48 +21,53 @@ public class MemberConverter {
   }
 
 
-  public static MatchHistoryRes toSingleResDTO(MatchHistory history) {
+  public static MatchHistoryRes toSingleResDTO(MatchHistory history, String membername) {
     return new MatchHistoryRes(
         history.getId(),
         history.getMatchedAt(),
         history.getStartPoint().name(),
         history.getEndPoint().name(),
-        maskFellas(history.getFellas())
+        getFellaUsers(history.getFellas(), membername)
     );
   }
 
-  public static MatchHistoryRes toAllResDTO(MatchHistory history, String CurrentUserNickname) {
-
-    List<String> total = new ArrayList<>();
-    total.add(history.getUser().getNickname());
-    total.addAll(history.getFellas());
-
-    // 중복 제거 (현재 유저 제외)
-    List<String> others = total.stream()
-        .distinct()
-        .filter(name -> !name.equals(CurrentUserNickname))  // 로그인한 사용자 제외
-        .map(MemberConverter::maskName)
-        .toList();
+  public static MatchHistoryRes toAllResDTO(MatchHistory history, String membername) {
 
     return new MatchHistoryRes(
         history.getId(),
         history.getMatchedAt(),
         history.getStartPoint().name(),
         history.getEndPoint().name(),
-        others
+        getFellaUsers(history.getFellas(), membername)
     );
   }
 
+  // 마스킹 처리 메서드
+  private static String maskName(String name) {
+    if (name == null || name.isBlank()) return "";
+    if (name.length() == 1) return name;
+    return name.charAt(0) + "*".repeat(name.length() - 1);
+  }
+
+  // fellas 반환 (필터링 미포함)
   private static List<String> maskFellas(List<String> fellas) {
     return fellas.stream()
         .map(MemberConverter::maskName)
         .toList();
   }
 
-  private static String maskName(String name) {
-    if (name == null || name.isBlank()) return "";
-    if (name.length() == 1) return name;
-    return name.charAt(0) + "*".repeat(name.length() - 1);
+  // fellas - 조회 기준 user (마스킹 처리 포함)
+  private static List<String> getFellaUsers(List<String> fellas, String membername) {
+    log.info("제외할 이름: {}", membername);
+    log.info("Fellas: {}", fellas);
+
+    List<String> result = fellas.stream()
+        .filter(name -> !name.equals(membername))
+        .map(MemberConverter::maskName)
+        .toList();
+
+    log.info("필터링 후 결과: {}", result);
+    return result;
   }
 
 }

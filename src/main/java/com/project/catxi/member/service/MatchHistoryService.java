@@ -51,28 +51,29 @@ public class MatchHistoryService {
     if (!history.getUser().equals(user)) {
       throw new AccessDeniedException("본인의 이력만 조회할 수 있습니다.");
     }
+    log.info("로그인한 사용자 이름: {}", user.getMembername());
     log.info("Fellas: {}", history.getFellas());
-    return MemberConverter.toSingleResDTO(history);
+    return MemberConverter.toSingleResDTO(history,user.getMembername());
   }
+  //최근 내역 2건 조회용
+  //  public List<MatchHistoryRes> getRecentHistoryTop2(String email) {
+  //    Member user = memberRepository.findByEmail(email)
+  //        .orElseThrow(() -> new CatxiException(MemberErrorCode.MEMBER_NOT_FOUND));
+  //
+  //    return matchHistoryRepository.findTop2ByUserOrderByCreatedAtDesc(user).stream()
+  //        .map(MemberConverter::toSingleResDTO)
+  //        .toList();
+  //  }
 
-  //최근 내역 조회용
-  public List<MatchHistoryRes> getRecentHistoryTop2(String email) {
-    Member user = memberRepository.findByEmail(email)
-        .orElseThrow(() -> new CatxiException(MemberErrorCode.MEMBER_NOT_FOUND));
-
-    return matchHistoryRepository.findTop2ByUserOrderByCreatedAtDesc(user).stream()
-        .map(MemberConverter::toSingleResDTO)
-        .toList();
-  }
-
+  //전체 내역 조회용
   public Slice<MatchHistoryRes> getScrollHistory(String email, Pageable pageable) {
     Member user = memberRepository.findByEmail(email)
         .orElseThrow(() -> new CatxiException(MemberErrorCode.MEMBER_NOT_FOUND));
 
-    String nickname = user.getNickname();
-    Slice<MatchHistory> histories = matchHistoryRepository.findHistoriesByUserOrFella(email, nickname, pageable);
+    String membername = user.getMembername();
+    Slice<MatchHistory> histories = matchHistoryRepository.findHistoriesByUserOrFella(email, membername, pageable);
 
-    return histories.map(history->MemberConverter.toAllResDTO(history,nickname));
+    return histories.map(history->MemberConverter.toAllResDTO(history,membername));
   }
 
   //매치 히스토리 저장 : 채팅방, 채팅내역, 채팅 참가자 제거
