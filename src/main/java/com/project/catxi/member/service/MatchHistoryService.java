@@ -51,8 +51,6 @@ public class MatchHistoryService {
     if (!history.getUser().equals(user)) {
       throw new AccessDeniedException("본인의 이력만 조회할 수 있습니다.");
     }
-    log.info("로그인한 사용자 이름: {}", user.getMembername());
-    log.info("Fellas: {}", history.getFellas());
     return MemberConverter.toSingleResDTO(history,user.getMembername());
   }
   //최근 내역 2건 조회용

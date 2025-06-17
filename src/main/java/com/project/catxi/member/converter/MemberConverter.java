@@ -58,15 +58,15 @@ public class MemberConverter {
 
   // fellas - 조회 기준 user (마스킹 처리 포함)
   private static List<String> getFellaUsers(List<String> fellas, String membername) {
-    log.info("제외할 이름: {}", membername);
-    log.info("Fellas: {}", fellas);
+    log.info("로그인 유저 : {}", membername);
+    log.info("Fellas : {}", fellas);
 
     List<String> result = fellas.stream()
         .filter(name -> !name.equals(membername))
         .map(MemberConverter::maskName)
         .toList();
 
-    log.info("필터링 후 결과: {}", result);
+    log.info("출력 Fellas: {}", result);
     return result;
   }
 
