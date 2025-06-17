@@ -21,15 +21,15 @@ public class ReportController {
         this.reportService = reportService;
     }
 
-    @PostMapping("/rooms/{roomId}/report/{targetUserId}")
+    @PostMapping("/rooms/{roomId}/report/{targetUserEmail}")
     public ResponseEntity<ApiResponse<ReportCreateRes>> reportUser(
-            @PathVariable Long roomId,
-            @PathVariable Long targetUserId,
-            @Valid @RequestBody ReportCreateReq request,
-            @AuthenticationPrincipal CustomUserDetails userDetails) {
+        @PathVariable Long roomId,
+        @PathVariable String targetUserEmail,
+        @Valid @RequestBody ReportCreateReq request,
+        @AuthenticationPrincipal CustomUserDetails userDetails) {
 
         String reporterEmail = userDetails.getUsername();
-        ReportCreateRes response = reportService.createReport(roomId, targetUserId, reporterEmail, request);
+        ReportCreateRes response = reportService.createReport(roomId, targetUserEmail, reporterEmail, request);
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.created(response));
     }
 }

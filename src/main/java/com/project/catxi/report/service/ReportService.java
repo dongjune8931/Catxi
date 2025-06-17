@@ -27,25 +27,24 @@ public class ReportService {
     private final DiscordWebhookService discordWebhookService;
 
     @Transactional
-    public ReportCreateRes createReport(Long roomId, Long targetUserId, String reporterEmail, ReportCreateReq req) {
+    public ReportCreateRes createReport(Long roomId, String targetUserEmail, String reporterEmail, ReportCreateReq req) {
         Member reporter = memberRepository.findByEmail(reporterEmail)
-                .orElseThrow(() -> new ReportExceptionHandler(CommonErrorCode.USER_NOT_FOUND));
+            .orElseThrow(() -> new ReportExceptionHandler(CommonErrorCode.USER_NOT_FOUND));
 
-        // ChatRoom 존재 여부만 확인
         ChatRoom chatRoom = chatRoomRepository.findById(roomId)
-                .orElseThrow(() -> new ReportExceptionHandler(CommonErrorCode.RESOURCE_NOT_FOUND));
+            .orElseThrow(() -> new ReportExceptionHandler(CommonErrorCode.RESOURCE_NOT_FOUND));
 
-        Member reportedMember = memberRepository.findById(targetUserId)
-                .orElseThrow(() -> new ReportExceptionHandler(CommonErrorCode.RESOURCE_NOT_FOUND));
+        Member reportedMember = memberRepository.findByEmail(targetUserEmail)
+            .orElseThrow(() -> new ReportExceptionHandler(CommonErrorCode.RESOURCE_NOT_FOUND));
 
         validateReport(chatRoom, reporter, reportedMember);
 
         Report report = Report.builder()
-                .roomId(roomId) // ChatRoom 엔티티 대신 roomId 직접 저장
-                .reporter(reporter)
-                .reportedMember(reportedMember)
-                .reason(req.reason())
-                .build();
+            .roomId(roomId)
+            .reporter(reporter)
+            .reportedMember(reportedMember)
+            .reason(req.reason())
+            .build();
 
         Report savedReport = reportRepository.save(report);
         discordWebhookService.sendReportNotification(savedReport);
@@ -67,8 +66,8 @@ public class ReportService {
         }
 
         reportRepository.findDuplicateReport(room.getRoomId(), reporter.getId(), reportedMember.getId())
-                .ifPresent(report -> {
-                    throw new ReportExceptionHandler(ReportErrorCode.ALREADY_REPORTED);
-                });
+            .ifPresent(report -> {
+                throw new ReportExceptionHandler(ReportErrorCode.ALREADY_REPORTED);
+            });
     }
 }
