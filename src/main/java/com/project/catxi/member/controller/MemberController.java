@@ -126,28 +126,28 @@ public class MemberController {
   @Operation(summary = "이용 기록 단건 조회")
   @GetMapping("/history/{historyId}")
   public ResponseEntity<MatchHistoryRes> getMatchHistoryById(
-      @PathVariable Long historyId, @AuthenticationPrincipal UserDetails userDetails
+      @PathVariable("historyId") Long historyId, @AuthenticationPrincipal UserDetails userDetails
   ) {
     String email = userDetails.getUsername();
     MatchHistoryRes res = matchHistoryService.getHistoryById(historyId, email);
     return ResponseEntity.ok(res);
   }
 
-  @Operation(summary = "이용 기록 최신 2개 조회")
-  @GetMapping("/history/recent")
-  public ResponseEntity<List<MatchHistoryRes>> getRecentHistorySummary(
-      @AuthenticationPrincipal UserDetails userDetails
-  ) {
-    String email = userDetails.getUsername();
-    List<MatchHistoryRes> summaries = matchHistoryService.getRecentHistoryTop2(email);
-    return ResponseEntity.ok(summaries);
-  }
+//  @Operation(summary = "이용 기록 최신 2개 조회")
+//  @GetMapping("/history/recent")
+//  public ResponseEntity<List<MatchHistoryRes>> getRecentHistorySummary(
+//      @AuthenticationPrincipal UserDetails userDetails
+//  ) {
+//    String email = userDetails.getUsername();
+//    List<MatchHistoryRes> summaries = matchHistoryService.getRecentHistoryTop2(email);
+//    return ResponseEntity.ok(summaries);
+//  }
 
   @Operation(summary = "이용 기록 전부 조회")
   @GetMapping("/history/all")
   public ResponseEntity<Slice<MatchHistoryRes>> getMyMatchHistoryWithScroll(
       @AuthenticationPrincipal UserDetails userDetails,
-      @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable
+      @PageableDefault(size = 2, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable
   ) {
     String email = userDetails.getUsername();
     Slice<MatchHistoryRes> slice = matchHistoryService.getScrollHistory(email, pageable);

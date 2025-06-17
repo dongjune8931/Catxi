@@ -15,6 +15,7 @@ import com.project.catxi.member.domain.MatchHistory;
 import com.project.catxi.member.domain.Member;
 import com.project.catxi.member.repository.MatchHistoryRepository;
 import com.project.catxi.member.repository.MemberRepository;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;
 import org.springframework.security.access.AccessDeniedException;
@@ -29,6 +30,7 @@ import lombok.RequiredArgsConstructor;
 @Service
 @Transactional
 @RequiredArgsConstructor
+@Slf4j
 public class MatchHistoryService {
 
   private final MatchHistoryRepository matchHistoryRepository;
@@ -49,27 +51,27 @@ public class MatchHistoryService {
     if (!history.getUser().equals(user)) {
       throw new AccessDeniedException("본인의 이력만 조회할 수 있습니다.");
     }
-
-    return MemberConverter.toSingleResDTO(history);
+    return MemberConverter.toSingleResDTO(history,user.getMembername());
   }
+  //최근 내역 2건 조회용
+  //  public List<MatchHistoryRes> getRecentHistoryTop2(String email) {
+  //    Member user = memberRepository.findByEmail(email)
+  //        .orElseThrow(() -> new CatxiException(MemberErrorCode.MEMBER_NOT_FOUND));
+  //
+  //    return matchHistoryRepository.findTop2ByUserOrderByCreatedAtDesc(user).stream()
+  //        .map(MemberConverter::toSingleResDTO)
+  //        .toList();
+  //  }
 
-  //최근 내역 조회용
-  public List<MatchHistoryRes> getRecentHistoryTop2(String email) {
-    Member user = memberRepository.findByEmail(email)
-        .orElseThrow(() -> new CatxiException(MemberErrorCode.MEMBER_NOT_FOUND));
-
-    return matchHistoryRepository.findTop2ByUserOrderByCreatedAtDesc(user).stream()
-        .map(MemberConverter::toSingleResDTO)
-        .toList();
-  }
-
+  //전체 내역 조회용
   public Slice<MatchHistoryRes> getScrollHistory(String email, Pageable pageable) {
     Member user = memberRepository.findByEmail(email)
         .orElseThrow(() -> new CatxiException(MemberErrorCode.MEMBER_NOT_FOUND));
 
-    Slice<MatchHistory> histories = matchHistoryRepository.findAllByUserOrderByCreatedAtDesc(user, pageable);
+    String membername = user.getMembername();
+    Slice<MatchHistory> histories = matchHistoryRepository.findHistoriesByUserOrFella(email, membername, pageable);
 
-    return histories.map(MemberConverter::toSingleResDTO);
+    return histories.map(history->MemberConverter.toAllResDTO(history,membername));
   }
 
   //매치 히스토리 저장 : 채팅방, 채팅내역, 채팅 참가자 제거

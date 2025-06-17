@@ -21,6 +21,7 @@ spring:
     header: authorization
     secret: ${SECRET_KEY}
     access-token-validity-in-seconds: 3600
+    refresh-token-validity-in-seconds:  604800
 
   security:
     oauth2:

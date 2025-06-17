@@ -59,4 +59,21 @@ public class JwtUtill {
     parseJwt(token);
   }
 
+  public boolean validateToken(String token) {
+    try {
+      Claims claims = parseJwt(token);
+      return !claims.getExpiration().before(new Date());
+    } catch (Exception e) {
+      return false;
+    }
+  }
+
+  public boolean isRefreshToken(String token) {
+    try {
+      return "refresh".equals(parseJwt(token).get("type", String.class));
+    } catch (Exception e) {
+      return false;
+    }
+  }
+
 }
