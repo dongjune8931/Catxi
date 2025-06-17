@@ -29,7 +29,7 @@ spring:
             client-name: kakao
             client-id: ${KAKAO_CLIENT_ID}
             client-secret: ${KAKAO_CLIENT_SECRET}
-            redirect-uri: http://localhost:8080/auth/kakao/callback
+            redirect-uri: https://catxi-university-taxi-b0936.web.app/callback/kakao
             authorization-grant-type: authorization_code
             scope: profile_nickname,account_email
             client-authentication-method: client_secret_post
