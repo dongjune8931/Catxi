@@ -110,7 +110,7 @@ public class OAuthController {
   @Operation(summary = "AccessToken 재발급")
   @PostMapping("/reissue")
   public ResponseEntity<?> reissue(@RequestHeader("refresh") String refreshToken) {
-    if (!jwtUtill.validateToken(refreshToken) || !jwtUtill.isRefreshToken(refreshToken)) {
+    if (!jwtUtill.validateToken(refreshToken) || !jwtUtill.isRefreshToken(claims)) {
       throw new CatxiException(MemberErrorCode.MEMBER_NOT_FOUND);
     }
 

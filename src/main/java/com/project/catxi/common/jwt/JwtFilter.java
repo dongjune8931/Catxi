@@ -7,6 +7,7 @@ import com.project.catxi.common.domain.MemberStatus;
 import com.project.catxi.member.dto.CustomUserDetails;
 import com.project.catxi.member.domain.Member;
 import com.project.catxi.member.repository.MemberRepository;
+import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -28,56 +29,61 @@ public class JwtFilter extends OncePerRequestFilter {
   private final JwtConfig jwtConfig;
   private final MemberRepository memberRepository;
 
+  private static final String AUTH_HEADER = "Authorization";
+  private static final String BEARER_PREFIX = "Bearer";
+
+
   @Override
   protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
 
     String uri = request.getRequestURI();
-    String method = request.getMethod();
 
-    log.info("JwtFilter 진입 - Method: {}, URI: {}", method, uri);
-
-    // /connect, /auth/login/kakao로 시작하는 주소 예외처리
+    // /connect, /auth/login/kakao로 시작하는 주소 JWT 검증 예외처리
     if (uri.startsWith("/connect") || uri.equals("/auth/login/kakao")) {
       log.info("JWT 검증 제외 경로로 통과: {}", uri);
       filterChain.doFilter(request, response);
       return;
     }
 
-    //토큰 검증
-    // Request에서 Authorization 헤더를 찾음
-    String authorization = request.getHeader("Authorization");
-
-    // Authorization 헤더가 없거나 Bearer 스킴 없다면
-    if(authorization == null || !authorization.startsWith("Bearer ")) {
+    //토큰 검증(헤더 확인)
+    //Request에서 Authorization 헤더를 찾음
+    String authorization = request.getHeader(AUTH_HEADER);
+    if(authorization == null || !authorization.startsWith(BEARER_PREFIX)) {
       log.info("Token null");
-      //request 필터 종료하고 다음 필터로 넘겨줌
       filterChain.doFilter(request, response);
       return;
     }
 
-    // 토큰 분리 -> 토큰에 대한 소멸시간 검증
-    String accessToken = authorization.substring(7).trim();
+    //토큰 추출 Prefix 제거
+    String accessToken = authorization.substring(BEARER_PREFIX.length()).trim();
+
+    //Claims 한 번에 전부 파싱
+    Claims claims;
+    try {
+      claims = jwtUtill.parseJwt(accessToken);
+    } catch (ExpiredJwtException e) {
+      throw new MemberHandler(MemberErrorCode.ACCESS_EXPIRED);
+    } catch (Exception e) {
+      response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+      response.getWriter().print("유효하지 않은 토큰입니다");
+      return;
+    }
 
     // 토큰 만료 여부 확인
-    try {
-      log.info("토큰 존재 검증 시작");
-      jwtUtill.isExpired(accessToken);
-    } catch (ExpiredJwtException e) {
+    if (jwtUtill.isExpired(claims)) {
       throw new MemberHandler(MemberErrorCode.ACCESS_EXPIRED);
     }
 
     // 토큰이 accessToken인지 확인
-    String category = jwtUtill.getType(accessToken);
-    if (!category.equals("access")) {
+    String category = jwtUtill.getType(claims);
+    if (!"access".equals(category)) {
       response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-      response.getWriter().print("invalid access token");
+      response.getWriter().print("AccessToken이 아닙니다");
       return;
     }
 
-    // jwtUtill 객체에서 username 받아옴
-    String email = jwtUtill.getEmail(accessToken);
-
-    // 실제 DB에서 회원 정보 조회 및 상태 확인
+    // jwtUtill 객체에서 username 받아와 DB에서 회원 확인 및 상태 점검
+    String email = jwtUtill.getEmail(claims);
     Member member = memberRepository.findByEmail(email).orElse(null);
     if (member == null) {
       response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);

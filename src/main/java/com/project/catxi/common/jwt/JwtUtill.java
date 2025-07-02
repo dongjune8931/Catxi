@@ -39,7 +39,7 @@ public class JwtUtill {
   }
 
   //Jwt 토큰 파싱 -> Claim 객체 반환
-  private Claims parseJwt(String token) {
+  public Claims parseJwt(String token) {
     return Jwts.parser()
         .verifyWith(secretKey)
         .build()
@@ -47,33 +47,20 @@ public class JwtUtill {
         .getPayload();
   }
 
-  public String getType(String token) {
-    return parseJwt(token).get("type", String.class);
+  public String getType(Claims claims) {
+    return claims.get("type", String.class);
   }
 
-  public String getEmail(String token) {
-    return parseJwt(token).get("email", String.class);
+  public String getEmail(Claims claims) {
+    return claims.get("email", String.class);
   }
 
-  public void isExpired(String token) throws ExpiredJwtException {
-    parseJwt(token);
+  public boolean isExpired(Claims claims) {
+    return claims.getExpiration().before(new Date());
   }
 
-  public boolean validateToken(String token) {
-    try {
-      Claims claims = parseJwt(token);
-      return !claims.getExpiration().before(new Date());
-    } catch (Exception e) {
-      return false;
-    }
-  }
-
-  public boolean isRefreshToken(String token) {
-    try {
-      return "refresh".equals(parseJwt(token).get("type", String.class));
-    } catch (Exception e) {
-      return false;
-    }
+  public boolean isRefreshToken(Claims claims) {
+    return "refresh".equals(claims.get("type", String.class));
   }
 
 }
