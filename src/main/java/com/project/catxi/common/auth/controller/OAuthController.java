@@ -107,18 +107,18 @@ public class OAuthController {
     return ResponseEntity.ok(isDuplicate);
   }
 
-  @Operation(summary = "AccessToken 재발급")
-  @PostMapping("/reissue")
-  public ResponseEntity<?> reissue(@RequestHeader("refresh") String refreshToken) {
-    if (!jwtUtill.validateToken(refreshToken) || !jwtUtill.isRefreshToken(claims)) {
-      throw new CatxiException(MemberErrorCode.MEMBER_NOT_FOUND);
-    }
-
-    String email = jwtUtill.getEmail(refreshToken);
-    String newAccessToken = jwtUtill.createJwt("access", email, "ROLE_USER", jwtConfig.getAccessTokenValidityInSeconds());
-
-    return ResponseEntity.ok().header("access", newAccessToken).build();
-  }
+//  @Operation(summary = "AccessToken 재발급")
+//  @PostMapping("/reissue")
+//  public ResponseEntity<?> reissue(@RequestHeader("refresh") String refreshToken) {
+//    if (!jwtUtill.validateToken(refreshToken) || !jwtUtill.isRefreshToken(claims)) {
+//      throw new CatxiException(MemberErrorCode.MEMBER_NOT_FOUND);
+//    }
+//
+//    String email = jwtUtill.getEmail(refreshToken);
+//    String newAccessToken = jwtUtill.createJwt("access", email, "ROLE_USER", jwtConfig.getAccessTokenValidityInSeconds());
+//
+//    return ResponseEntity.ok().header("access", newAccessToken).build();
+//  }
 
 
 }
