@@ -28,7 +28,7 @@ public class JwtUtill {
 
     return Jwts.builder()
         //이메일을 주 키로 사용하기 위함
-        .setSubject(email)
+        .claim("sub",email)
         .claim("type", type) //TokenType
         .claim("email", email)
         .claim("role", role)
