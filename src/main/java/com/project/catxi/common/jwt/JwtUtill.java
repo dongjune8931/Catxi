@@ -1,5 +1,6 @@
 package com.project.catxi.common.jwt;
 
+import com.project.catxi.common.config.JwtConfig;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.Jwts;
@@ -14,11 +15,13 @@ import org.springframework.stereotype.Component;
 @Component
 public class JwtUtill {
 
-  private SecretKey secretKey;
+  private final SecretKey secretKey;
 
-  public JwtUtill(@Value("${SECRET_KEY}")String secret){
-    // key는 객체 타입으로 저장 -> 키를 암호화
-    secretKey = new SecretKeySpec(secret.getBytes(StandardCharsets.UTF_8), Jwts.SIG.HS256.key().build().getAlgorithm());
+  public JwtUtill(JwtConfig jwtConfig) {
+    this.secretKey = new SecretKeySpec(
+        jwtConfig.getSecret().getBytes(StandardCharsets.UTF_8),
+        Jwts.SIG.HS256.key().build().getAlgorithm()
+    );
   }
 
   public String createJwt(String type,String email, String role, Long expiredMs) {
@@ -35,6 +38,7 @@ public class JwtUtill {
         .compact();
   }
 
+  //Jwt 토큰 파싱 -> Claim 객체 반환
   private Claims parseJwt(String token) {
     return Jwts.parser()
         .verifyWith(secretKey)
@@ -43,12 +47,8 @@ public class JwtUtill {
         .getPayload();
   }
 
-  public String getCategory(String token) {
+  public String getType(String token) {
     return parseJwt(token).get("type", String.class);
-  }
-
-  public String getMembername(String token) {
-    return parseJwt(token).get("membername", String.class);
   }
 
   public String getEmail(String token) {

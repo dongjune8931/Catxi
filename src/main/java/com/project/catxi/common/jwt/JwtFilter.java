@@ -67,7 +67,7 @@ public class JwtFilter extends OncePerRequestFilter {
     }
 
     // 토큰이 accessToken인지 확인
-    String category = jwtUtill.getCategory(accessToken);
+    String category = jwtUtill.getType(accessToken);
     if (!category.equals("access")) {
       response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
       response.getWriter().print("invalid access token");
