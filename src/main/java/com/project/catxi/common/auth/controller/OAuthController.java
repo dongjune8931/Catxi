@@ -90,15 +90,15 @@ public class OAuthController {
     }
   }
 
-    // 카카오 회원가입
+  // 카카오 회원가입
 
-    // 추가 회원가입 단계
-    @PatchMapping("/signUp/catxi")
-    public ResponseEntity<?> completeSignup (@RequestBody @Valid KakaoDTO.CatxiSignUp dto, @AuthenticationPrincipal CustomUserDetails userDetails){
+  // 추가 회원가입 단계
+  @PatchMapping("/signUp/catxi")
+  public ResponseEntity<?> completeSignup (@RequestBody @Valid KakaoDTO.CatxiSignUp dto, @AuthenticationPrincipal CustomUserDetails userDetails){
 
-      customOAuth2UserService.catxiSignup(userDetails.getUsername(), dto);
-      return ResponseEntity.ok("추가 회원정보 등록 완료");
-    }
+    customOAuth2UserService.catxiSignup(userDetails.getUsername(), dto);
+    return ResponseEntity.ok("추가 회원정보 등록 완료");
+  }
 
   @Operation(summary = "닉네임 중복 조회")
   @GetMapping("/signUp/catxi/checkNN")
