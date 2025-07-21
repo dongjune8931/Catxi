@@ -1,10 +1,15 @@
 package com.project.catxi.chat.service;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.project.catxi.chat.domain.ChatMessage;
 import com.project.catxi.chat.domain.ChatParticipant;
 import com.project.catxi.chat.domain.ChatRoom;
@@ -32,6 +37,7 @@ public class ChatMessageService {
 	private final MemberRepository memberRepository;
 	private final ChatMessageRepository chatMessageRepository;
 	private final ChatParticipantRepository chatParticipantRepository;
+	private final RedisPubSubService pubSubService;
 
 	public void saveMessage(Long roomId,ChatMessageSendReq req) {
 		ChatRoom room = chatRoomRepository.findById(roomId)
@@ -74,6 +80,40 @@ public class ChatMessageService {
 				m.getCreatedTime()
 			))
 			.toList();
+
+	}
+
+	public void sendSystemMessage(Long roomId, String content){
+		ChatRoom chatRoom = chatRoomRepository.findById(roomId)
+			.orElseThrow(() -> new CatxiException(ChatRoomErrorCode.CHATROOM_NOT_FOUND));
+
+		ChatMessage systemMsg = ChatMessage.builder()
+			.chatRoom(chatRoom)
+			.member(null)
+			.content(content)
+			.msgType(MessageType.SYSTEM)
+			.build();
+
+		chatMessageRepository.save(systemMsg);
+
+		ChatMessageSendReq dto = new ChatMessageSendReq(
+			roomId,
+			"[SYSTEM]",
+			content,
+			LocalDateTime.now()
+		);
+
+		try {
+			String json = new ObjectMapper()
+				.registerModule(new JavaTimeModule())
+				.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
+				.writeValueAsString(dto);
+
+			pubSubService.publish("chat", json);
+		} catch (JsonProcessingException e) {
+			throw new RuntimeException("시스템 메시지 직렬화 실패", e);
+		}
+
 
 	}
 }

@@ -40,7 +40,7 @@ public class ChatRoomService {
 	private final ChatParticipantRepository chatParticipantRepository;
 	private final MemberRepository memberRepository;
 	private final ChatMessageRepository chatMessageRepository;
-
+	private final ChatMessageService chatMessageService;
 
 	public RoomCreateRes createRoom(RoomCreateReq roomReq, String email) {
 		Member host = memberRepository.findByEmail(email)
@@ -94,7 +94,6 @@ public class ChatRoomService {
 	}
 
 
-	//로그인 전이라 member 임시로 추가해둠.
 	public void leaveChatRoom(Long roomId, String email) {
 		Member member = memberRepository.findByEmail(email).orElseThrow(() -> new CatxiException(MemberErrorCode.MEMBER_NOT_FOUND));
 		ChatRoom chatRoom = chatRoomRepository.findById(roomId)
@@ -109,6 +108,9 @@ public class ChatRoomService {
 		}
 
 		chatParticipantRepository.delete(chatParticipant);
+
+		String systemMessage = member.getNickname() + " 님이 퇴장하셨습니다.";
+		chatMessageService.sendSystemMessage(roomId, systemMessage);
 	}
 
 	public void joinChatRoom(Long roomId, String email) {
@@ -133,6 +135,8 @@ public class ChatRoomService {
 			.build();
 
 		chatParticipantRepository.save(chatParticipant);
+
+		chatMessageService.sendSystemMessage(roomId, member.getNickname() + " 님이 입장하셨습니다.");
 	}
 
 	public Long getMyChatRoomId(String email) {
@@ -163,6 +167,9 @@ public class ChatRoomService {
 			.orElseThrow(() -> new CatxiException(ChatParticipantErrorCode.PARTICIPANT_NOT_FOUND));
 
 		chatParticipantRepository.delete(participant);
+
+		String msg = target.getNickname() + " 님이 강퇴되었습니다.";
+		chatMessageService.sendSystemMessage(roomId, msg);
 
 	}
 
