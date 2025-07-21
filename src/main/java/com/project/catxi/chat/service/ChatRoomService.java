@@ -1,19 +1,26 @@
 package com.project.catxi.chat.service;
 
 
+import static com.project.catxi.chat.domain.QChatRoom.*;
+
 import java.util.List;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.project.catxi.chat.domain.ChatParticipant;
 import com.project.catxi.chat.domain.ChatRoom;
 import com.project.catxi.chat.dto.ChatRoomInfoRes;
 import com.project.catxi.chat.dto.ChatRoomRes;
+import com.project.catxi.chat.dto.ParticipantsUpdateMessage;
 import com.project.catxi.chat.dto.RoomCreateReq;
 import com.project.catxi.chat.dto.RoomCreateRes;
 import com.project.catxi.chat.repository.ChatMessageRepository;
@@ -40,6 +47,12 @@ public class ChatRoomService {
 	private final ChatParticipantRepository chatParticipantRepository;
 	private final MemberRepository memberRepository;
 	private final ChatMessageRepository chatMessageRepository;
+
+	private final StringRedisTemplate stringRedisTemplate;
+
+	private final ObjectMapper objectMapper = new ObjectMapper()
+		.registerModule(new JavaTimeModule())
+		.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
 
 
 	public RoomCreateRes createRoom(RoomCreateReq roomReq, String email) {
@@ -109,6 +122,7 @@ public class ChatRoomService {
 		}
 
 		chatParticipantRepository.delete(chatParticipant);
+		sendParticipantUpdateMessage(chatRoom);
 	}
 
 	public void joinChatRoom(Long roomId, String email) {
@@ -133,6 +147,8 @@ public class ChatRoomService {
 			.build();
 
 		chatParticipantRepository.save(chatParticipant);
+
+		sendParticipantUpdateMessage(chatRoom);
 	}
 
 	public Long getMyChatRoomId(String email) {
@@ -164,6 +180,7 @@ public class ChatRoomService {
 
 		chatParticipantRepository.delete(participant);
 
+		sendParticipantUpdateMessage(room);
 	}
 
 
@@ -228,5 +245,16 @@ public class ChatRoomService {
 
 	}
 
+	private void sendParticipantUpdateMessage(ChatRoom chatRoom) {
+		List<String> nicknames = chatParticipantRepository.findParticipantNicknamesByChatRoom(chatRoom);
+		ParticipantsUpdateMessage update = new ParticipantsUpdateMessage(chatRoom.getRoomId(), nicknames);
+
+		try {
+			String json = objectMapper.writeValueAsString(update);
+			stringRedisTemplate.convertAndSend("participants:" + chatRoom.getRoomId(), json);
+		} catch (Exception e) {
+			throw new RuntimeException("참여자 목록 발행 실패", e);
+		}
+	}
 
 }
