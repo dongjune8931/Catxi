@@ -5,7 +5,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 
@@ -57,6 +56,27 @@ public class MapService {
 				.toList();
 		} catch (Exception e) {
 			throw new CatxiException(MapError.COORDINATE_PARSE_FAILED);
+		}
+	}
+
+	public void saveCoordinate(CoordinateReq coordinateReq) {
+		/*
+		지도 좌표 저장 메서드
+		사용자의 가장 최근 좌표는 레디스에 저장 map:{roomId}:{userMail}을 키로 사용
+		TTL은 5분으로 설정
+		 */
+
+		String key = "map:" + coordinateReq.roomId() + ":" + coordinateReq.email();
+
+		try{
+			String json = objectMapper.writeValueAsString(Map.of(
+				"latitude", coordinateReq.latitude(),
+				"longitude", coordinateReq.longitude()
+			));
+			redisTemplate.opsForValue().set(key, json, GEO_TTL_SECONDS, TimeUnit.SECONDS);
+		}
+		catch (Exception e) {
+			throw new CatxiException(MapError.COORDINATE_SAVE_FAILED);
 		}
 	}
 

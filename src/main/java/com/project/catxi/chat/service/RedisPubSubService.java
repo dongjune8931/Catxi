@@ -14,6 +14,7 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.project.catxi.chat.dto.ChatMessageSendReq;
 import com.project.catxi.chat.dto.ReadyMessageRes;
+import com.project.catxi.map.dto.CoordinateReq;
 
 @Service
 public class RedisPubSubService implements MessageListener {
@@ -46,6 +47,10 @@ public class RedisPubSubService implements MessageListener {
 				ReadyMessageRes readyMessage = objectMapper.readValue(payload, ReadyMessageRes.class);
 				// ready 메시지는 별도의 토픽으로 보낼 수 있음 (예: /topic/ready/{roomId})
 				messageTemplate.convertAndSend("/topic/ready/" + readyMessage.roomId(), readyMessage);
+			} else if (channel.startsWith("map:")) {
+				// 지도 좌표 관련 메시지 처리
+				CoordinateReq coordinateReq = objectMapper.readValue(payload, CoordinateReq.class);
+				messageTemplate.convertAndSend("/topic/map/" + coordinateReq.roomId(), coordinateReq);
 			}
 		} catch (JsonProcessingException e) {
 			throw new RuntimeException(e);

@@ -58,6 +58,7 @@ public class RedisConfig {
 		container.setConnectionFactory(redisConnectionFactory);
 		container.addMessageListener(messageListenerAdapter, new PatternTopic("chat"));
 		container.addMessageListener(messageListenerAdapter, new PatternTopic("ready:*"));
+		container.addMessageListener(messageListenerAdapter, new PatternTopic("map:*"));
 		return container;
 	}
 
