@@ -9,6 +9,10 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.project.catxi.chat.domain.ChatRoom;
+import com.project.catxi.chat.repository.ChatParticipantRepository;
+import com.project.catxi.chat.repository.ChatRoomRepository;
+import com.project.catxi.common.api.error.ChatRoomErrorCode;
 import com.project.catxi.common.api.error.MapError;
 import com.project.catxi.common.api.exception.CatxiException;
 import com.project.catxi.map.dto.CoordinateReq;
@@ -17,13 +21,18 @@ import com.project.catxi.map.dto.CoordinateRes;
 @Service
 public class MapService {
 
+	private final ChatRoomRepository chatRoomRepository;
+	private final ChatParticipantRepository chatParticipantRepository;
 	private final StringRedisTemplate redisTemplate;
 	private final ObjectMapper objectMapper;
-	private static final long GEO_TTL_SECONDS = 300; // 5 minutes
+	private static final long GEO_TTL_SECONDS = 300;
 
-	public MapService(StringRedisTemplate redisTemplate, ObjectMapper objectMapper) {
+	public MapService(StringRedisTemplate redisTemplate, ObjectMapper objectMapper,
+			ChatParticipantRepository chatParticipantRepository, ChatRoomRepository chatRoomRepository) {
 		this.redisTemplate = redisTemplate;
 		this.objectMapper = objectMapper;
+		this.chatParticipantRepository = chatParticipantRepository;
+		this.chatRoomRepository = chatRoomRepository;
 	}
 
 	public List<CoordinateRes> getCoordinates(Long roomId) {
@@ -32,31 +41,25 @@ public class MapService {
 		해당 방에 참여중인 모든 유저의 좌표를 조회
 		레디스에서 map:{roomId}:* 패턴으로 조회
 		 */
+		ChatRoom chatRoom = chatRoomRepository.findById(roomId)
+			.orElseThrow(() -> new CatxiException(ChatRoomErrorCode.CHATROOM_NOT_FOUND));
 
-		String pattern = "map:" + roomId + ":*";
-		Set<String> keys = redisTemplate.keys(pattern);
+		List<String> keys = chatParticipantRepository.findParticipantEmailsByChatRoom(chatRoom);
 
-		if (keys == null || keys.isEmpty()) {
-			throw new CatxiException(MapError.COORDINATE_NOT_FOUND);
-		}
-		try {
-			return keys.stream()
-				.map(key -> {
-					String json = redisTemplate.opsForValue().get(key);
-					try {
-						Map<String, Double> coordMap = objectMapper.readValue(json, Map.class);
-						String userEmail = key.substring(key.lastIndexOf(':') + 1);
-						Double latitude = coordMap.get("latitude");
-						Double longitude = coordMap.get("longitude");
-						return new CoordinateRes(userEmail, latitude, longitude);
-					} catch (Exception e) {
-						throw new CatxiException(MapError.COORDINATE_PARSE_FAILED);
-					}
-				})
-				.toList();
-		} catch (Exception e) {
-			throw new CatxiException(MapError.COORDINATE_PARSE_FAILED);
-		}
+		return keys.stream()
+			.map(key -> {
+				String json = redisTemplate.opsForValue().get("map:" + roomId + ":" + key);
+				try {
+					Map<String, Double> coordMap = objectMapper.readValue(json, Map.class);
+					String userEmail = key.substring(key.lastIndexOf(':') + 1);
+					Double latitude = coordMap.get("latitude");
+					Double longitude = coordMap.get("longitude");
+					return new CoordinateRes(userEmail, latitude, longitude);
+				} catch (Exception e) {
+					throw new CatxiException(MapError.COORDINATE_PARSE_FAILED);
+				}
+			})
+			.toList();
 	}
 
 	public void saveCoordinate(CoordinateReq coordinateReq) {
