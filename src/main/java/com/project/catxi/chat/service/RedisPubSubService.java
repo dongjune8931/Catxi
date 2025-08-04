@@ -14,7 +14,7 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.project.catxi.chat.dto.ChatMessageSendReq;
 import com.project.catxi.chat.dto.ReadyMessageRes;
-import com.project.catxi.map.dto.CoordinateReq;
+import com.project.catxi.map.dto.CoordinateRes;
 
 @Service
 public class RedisPubSubService implements MessageListener {
@@ -47,8 +47,8 @@ public class RedisPubSubService implements MessageListener {
 				ReadyMessageRes readyMessage = objectMapper.readValue(payload, ReadyMessageRes.class);
 				messageTemplate.convertAndSend("/topic/ready/" + readyMessage.roomId(), readyMessage);
 			} else if (channel.equals("map")) {
-				CoordinateReq coordinateReq = objectMapper.readValue(payload, CoordinateReq.class);
-				messageTemplate.convertAndSend("/topic/map/" + coordinateReq.roomId(), coordinateReq);
+				CoordinateRes coordinateRes = objectMapper.readValue(payload, CoordinateRes.class);
+				messageTemplate.convertAndSend("/topic/map/" + coordinateRes.roomId(), coordinateRes);
 			}
 		} catch (JsonProcessingException e) {
 			throw new RuntimeException(e);

@@ -17,6 +17,7 @@ import com.project.catxi.chat.dto.ChatMessageSendReq;
 import com.project.catxi.chat.service.ChatMessageService;
 import com.project.catxi.chat.service.RedisPubSubService;
 import com.project.catxi.map.dto.CoordinateReq;
+import com.project.catxi.map.dto.CoordinateRes;
 import com.project.catxi.map.service.MapService;
 
 @Controller
@@ -58,13 +59,14 @@ public class StompController {
 
 	@MessageMapping("/map/{roomId}")
 	public void sendCoordinate(@DestinationVariable Long roomId, CoordinateReq coordinateReq) throws JsonProcessingException {
-		mapService.saveCoordinate(coordinateReq);
+		double distance = mapService.handleSaveCoordinateAndDistance(coordinateReq);
 
-		CoordinateReq enriched = new CoordinateReq(
+		CoordinateRes enriched = new CoordinateRes(
 			coordinateReq.roomId(),
 			coordinateReq.email(),
 			coordinateReq.latitude(),
-			coordinateReq.longitude()
+			coordinateReq.longitude(),
+			distance
 		);
 		ObjectMapper objectMapper = new ObjectMapper();
 		String message = objectMapper.writeValueAsString(enriched);

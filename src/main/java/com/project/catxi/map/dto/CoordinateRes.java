@@ -1,8 +1,10 @@
 package com.project.catxi.map.dto;
 
 public record CoordinateRes (
-	String userEmail,
+	Long roomId,
+	String email,
 	Double latitude,
-	Double longitude
+	Double longitude,
+	Double distance
 ){
 }
