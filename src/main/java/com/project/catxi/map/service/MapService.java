@@ -29,7 +29,7 @@ public class MapService {
 	private final ChatParticipantRepository chatParticipantRepository;
 	private final StringRedisTemplate redisTemplate;
 	private final ObjectMapper objectMapper;
-	private static final long GEO_TTL_SECONDS = 500;
+	private static final long GEO_TTL_SECONDS = 300;
 
 	public MapService(StringRedisTemplate redisTemplate, ObjectMapper objectMapper,
 			ChatParticipantRepository chatParticipantRepository, ChatRoomRepository chatRoomRepository) {
