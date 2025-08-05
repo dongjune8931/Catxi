@@ -5,11 +5,16 @@ import java.util.List;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.project.catxi.common.api.ApiResponse;
+import com.project.catxi.map.dto.CoordinateReq;
 import com.project.catxi.map.dto.CoordinateRes;
+import com.project.catxi.map.dto.DepartureReq;
 import com.project.catxi.map.service.MapService;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -33,6 +38,16 @@ public class MapController {
 		return ResponseEntity.ok(
 			ApiResponse.success(mapService.getCoordinates(roomId))
 		);
+	}
+
+	@PostMapping("/{roomId}/save-depart")
+	@Operation(summary = "출발지 좌표 저장 API", description = "출발지 좌표를 레디스에 저장합니다. "
+		+ "email 필드에는 departure 문자열을 담아주세요."
+		+ "지도 페이지 로딩 시 호출해주세요.")
+	public ResponseEntity<ApiResponse<Void>> saveDepart(@PathVariable Long roomId, @RequestBody DepartureReq req){
+		mapService.saveDepartureCoordinate( req.latitude(), req.longitude(), roomId);
+
+		return ResponseEntity.ok(ApiResponse.successWithNoData());
 	}
 
 }

@@ -1,23 +1,27 @@
 package com.project.catxi.map.service;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.project.catxi.chat.domain.ChatRoom;
 import com.project.catxi.chat.repository.ChatParticipantRepository;
 import com.project.catxi.chat.repository.ChatRoomRepository;
 import com.project.catxi.common.api.error.ChatRoomErrorCode;
-import com.project.catxi.common.api.error.MapError;
+import com.project.catxi.common.api.error.MapErrorCode;
 import com.project.catxi.common.api.exception.CatxiException;
 import com.project.catxi.map.dto.CoordinateReq;
 import com.project.catxi.map.dto.CoordinateRes;
 
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
 @Service
 public class MapService {
 
@@ -25,7 +29,7 @@ public class MapService {
 	private final ChatParticipantRepository chatParticipantRepository;
 	private final StringRedisTemplate redisTemplate;
 	private final ObjectMapper objectMapper;
-	private static final long GEO_TTL_SECONDS = 300;
+	private static final long GEO_TTL_SECONDS = 500;
 
 	public MapService(StringRedisTemplate redisTemplate, ObjectMapper objectMapper,
 			ChatParticipantRepository chatParticipantRepository, ChatRoomRepository chatRoomRepository) {
@@ -49,16 +53,21 @@ public class MapService {
 		return keys.stream()
 			.map(key -> {
 				String json = redisTemplate.opsForValue().get("map:" + roomId + ":" + key);
-				try {
-					Map<String, Double> coordMap = objectMapper.readValue(json, Map.class);
-					String userEmail = key.substring(key.lastIndexOf(':') + 1);
-					Double latitude = coordMap.get("latitude");
-					Double longitude = coordMap.get("longitude");
-					Double distance = coordMap.get("distance");
-					return new CoordinateRes(roomId, userEmail, latitude, longitude, distance);
-				} catch (Exception e) {
-					throw new CatxiException(MapError.COORDINATE_PARSE_FAILED);
+				Double latitude = null;
+				Double longitude = null;
+				Double distance = null;
+
+				if (json != null) {
+					try {
+						Map<String, Double> coordMap = objectMapper.readValue(json, new TypeReference<>() {});
+						latitude = coordMap.get("latitude");
+						longitude = coordMap.get("longitude");
+						distance = coordMap.get("distance");
+					} catch (Exception e) {
+						log.warn("[좌표 파싱 실패] email: {}, roomId: {}", key, roomId);
+					}
 				}
+				return new CoordinateRes(roomId, key, latitude, longitude, distance);
 			})
 			.toList();
 	}
@@ -70,23 +79,40 @@ public class MapService {
 		출발지점이 없으면 예외 발생
 		 */
 		double distance = calculateFromDeparture(coordinateReq);
-		saveCoordinate(coordinateReq, distance);
+		saveCoordinateWithDistance(coordinateReq.latitude(), coordinateReq.longitude(),
+				coordinateReq.roomId(), coordinateReq.email(), distance);
+
 		return distance;
 	}
 
-	private void saveCoordinate(CoordinateReq coordinateReq, double distance) {
-		String key = "map:" + coordinateReq.roomId() + ":" + coordinateReq.email();
+	public void saveDepartureCoordinate(Double latitude, Double longitude, Long roomId){
+		String key = "map:" + roomId + ":" + "departure";
+
+		try {
+			Map<String, Object> coordMap = new HashMap<>();
+			coordMap.put("latitude", latitude);
+			coordMap.put("longitude", longitude);
+			String json = objectMapper.writeValueAsString(coordMap);
+			redisTemplate.opsForValue().set(key, json); //TTL 없이 저장
+		}catch (Exception e) {
+			throw new CatxiException(MapErrorCode.COORDINATE_SAVE_FAILED);
+		}
+	}
+
+	private void saveCoordinateWithDistance(Double latitude, Double longitude, Long roomId, String subKey , Double distance) {
+		String key = "map:" + roomId + ":" + subKey;
 
 		try{
-			String json = objectMapper.writeValueAsString(Map.of(
-				"latitude", coordinateReq.latitude(),
-				"longitude", coordinateReq.longitude(),
-				"distance", distance
-			));
-			redisTemplate.opsForValue().set(key, json, GEO_TTL_SECONDS, TimeUnit.SECONDS);
+			Map<String, Object> coordMap = new HashMap<>();
+			coordMap.put("latitude", latitude);
+			coordMap.put("longitude", longitude);
+			coordMap.put("distance", distance);
+			String json = objectMapper.writeValueAsString(coordMap);
+
+			redisTemplate.opsForValue().set(key, json, GEO_TTL_SECONDS, TimeUnit.SECONDS); // TTL 적용
 		}
 		catch (Exception e) {
-			throw new CatxiException(MapError.COORDINATE_SAVE_FAILED);
+			throw new CatxiException(MapErrorCode.COORDINATE_SAVE_FAILED);
 		}
 	}
 
@@ -94,16 +120,16 @@ public class MapService {
 		String key = "map:" + coordinateReq.roomId() + ":departure";
 		String json = redisTemplate.opsForValue().get(key);
 		if (json == null) {
-			throw new CatxiException(MapError.DEPARTURE_NOT_FOUND);
+			throw new CatxiException(MapErrorCode.DEPARTURE_NOT_FOUND);
 		}
 
 		try {
-			Map<String, Double> departureMap = objectMapper.readValue(json, Map.class);
+			Map<String, Double> departureMap = objectMapper.readValue(json, new TypeReference<>() {});
 			double departureLat = departureMap.get("latitude");
 			double departureLon = departureMap.get("longitude");
 			return calculateDistance(departureLat, departureLon, coordinateReq.latitude(), coordinateReq.longitude());
 		} catch (Exception e) {
-			throw new CatxiException(MapError.COORDINATE_PARSE_FAILED);
+			throw new CatxiException(MapErrorCode.COORDINATE_PARSE_FAILED);
 		}
 
 	}
