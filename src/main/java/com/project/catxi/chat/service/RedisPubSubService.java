@@ -46,6 +46,9 @@ public class RedisPubSubService implements MessageListener {
 				ReadyMessageRes readyMessage = objectMapper.readValue(payload, ReadyMessageRes.class);
 				// ready 메시지는 별도의 토픽으로 보낼 수 있음 (예: /topic/ready/{roomId})
 				messageTemplate.convertAndSend("/topic/ready/" + readyMessage.roomId(), readyMessage);
+			} else if (channel.startsWith("kick:")) {
+				String email = channel.split(":")[1];
+				messageTemplate.convertAndSendToUser(email, "/queue/kick", "KICKED");
 			}
 		} catch (JsonProcessingException e) {
 			throw new RuntimeException(e);
