@@ -38,7 +38,7 @@ public class ChatMessage extends BaseTimeEntity {
 	private ChatRoom chatRoom;
 
 	@ManyToOne(fetch = FetchType.LAZY)
-	@JoinColumn(name = "member_id", nullable = false)
+	@JoinColumn(name = "member_id", nullable = true)
 	private Member member;
 
 	@Column(nullable = false, length = 500)
