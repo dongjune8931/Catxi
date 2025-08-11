@@ -1,6 +1,7 @@
 package com.project.catxi.chat.service;
 
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 import org.springframework.data.domain.Page;
@@ -13,6 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.project.catxi.chat.domain.ChatParticipant;
 import com.project.catxi.chat.domain.ChatRoom;
+import com.project.catxi.chat.domain.KickedParticipant;
 import com.project.catxi.chat.dto.ChatRoomInfoRes;
 import com.project.catxi.chat.dto.ChatRoomRes;
 import com.project.catxi.chat.dto.RoomCreateReq;
@@ -20,6 +22,7 @@ import com.project.catxi.chat.dto.RoomCreateRes;
 import com.project.catxi.chat.repository.ChatMessageRepository;
 import com.project.catxi.chat.repository.ChatParticipantRepository;
 import com.project.catxi.chat.repository.ChatRoomRepository;
+import com.project.catxi.chat.repository.KickedParticipantRepository;
 import com.project.catxi.common.api.error.ChatParticipantErrorCode;
 import com.project.catxi.common.api.error.ChatRoomErrorCode;
 import com.project.catxi.common.api.error.MemberErrorCode;
@@ -41,8 +44,12 @@ public class ChatRoomService {
 	private final ChatParticipantRepository chatParticipantRepository;
 	private final MemberRepository memberRepository;
 	private final ChatMessageRepository chatMessageRepository;
+
+	private final KickedParticipantRepository kickedParticipantRepository;
+
 	private final ChatMessageService chatMessageService;
 	private final StringRedisTemplate stringRedisTemplate;
+
 
 
 	public RoomCreateRes createRoom(RoomCreateReq roomReq, String email) {
@@ -123,6 +130,10 @@ public class ChatRoomService {
 		Member member = memberRepository.findByEmail(email)
 			.orElseThrow(() -> new CatxiException(MemberErrorCode.MEMBER_NOT_FOUND));
 
+		if (kickedParticipantRepository.existsByChatRoomAndMember(chatRoom, member)) {
+			throw new CatxiException(ChatParticipantErrorCode.BLOCKED_FROM_ROOM);
+		}
+
 		HostNotInOtherRoom(member);
 
 		if(chatRoom.getStatus() != RoomStatus.WAITING)
@@ -171,11 +182,19 @@ public class ChatRoomService {
 
 		chatParticipantRepository.delete(participant);
 
+
+		KickedParticipant kicked = KickedParticipant.builder()
+			.chatRoom(room)
+			.member(target)
+			.build();
+		kickedParticipantRepository.save(kicked);
+
 		String msg = target.getNickname() + " 님이 강퇴되었습니다.";
 		chatMessageService.sendSystemMessage(roomId, msg);
 
 		String channel = "kick:" + target.getEmail();
 		stringRedisTemplate.convertAndSend(channel, "KICKED");
+
 
 	}
 
