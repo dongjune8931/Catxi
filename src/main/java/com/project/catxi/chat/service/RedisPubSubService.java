@@ -13,6 +13,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.project.catxi.chat.dto.ChatMessageSendReq;
+import com.project.catxi.chat.dto.ParticipantsUpdateMessage;
 import com.project.catxi.chat.dto.ReadyMessageRes;
 
 @Service
@@ -46,6 +47,9 @@ public class RedisPubSubService implements MessageListener {
 				ReadyMessageRes readyMessage = objectMapper.readValue(payload, ReadyMessageRes.class);
 				// ready 메시지는 별도의 토픽으로 보낼 수 있음 (예: /topic/ready/{roomId})
 				messageTemplate.convertAndSend("/topic/ready/" + readyMessage.roomId(), readyMessage);
+			} else if (channel.startsWith("participants:")) {
+				ParticipantsUpdateMessage update = objectMapper.readValue(payload, ParticipantsUpdateMessage.class);
+				messageTemplate.convertAndSend("/topic/room/" + update.roomId() + "/participants", update);
 			} else if (channel.startsWith("kick:")) {
 				String email = channel.split(":")[1];
 				messageTemplate.convertAndSendToUser(email, "/queue/kick", "KICKED");

@@ -1,7 +1,11 @@
 package com.project.catxi.chat.service;
 
 
+import static com.project.catxi.chat.domain.QChatRoom.*;
+
+
 import java.time.LocalDateTime;
+
 import java.util.List;
 
 import org.springframework.data.domain.Page;
@@ -12,11 +16,15 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.project.catxi.chat.domain.ChatParticipant;
 import com.project.catxi.chat.domain.ChatRoom;
 import com.project.catxi.chat.domain.KickedParticipant;
 import com.project.catxi.chat.dto.ChatRoomInfoRes;
 import com.project.catxi.chat.dto.ChatRoomRes;
+import com.project.catxi.chat.dto.ParticipantsUpdateMessage;
 import com.project.catxi.chat.dto.RoomCreateReq;
 import com.project.catxi.chat.dto.RoomCreateRes;
 import com.project.catxi.chat.repository.ChatMessageRepository;
@@ -44,6 +52,13 @@ public class ChatRoomService {
 	private final ChatParticipantRepository chatParticipantRepository;
 	private final MemberRepository memberRepository;
 	private final ChatMessageRepository chatMessageRepository;
+
+
+	private final StringRedisTemplate stringRedisTemplate;
+
+	private final ObjectMapper objectMapper = new ObjectMapper()
+		.registerModule(new JavaTimeModule())
+		.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
 
 	private final KickedParticipantRepository kickedParticipantRepository;
 
@@ -119,6 +134,7 @@ public class ChatRoomService {
 
 		chatParticipantRepository.delete(chatParticipant);
 
+
 		String systemMessage = member.getNickname() + " 님이 퇴장하셨습니다.";
 		chatMessageService.sendSystemMessage(roomId, systemMessage);
 	}
@@ -149,6 +165,7 @@ public class ChatRoomService {
 			.build();
 
 		chatParticipantRepository.save(chatParticipant);
+
 
 		chatMessageService.sendSystemMessage(roomId, member.getNickname() + " 님이 입장하셨습니다.");
 	}
@@ -181,6 +198,7 @@ public class ChatRoomService {
 			.orElseThrow(() -> new CatxiException(ChatParticipantErrorCode.PARTICIPANT_NOT_FOUND));
 
 		chatParticipantRepository.delete(participant);
+
 
 
 		KickedParticipant kicked = KickedParticipant.builder()
@@ -260,5 +278,16 @@ public class ChatRoomService {
 
 	}
 
+	private void sendParticipantUpdateMessage(ChatRoom chatRoom) {
+		List<String> nicknames = chatParticipantRepository.findParticipantNicknamesByChatRoom(chatRoom);
+		ParticipantsUpdateMessage update = new ParticipantsUpdateMessage(chatRoom.getRoomId(), nicknames);
+
+		try {
+			String json = objectMapper.writeValueAsString(update);
+			stringRedisTemplate.convertAndSend("participants:" + chatRoom.getRoomId(), json);
+		} catch (Exception e) {
+			throw new RuntimeException("참여자 목록 발행 실패", e);
+		}
+	}
 
 }
