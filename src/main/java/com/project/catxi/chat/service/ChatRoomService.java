@@ -3,6 +3,9 @@ package com.project.catxi.chat.service;
 
 import static com.project.catxi.chat.domain.QChatRoom.*;
 
+
+import java.time.LocalDateTime;
+
 import java.util.List;
 
 import org.springframework.data.domain.Page;
@@ -18,6 +21,7 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.project.catxi.chat.domain.ChatParticipant;
 import com.project.catxi.chat.domain.ChatRoom;
+import com.project.catxi.chat.domain.KickedParticipant;
 import com.project.catxi.chat.dto.ChatRoomInfoRes;
 import com.project.catxi.chat.dto.ChatRoomRes;
 import com.project.catxi.chat.dto.ParticipantsUpdateMessage;
@@ -26,6 +30,7 @@ import com.project.catxi.chat.dto.RoomCreateRes;
 import com.project.catxi.chat.repository.ChatMessageRepository;
 import com.project.catxi.chat.repository.ChatParticipantRepository;
 import com.project.catxi.chat.repository.ChatRoomRepository;
+import com.project.catxi.chat.repository.KickedParticipantRepository;
 import com.project.catxi.common.api.error.ChatParticipantErrorCode;
 import com.project.catxi.common.api.error.ChatRoomErrorCode;
 import com.project.catxi.common.api.error.MemberErrorCode;
@@ -48,11 +53,18 @@ public class ChatRoomService {
 	private final MemberRepository memberRepository;
 	private final ChatMessageRepository chatMessageRepository;
 
+
 	private final StringRedisTemplate stringRedisTemplate;
 
 	private final ObjectMapper objectMapper = new ObjectMapper()
 		.registerModule(new JavaTimeModule())
 		.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+
+	private final KickedParticipantRepository kickedParticipantRepository;
+
+	private final ChatMessageService chatMessageService;
+	private final StringRedisTemplate stringRedisTemplate;
+
 
 
 	public RoomCreateRes createRoom(RoomCreateReq roomReq, String email) {
@@ -107,7 +119,6 @@ public class ChatRoomService {
 	}
 
 
-	//로그인 전이라 member 임시로 추가해둠.
 	public void leaveChatRoom(Long roomId, String email) {
 		Member member = memberRepository.findByEmail(email).orElseThrow(() -> new CatxiException(MemberErrorCode.MEMBER_NOT_FOUND));
 		ChatRoom chatRoom = chatRoomRepository.findById(roomId)
@@ -122,7 +133,10 @@ public class ChatRoomService {
 		}
 
 		chatParticipantRepository.delete(chatParticipant);
-		sendParticipantUpdateMessage(chatRoom);
+
+
+		String systemMessage = member.getNickname() + " 님이 퇴장하셨습니다.";
+		chatMessageService.sendSystemMessage(roomId, systemMessage);
 	}
 
 	public void joinChatRoom(Long roomId, String email) {
@@ -131,6 +145,10 @@ public class ChatRoomService {
 
 		Member member = memberRepository.findByEmail(email)
 			.orElseThrow(() -> new CatxiException(MemberErrorCode.MEMBER_NOT_FOUND));
+
+		if (kickedParticipantRepository.existsByChatRoomAndMember(chatRoom, member)) {
+			throw new CatxiException(ChatParticipantErrorCode.BLOCKED_FROM_ROOM);
+		}
 
 		HostNotInOtherRoom(member);
 
@@ -148,7 +166,8 @@ public class ChatRoomService {
 
 		chatParticipantRepository.save(chatParticipant);
 
-		sendParticipantUpdateMessage(chatRoom);
+
+		chatMessageService.sendSystemMessage(roomId, member.getNickname() + " 님이 입장하셨습니다.");
 	}
 
 	public Long getMyChatRoomId(String email) {
@@ -180,7 +199,21 @@ public class ChatRoomService {
 
 		chatParticipantRepository.delete(participant);
 
-		sendParticipantUpdateMessage(room);
+
+
+		KickedParticipant kicked = KickedParticipant.builder()
+			.chatRoom(room)
+			.member(target)
+			.build();
+		kickedParticipantRepository.save(kicked);
+
+		String msg = target.getNickname() + " 님이 강퇴되었습니다.";
+		chatMessageService.sendSystemMessage(roomId, msg);
+
+		String channel = "kick:" + target.getEmail();
+		stringRedisTemplate.convertAndSend(channel, "KICKED");
+
+
 	}
 
 

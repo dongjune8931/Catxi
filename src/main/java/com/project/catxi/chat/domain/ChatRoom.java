@@ -49,6 +49,8 @@ public class ChatRoom extends BaseTimeEntity {
 	@OneToMany(mappedBy = "chatRoom", cascade = CascadeType.ALL, orphanRemoval = true)
 	private final List<ChatParticipant> participants = new ArrayList<>();
 
+	@OneToMany(mappedBy = "chatRoom", cascade = CascadeType.ALL, orphanRemoval = true)
+	private List<KickedParticipant> kickedParticipants = new ArrayList<>();
 
 	@Column(nullable = true)
 	private LocalDateTime matchedAt;

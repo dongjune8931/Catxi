@@ -32,8 +32,8 @@ public class StompWebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
 		//  /topic/1 형태로 메시지 수신해야 함을 설정
 		// /topic 로 시작하는 url 패턴으로 메시지가 발행되면 @Controller 객체의 @MessageMapping 메서드로 라우팅
-		registry.enableSimpleBroker("/topic");
-
+		registry.enableSimpleBroker("/topic","/queue");
+		registry.setUserDestinationPrefix("/user");
 	}
 
 	//웹소켓 요청(connect, subscribe, disconnect )등의 요청시에는 http header 등 http 메시지를 넣어올 수 있고 이를 interceptor 를 통해 가로채 토큰등을 검증할 수 있음.

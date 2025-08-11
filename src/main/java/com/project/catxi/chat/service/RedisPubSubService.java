@@ -50,6 +50,9 @@ public class RedisPubSubService implements MessageListener {
 			} else if (channel.startsWith("participants:")) {
 				ParticipantsUpdateMessage update = objectMapper.readValue(payload, ParticipantsUpdateMessage.class);
 				messageTemplate.convertAndSend("/topic/room/" + update.roomId() + "/participants", update);
+			} else if (channel.startsWith("kick:")) {
+				String email = channel.split(":")[1];
+				messageTemplate.convertAndSendToUser(email, "/queue/kick", "KICKED");
 			}
 		} catch (JsonProcessingException e) {
 			throw new RuntimeException(e);
