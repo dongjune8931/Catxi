@@ -7,6 +7,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -41,6 +42,8 @@ public class ChatRoomService {
 	private final MemberRepository memberRepository;
 	private final ChatMessageRepository chatMessageRepository;
 	private final ChatMessageService chatMessageService;
+	private final StringRedisTemplate stringRedisTemplate;
+
 
 	public RoomCreateRes createRoom(RoomCreateReq roomReq, String email) {
 		Member host = memberRepository.findByEmail(email)
@@ -170,6 +173,9 @@ public class ChatRoomService {
 
 		String msg = target.getNickname() + " 님이 강퇴되었습니다.";
 		chatMessageService.sendSystemMessage(roomId, msg);
+
+		String channel = "kick:" + target.getEmail();
+		stringRedisTemplate.convertAndSend(channel, "KICKED");
 
 	}
 
