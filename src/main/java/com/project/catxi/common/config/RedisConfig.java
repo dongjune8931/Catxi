@@ -8,11 +8,13 @@ import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.connection.RedisPassword;
 import org.springframework.data.redis.connection.RedisStandaloneConfiguration;
 import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.listener.ChannelTopic;
 import org.springframework.data.redis.listener.PatternTopic;
 import org.springframework.data.redis.listener.RedisMessageListenerContainer;
 import org.springframework.data.redis.listener.adapter.MessageListenerAdapter;
+import org.springframework.data.redis.serializer.StringRedisSerializer;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 
 import com.project.catxi.chat.service.RedisPubSubService;
@@ -91,4 +93,38 @@ public class RedisConfig {
 		return container;
 	}
 
+
+	//redis에서 수신된 메시지를 처리하는 객체 생성
+	@Bean
+	public MessageListenerAdapter messageListenerAdapter(RedisPubSubService redisPubSubService){
+		//RedisPubSubService의 특정 메서드가 수신된 메시지를 처리할 수 있도록 지정
+		return new MessageListenerAdapter(redisPubSubService,"onMessage");
+	}
+
+	// JWT 토큰 저장용 Redis 연결
+	@Bean
+	@Qualifier("tokenRedisConnectionFactory")
+	public RedisConnectionFactory tokenRedisConnectionFactory() {
+		RedisStandaloneConfiguration configuration = new RedisStandaloneConfiguration();
+		configuration.setHostName(host);
+		configuration.setPort(port);
+		//리프레시 토큰용 DB 분리
+		configuration.setDatabase(1);
+		configuration.setPassword(RedisPassword.of(password));
+		return new LettuceConnectionFactory(configuration);
+	}
+
+	// JWT 토큰 저장용 RedisTemplate (String,String -> 불필요한 역인덱스 방식 X)
+	@Bean
+	@Qualifier("tokenRedisTemplate")
+	public RedisTemplate<String, String> tokenRedisTemplate(@Qualifier("tokenRedisConnectionFactory") RedisConnectionFactory redisConnectionFactory) {
+		RedisTemplate<String, String> template = new RedisTemplate<>();
+		template.setConnectionFactory(redisConnectionFactory);
+		template.setKeySerializer(new StringRedisSerializer());
+		template.setValueSerializer(new StringRedisSerializer());
+		template.setHashKeySerializer(new StringRedisSerializer());
+		template.setHashValueSerializer(new StringRedisSerializer());
+		template.afterPropertiesSet();
+		return template;
+	}
 }
