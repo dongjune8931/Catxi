@@ -17,6 +17,7 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.actuate.autoconfigure.wavefront.WavefrontProperties.TokenType;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -36,6 +37,9 @@ public class LoginFilter extends UsernamePasswordAuthenticationFilter {
 
   private final MemberRepository memberRepository;
 
+  private static final String AUTH_HEADER = "Authorization";
+  private static final String BEARER_PREFIX = "Bearer";
+
   // 로그인 시도 메서드 -> UsernamePasswordAuthenticationFilter에서 상속
   @Override
   public Authentication attemptAuthentication(HttpServletRequest request, HttpServletResponse response) throws AuthenticationException{
@@ -45,13 +49,11 @@ public class LoginFilter extends UsernamePasswordAuthenticationFilter {
         // Login 요청 전문 DTO
         AuthDTO.LoginRequest loginRequestDto = objectMapper.readValue(request.getInputStream(), AuthDTO.LoginRequest.class);
 
-
-        String username = loginRequestDto.membername();
+        String membername = loginRequestDto.membername();
         String password = loginRequestDto.password();
 
-        log.info("로그인 시도 User 명 : {}",username);
-
-        UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(username, password, null);
+        log.info("로그인 시도 User 명 : {}",membername);
+        UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(membername, password, null);
 
         // 인증 시도
         log.info("Fuckin 무한 재귀");
@@ -86,7 +88,7 @@ public class LoginFilter extends UsernamePasswordAuthenticationFilter {
     log.info("Access Token 생성");
 
     // 응답 헤더에 토큰 설정
-    response.setHeader("Authorization", "Bearer " + access);
+    response.setHeader(AUTH_HEADER, BEARER_PREFIX + access);
 
     // 유저 정보 조회
     Member byUsername = memberRepository.findByMembername(username)

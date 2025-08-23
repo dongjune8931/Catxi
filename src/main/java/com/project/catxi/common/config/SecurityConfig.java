@@ -49,17 +49,17 @@ public class SecurityConfig {
     http
         .csrf((auth) -> auth.disable());
 
-    //cors 설정
+    //cors 설정 (origin 명시적 허용)
     http
         .cors(
             cors -> cors.configurationSource(corsConfigurationSource())
         );
 
-    //Form 로그인 방식 disable -> Custom하게 설정
+    //기본 Form 로그인 방식 disable -> Custom 인증 로직 사용
     http
         .formLogin((auth) -> auth.disable());
 
-    //http basic 인증 방식 disable
+    //http basic 인증 방식 disable (JWT 사용 필수)
     http
         .httpBasic((auth) -> auth.disable());
 
@@ -68,24 +68,24 @@ public class SecurityConfig {
         .authorizeHttpRequests((auth)-> auth
             .requestMatchers("/swagger", "/swagger-ui/**", "/v3/api-docs/**", "/swagger-resources/**", "/webjars/**").permitAll() // Swagger 허용
             .requestMatchers("/connect/**").permitAll()
-            .requestMatchers("/login","/","/signUp").permitAll()
             .requestMatchers("/auth/login/kakao").permitAll()
             .requestMatchers("/actuator/**").permitAll()
-            .requestMatchers("/admin").hasRole("ADMIN")
             .anyRequest().authenticated()
         );
 
-    // 로그인 필터 이전에 동작시킴
+    //JwtFilter
+    // 로그인 필터 이전에 동작
+    // 토큰 존재 시 -> 토큰 검증 -> 유저 정보 추출 -> SecurityContext에 인증 객체 설정
     http
         .addFilterBefore(new JwtFilter(jwtUtill,jwtConfig,memberRepository), LoginFilter.class);
 
-    //Filter 등록 매개변수(필터 , 위치)
-    //addFilterAt : 원하는 자리에 등록 , before: 해당 필터 전, after: 해당 필터 이후
+    //LoginFilter -> UsernamePasswordAuthenticationFilter
+    //로그인 요청 가로채 인증시도 -> 성공 시 JWT 발급
     http
         .addFilterBefore((new LoginFilter(authenticationManager(authenticationConfiguration), jwtUtill, jwtConfig,memberRepository)), UsernamePasswordAuthenticationFilter.class);
 
     // 세션 설정
-    // JWT -> Session 항상 Stateless 상태로 둬야 함
+    // JWT -> Session Stateless (인증상태 토큰으로 확인)
     http
         .sessionManagement((session) -> session
             .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
@@ -94,17 +94,17 @@ public class SecurityConfig {
     return http.build();
   }
 
-  //모든 경로 대해 cors 요청 허용Add commentMore actions
+  //cors 요청 허용
   public CorsConfigurationSource corsConfigurationSource() {
     CorsConfiguration configuration = new CorsConfiguration();
-
-    configuration.setAllowedOrigins(List.of("http://localhost:5173","http://localhost:8080","https://catxi.kro.kr","https://catxi-university-taxi-b0936.web.app"));
+    //허용 오리진 목록
+    configuration.setAllowedOrigins(List.of("http://localhost:5173","http://localhost:8080"));
 
     configuration.addAllowedHeader("*");
     configuration.setExposedHeaders(List.of("access", "Authorization","isNewUser"));
 
-    configuration.addAllowedMethod("*");
-
+    configuration.setAllowedMethods(List.of("GET","PUT","POST","DELETE"));
+    //자격증명 허용
     configuration.setAllowCredentials(true);
 
     UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();

@@ -28,7 +28,7 @@ public class CustomUserDetailsService implements UserDetailsService {
 
     log.info("✅로그인 시도 : Email: {}, Status: {}", member.getEmail(), member.getStatus());
 
-    // 탈퇴한 회원여부 조회
+    // 회원 상태 조회
     switch (member.getStatus()) {
       case INACTIVE:
         throw new DisabledException("탈퇴한 회원입니다.");

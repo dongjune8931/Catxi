@@ -36,7 +36,8 @@ public class StompHandler implements ChannelInterceptor {
 		if (StompCommand.CONNECT == accessor.getCommand()) {
 			String token = extractToken(accessor);
 			try {
-				jwtUtill.isExpired(token);
+				Claims claims = jwtUtill.parseJwt(token);
+				jwtUtill.isExpired(claims);
 				System.out.println("CONNECT - 토큰 유효성 검증 완료");
 			} catch (Exception e) {
 				throw new MemberHandler(MemberErrorCode.ACCESS_EXPIRED);
@@ -49,8 +50,9 @@ public class StompHandler implements ChannelInterceptor {
 			log.info("Destination: {}", accessor.getDestination());
 
 			String token = extractToken(accessor);
-			String email = jwtUtill.getEmail(token);
-			log.info("Email from token: {}", email);
+			Claims claims;
+			String email;
+			log.info("Email from token: {}", jwtUtill.getEmail(jwtUtill.parseJwt(token)));
 
 			String destination = accessor.getDestination();
 			if (destination == null || !destination.startsWith("/topic/")) {
@@ -66,6 +68,8 @@ public class StompHandler implements ChannelInterceptor {
 
 			String roomIdStr = parts[parts.length - 1];
 			try {
+				claims = jwtUtill.parseJwt(token);
+				email = jwtUtill.getEmail(claims);
 				Long roomId = Long.parseLong(roomIdStr);
 				log.info("Room ID: {}", roomId);
 				if (!chatRoomService.isRoomParticipant(email, roomId)) {

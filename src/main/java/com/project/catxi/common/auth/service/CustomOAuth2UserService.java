@@ -63,8 +63,7 @@ public class CustomOAuth2UserService {
   private Member createNewUser(KakaoDTO.KakaoProfile kakaoProfile) {
 
     String email = kakaoProfile.kakao_account().email();
-    //실제 닉네임아니고 멤버 이름
-    //동의항목에서 실명 제공 안해줌 Fuck you kakao
+    // 멤버 이름(앱 내 닉네임 X), 동의항목에서 실명 제공 안해줌 Fuck you kakao
     String name = kakaoProfile.kakao_account().profile().nickname();
 
     log.info(">> name: " + kakaoProfile.kakao_account().profile().nickname());
@@ -86,7 +85,6 @@ public class CustomOAuth2UserService {
 
   private String loginProcess(HttpServletResponse httpServletResponse,Member user) {
 
-    String name = user.getMembername();
     String email = user.getEmail();
 
     String access = jwtUtill.createJwt(
