@@ -52,19 +52,13 @@ public class ChatRoomService {
 	private final ChatParticipantRepository chatParticipantRepository;
 	private final MemberRepository memberRepository;
 	private final ChatMessageRepository chatMessageRepository;
-
+	private final ObjectMapper objectMapper;
 
 	private final StringRedisTemplate stringRedisTemplate;
-
-	private final ObjectMapper objectMapper = new ObjectMapper()
-		.registerModule(new JavaTimeModule())
-		.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
 
 	private final KickedParticipantRepository kickedParticipantRepository;
 
 	private final ChatMessageService chatMessageService;
-	private final StringRedisTemplate stringRedisTemplate;
-
 
 
 	public RoomCreateRes createRoom(RoomCreateReq roomReq, String email) {
@@ -134,6 +128,7 @@ public class ChatRoomService {
 
 		chatParticipantRepository.delete(chatParticipant);
 
+		sendParticipantUpdateMessage(chatRoom);
 
 		String systemMessage = member.getNickname() + " 님이 퇴장하셨습니다.";
 		chatMessageService.sendSystemMessage(roomId, systemMessage);
@@ -166,6 +161,7 @@ public class ChatRoomService {
 
 		chatParticipantRepository.save(chatParticipant);
 
+		sendParticipantUpdateMessage(chatRoom);
 
 		chatMessageService.sendSystemMessage(roomId, member.getNickname() + " 님이 입장하셨습니다.");
 	}
@@ -199,13 +195,13 @@ public class ChatRoomService {
 
 		chatParticipantRepository.delete(participant);
 
-
-
 		KickedParticipant kicked = KickedParticipant.builder()
 			.chatRoom(room)
 			.member(target)
 			.build();
 		kickedParticipantRepository.save(kicked);
+
+		sendParticipantUpdateMessage(room);
 
 		String msg = target.getNickname() + " 님이 강퇴되었습니다.";
 		chatMessageService.sendSystemMessage(roomId, msg);
@@ -215,7 +211,6 @@ public class ChatRoomService {
 
 
 	}
-
 
 
 	private void HostNotInOtherRoom(Member host) {
