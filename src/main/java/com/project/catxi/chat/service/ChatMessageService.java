@@ -38,6 +38,7 @@ public class ChatMessageService {
 	private final ChatMessageRepository chatMessageRepository;
 	private final ChatParticipantRepository chatParticipantRepository;
 	private final RedisPubSubService pubSubService;
+	private final ObjectMapper objectMapper;
 
 	public void saveMessage(Long roomId,ChatMessageSendReq req) {
 		ChatRoom room = chatRoomRepository.findById(roomId)
@@ -104,11 +105,7 @@ public class ChatMessageService {
 		);
 
 		try {
-			String json = new ObjectMapper()
-				.registerModule(new JavaTimeModule())
-				.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
-				.writeValueAsString(dto);
-
+			String json = objectMapper.writeValueAsString(dto);
 			pubSubService.publish("chat", json);
 		} catch (JsonProcessingException e) {
 			throw new RuntimeException("시스템 메시지 직렬화 실패", e);

@@ -1,5 +1,7 @@
 package com.project.catxi.chat.service;
 
+import java.nio.charset.StandardCharsets;
+
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.data.redis.connection.Message;
@@ -20,11 +22,13 @@ import com.project.catxi.chat.dto.ReadyMessageRes;
 public class RedisPubSubService implements MessageListener {
 	private final SimpMessageSendingOperations messageTemplate;
 	public final StringRedisTemplate stringRedisTemplate;
+	private final ObjectMapper objectMapper;
 
 	public RedisPubSubService(@Qualifier("chatPubSub") StringRedisTemplate stringRedisTemplate,
-		SimpMessageSendingOperations messageTemplate) {
+		SimpMessageSendingOperations messageTemplate,ObjectMapper objectMapper) {
 		this.messageTemplate = messageTemplate;
 		this.stringRedisTemplate = stringRedisTemplate;
+		this.objectMapper=objectMapper;
 	}
 
 	public void publish(String channel, String message) {
@@ -34,11 +38,9 @@ public class RedisPubSubService implements MessageListener {
 	@Override
 	//pattern 에는 topic의 이름의 패턴이 담겨있고 이 패턴을 기반으로 다이나믹한 코딩
 	public void onMessage(Message message, byte[] pattern) {
-		String channel = new String(pattern);
-		String payload = new String(message.getBody());
-		ObjectMapper objectMapper = new ObjectMapper();
-		objectMapper.registerModule(new JavaTimeModule());
-		objectMapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+		String channel = new String(message.getChannel(), StandardCharsets.UTF_8);
+		String payload = new String(message.getBody(),StandardCharsets.UTF_8);
+
 		try {
 			if ("chat".equals(channel)) {
 			ChatMessageSendReq chatMessageDto = objectMapper.readValue(payload, ChatMessageSendReq.class);
@@ -51,7 +53,7 @@ public class RedisPubSubService implements MessageListener {
 				ParticipantsUpdateMessage update = objectMapper.readValue(payload, ParticipantsUpdateMessage.class);
 				messageTemplate.convertAndSend("/topic/room/" + update.roomId() + "/participants", update);
 			} else if (channel.startsWith("kick:")) {
-				String email = channel.split(":")[1];
+				String email = channel.split(":",2)[1];
 				messageTemplate.convertAndSendToUser(email, "/queue/kick", "KICKED");
 			}
 		} catch (JsonProcessingException e) {
