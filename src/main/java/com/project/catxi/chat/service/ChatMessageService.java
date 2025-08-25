@@ -75,8 +75,8 @@ public class ChatMessageService {
 				m.getMember() !=null ? m.getMember().getEmail(): "[SYSTEM]",
 				m.getId(),
 				room.getRoomId(),
-				m.getMember().getId(),
-				m.getMember().getNickname(),
+				m.getMember() != null ? m.getMember().getId()        : null,
+				m.getMember() != null ? m.getMember().getNickname()  : "[SYSTEM]",
 				m.getContent(),
 				m.getCreatedTime()
 			))
