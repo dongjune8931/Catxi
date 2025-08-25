@@ -52,13 +52,9 @@ public class ChatRoomService {
 	private final ChatParticipantRepository chatParticipantRepository;
 	private final MemberRepository memberRepository;
 	private final ChatMessageRepository chatMessageRepository;
-
+	private final ObjectMapper objectMapper;
 
 	private final StringRedisTemplate stringRedisTemplate;
-
-	private final ObjectMapper objectMapper = new ObjectMapper()
-		.registerModule(new JavaTimeModule())
-		.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
 
 	private final KickedParticipantRepository kickedParticipantRepository;
 
