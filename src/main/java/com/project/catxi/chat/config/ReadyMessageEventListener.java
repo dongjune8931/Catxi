@@ -14,18 +14,12 @@ import com.project.catxi.chat.service.RedisPubSubService;
 import lombok.RequiredArgsConstructor;
 
 @Component
+@RequiredArgsConstructor
 public class ReadyMessageEventListener {
 
 	private final RedisPubSubService redisPubSubService;
 	private final ObjectMapper objectMapper;
 
-	// ObjectMapper 초기 설정을 생성자에서 해도 됩니다.
-	public ReadyMessageEventListener(RedisPubSubService redisPubSubService, ObjectMapper objectMapper) {
-		this.redisPubSubService = redisPubSubService;
-		this.objectMapper = objectMapper;
-		this.objectMapper.registerModule(new JavaTimeModule());
-		this.objectMapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
-	}
 
 	@TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
 	public void onReadyMessageEvent(ReadyMessageEvent event) throws JsonProcessingException {

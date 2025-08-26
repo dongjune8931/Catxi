@@ -26,13 +26,16 @@ public class StompController {
 	private final SimpMessageSendingOperations messageTemplate;
 	private final ChatMessageService chatMessageService;
 	private final RedisPubSubService pubSubService;
+	private final ObjectMapper objectMapper;
 	private final MapService mapService;
 
+
 	public StompController(SimpMessageSendingOperations messageTemplate, ChatMessageService chatMessageService,
-		RedisPubSubService pubSubService, MapService mapService) {
+		RedisPubSubService pubSubService,ObjectMapper objectMapper, MapService mapService) {
 		this.messageTemplate = messageTemplate;
 		this.chatMessageService = chatMessageService;
 		this.pubSubService = pubSubService;
+		this.objectMapper=objectMapper;
 		this.mapService = mapService;
 	}
 
@@ -40,7 +43,6 @@ public class StompController {
 
 	@MessageMapping("/{roomId}")
 	public void sendMessage(@DestinationVariable Long roomId, ChatMessageSendReq chatMessageSendReq) throws JsonProcessingException {
-		System.out.println(chatMessageSendReq.message());
 		chatMessageService.saveMessage(roomId, chatMessageSendReq);
 		//messageTemplate.convertAndSend("/topic/"+ roomId,chatMessageSendReq);
 
@@ -50,9 +52,6 @@ public class StompController {
 			chatMessageSendReq.message(),
 			LocalDateTime.now()
 		);
-		ObjectMapper objectMapper = new ObjectMapper();
-		objectMapper.registerModule(new JavaTimeModule());
-		objectMapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
 		String message = objectMapper.writeValueAsString(enriched);
 		pubSubService.publish("chat", message);
 	}

@@ -3,6 +3,7 @@ package com.project.catxi.common.auth.controller;
 import com.project.catxi.common.api.ApiResponse;
 import com.project.catxi.common.api.error.MemberErrorCode;
 import com.project.catxi.common.api.exception.CatxiException;
+import com.project.catxi.common.auth.infra.CodeCache;
 import com.project.catxi.common.auth.kakao.KakaoDTO;
 import com.project.catxi.common.auth.service.CustomOAuth2UserService;
 import com.project.catxi.common.auth.service.CustomUserDetailsService;
@@ -47,19 +48,19 @@ public class OAuthController {
   private final JwtConfig jwtConfig;
   private final JwtUtill jwtUtill;
   private final CustomOAuth2UserService customOAuth2UserService;
-  private static final Set<String> usedCodes = ConcurrentHashMap.newKeySet();
+  private final CodeCache codeCache;
 
   @GetMapping("/kakao/callback")
   public ResponseEntity<Void> kakaoCallback(@RequestParam("code") String code) {
     HttpHeaders headers = new HttpHeaders();
     headers.setLocation(URI.create("https://catxi-university-taxi-b0936.web.app/home"));
-    return new ResponseEntity<>(headers, HttpStatus.FOUND); // 302 redirect
+    return new ResponseEntity<>(headers, HttpStatus.FOUND);
   }
 
   @GetMapping("/login/kakao")
   public ApiResponse<?> kakaoLogin(@RequestParam("code") String accessCode, HttpServletResponse response) {
     // 중복 코드 차단
-    if (!usedCodes.add(accessCode)) {
+    if (codeCache.isDuplicate(accessCode)) {
       log.warn("🚨중복 code 요청 차단 code = {}", accessCode);
       return ApiResponse.error(MemberErrorCode.DUPLICATE_AUTHORIZE_CODE);
     }
@@ -85,39 +86,24 @@ public class OAuthController {
       }
     } catch (Exception e) {
       log.error("[카카오 로그인 실패] code = {}, error = {}", accessCode, e.getMessage());
-      usedCodes.remove(accessCode); // 재시도 허용
+      codeCache.remove(accessCode); // 재시도 허용
       return ApiResponse.error(MemberErrorCode.ACCESS_EXPIRED);
     }
   }
 
-    // 카카오 회원가입
+  // 추가 회원가입 단계
+  @PatchMapping("/signUp/catxi")
+  public ResponseEntity<?> completeSignup (@RequestBody @Valid KakaoDTO.CatxiSignUp dto, @AuthenticationPrincipal CustomUserDetails userDetails){
 
-    // 추가 회원가입 단계
-    @PatchMapping("/signUp/catxi")
-    public ResponseEntity<?> completeSignup (@RequestBody @Valid KakaoDTO.CatxiSignUp dto, @AuthenticationPrincipal CustomUserDetails userDetails){
-
-      customOAuth2UserService.catxiSignup(userDetails.getUsername(), dto);
-      return ResponseEntity.ok("추가 회원정보 등록 완료");
-    }
+    customOAuth2UserService.catxiSignup(userDetails.getUsername(), dto);
+    return ResponseEntity.ok("추가 회원정보 등록 완료");
+  }
 
   @Operation(summary = "닉네임 중복 조회")
   @GetMapping("/signUp/catxi/checkNN")
   public ResponseEntity<?> checkNN(@RequestParam("nickname") String nickname) {
     boolean isDuplicate = customOAuth2UserService.isNNDuplicate(nickname);
     return ResponseEntity.ok(isDuplicate);
-  }
-
-  @Operation(summary = "AccessToken 재발급")
-  @PostMapping("/reissue")
-  public ResponseEntity<?> reissue(@RequestHeader("refresh") String refreshToken) {
-    if (!jwtUtill.validateToken(refreshToken) || !jwtUtill.isRefreshToken(refreshToken)) {
-      throw new CatxiException(MemberErrorCode.MEMBER_NOT_FOUND);
-    }
-
-    String email = jwtUtill.getEmail(refreshToken);
-    String newAccessToken = jwtUtill.createJwt("access", email, "ROLE_USER", jwtConfig.getAccessTokenValidityInSeconds());
-
-    return ResponseEntity.ok().header("access", newAccessToken).build();
   }
 
 

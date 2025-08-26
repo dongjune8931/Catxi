@@ -1,10 +1,15 @@
 package com.project.catxi.chat.service;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.project.catxi.chat.domain.ChatMessage;
 import com.project.catxi.chat.domain.ChatParticipant;
 import com.project.catxi.chat.domain.ChatRoom;
@@ -32,6 +37,8 @@ public class ChatMessageService {
 	private final MemberRepository memberRepository;
 	private final ChatMessageRepository chatMessageRepository;
 	private final ChatParticipantRepository chatParticipantRepository;
+	private final RedisPubSubService pubSubService;
+	private final ObjectMapper objectMapper;
 
 	public void saveMessage(Long roomId,ChatMessageSendReq req) {
 		ChatRoom room = chatRoomRepository.findById(roomId)
@@ -65,15 +72,45 @@ public class ChatMessageService {
 		return chatMessageRepository.findByChatRoomOrderByCreatedTimeAsc(room)
 			.stream()
 			.map(m -> new ChatMessageRes(
-				m.getMember().getEmail(),
+				m.getMember() !=null ? m.getMember().getEmail(): "[SYSTEM]",
 				m.getId(),
 				room.getRoomId(),
-				m.getMember().getId(),
-				m.getMember().getNickname(),
+				m.getMember() != null ? m.getMember().getId()        : null,
+				m.getMember() != null ? m.getMember().getNickname()  : "[SYSTEM]",
 				m.getContent(),
 				m.getCreatedTime()
 			))
 			.toList();
+
+	}
+
+	public void sendSystemMessage(Long roomId, String content){
+		ChatRoom chatRoom = chatRoomRepository.findById(roomId)
+			.orElseThrow(() -> new CatxiException(ChatRoomErrorCode.CHATROOM_NOT_FOUND));
+
+		ChatMessage systemMsg = ChatMessage.builder()
+			.chatRoom(chatRoom)
+			.member(null)
+			.content(content)
+			.msgType(MessageType.SYSTEM)
+			.build();
+
+		chatMessageRepository.save(systemMsg);
+
+		ChatMessageSendReq dto = new ChatMessageSendReq(
+			roomId,
+			"[SYSTEM]",
+			content,
+			LocalDateTime.now()
+		);
+
+		try {
+			String json = objectMapper.writeValueAsString(dto);
+			pubSubService.publish("chat", json);
+		} catch (JsonProcessingException e) {
+			throw new RuntimeException("시스템 메시지 직렬화 실패", e);
+		}
+
 
 	}
 }
