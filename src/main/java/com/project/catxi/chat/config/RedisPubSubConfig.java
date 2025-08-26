@@ -29,6 +29,7 @@ public class RedisPubSubConfig {
 
 		// 채널 구독: 정확히 "chat" 채널
 		container.addMessageListener(listener, new ChannelTopic("chat"));
+		container.addMessageListener(listener, new PatternTopic("map"));
 
 		// 패턴 구독: ready:*, participants:*, kick:* 모두 수신
 		container.addMessageListener(listener, new PatternTopic("ready:*"));

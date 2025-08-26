@@ -46,12 +46,12 @@ public class RedisPubSubService implements MessageListener {
 			if ("chat".equals(channel)) {
 			ChatMessageSendReq chatMessageDto = objectMapper.readValue(payload, ChatMessageSendReq.class);
 				messageTemplate.convertAndSend("/topic/" + chatMessageDto.roomId(), chatMessageDto);
-			} else if (channel.startsWith("ready:")) {
-				ReadyMessageRes readyMessage = objectMapper.readValue(payload, ReadyMessageRes.class);
-				messageTemplate.convertAndSend("/topic/ready/" + readyMessage.roomId(), readyMessage);
 			} else if (channel.equals("map")) {
 				CoordinateRes coordinateRes = objectMapper.readValue(payload, CoordinateRes.class);
 				messageTemplate.convertAndSend("/topic/map/" + coordinateRes.roomId(), coordinateRes);
+			} else if (channel.startsWith("ready:")) {
+				ReadyMessageRes readyMessage = objectMapper.readValue(payload, ReadyMessageRes.class);
+				messageTemplate.convertAndSend("/topic/ready/" + readyMessage.roomId(), readyMessage);
 			} else if (channel.startsWith("participants:")) {
 				ParticipantsUpdateMessage update = objectMapper.readValue(payload, ParticipantsUpdateMessage.class);
 				messageTemplate.convertAndSend("/topic/room/" + update.roomId() + "/participants", update);
