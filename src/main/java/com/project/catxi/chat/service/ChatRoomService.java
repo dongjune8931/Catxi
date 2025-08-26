@@ -106,7 +106,9 @@ public class ChatRoomService {
 		Location location = switch (station) {
 			case "SOSA_ST" -> Location.SOSA_ST;
 			case "YEOKGOK_ST" -> Location.YEOKGOK_ST;
-			default -> Location.GURO_ST;
+			case "ETC" -> Location.GURO_ST;
+			case "ALL" -> null;
+			default -> throw new CatxiException(ChatRoomErrorCode.INVALID_CHATROOM_PARAMETER);
 		};
 
 		return chatRoomRepository.findByLocationAndDirection(location, direction, pageable);

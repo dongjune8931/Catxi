@@ -112,6 +112,10 @@ public class ChatRoomRepositoryCustomImpl implements ChatRoomRepositoryCustom {
 
 	private BooleanExpression filterByLocation(EnumPath<Location> path, Location location){
 		Set<Location> locations = Set.of(Location.GURO_ST, Location.BUCHEON_ST, Location.SINDORIM_ST);
+
+		if(location == null)
+			return null;
+
 		if(locations.contains(location))
 			return path.in(locations);
 		else
