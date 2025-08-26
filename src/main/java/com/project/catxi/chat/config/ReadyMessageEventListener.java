@@ -1,5 +1,7 @@
 package com.project.catxi.chat.config;
 
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
@@ -17,13 +19,16 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class ReadyMessageEventListener {
 
-	private final RedisPubSubService redisPubSubService;
+	private final @Qualifier("chatPubSub") StringRedisTemplate redisTemplate;
 	private final ObjectMapper objectMapper;
 
-
 	@TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
-	public void onReadyMessageEvent(ReadyMessageEvent event) throws JsonProcessingException {
+	public void onReadyMessageEvent(ReadyMessageEvent event) {
+		try {
 			String json = objectMapper.writeValueAsString(event.readyMessageRes());
-			redisPubSubService.publish(event.channel(), json);
+			redisTemplate.convertAndSend(event.channel(), json);
+		} catch (JsonProcessingException e) {
+			throw new RuntimeException("ReadyMessageRes 직렬화 실패", e);
+		}
 	}
 }

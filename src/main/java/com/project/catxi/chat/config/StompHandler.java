@@ -1,6 +1,8 @@
 
 package com.project.catxi.chat.config;
 
+import java.util.Collections;
+
 import org.springframework.messaging.Message;
 import org.springframework.messaging.MessageChannel;
 import org.springframework.messaging.simp.stomp.StompCommand;
@@ -40,7 +42,7 @@ public class StompHandler implements ChannelInterceptor {
 				log.info("CONNECT - 토큰 유효성 검증 완료");
 
 				String email = jwtUtill.getEmail(claims);
-				accessor.setUser(new UsernamePasswordAuthenticationToken(email, null, java.util.Collections.emptyList()));
+				accessor.setUser(new UsernamePasswordAuthenticationToken(email, null, Collections.emptyList()));
 				log.info("CONNECT - 토큰 유효성 검증 및 Principal 설정 완료: {}", email);
 
 			} catch (Exception e) {

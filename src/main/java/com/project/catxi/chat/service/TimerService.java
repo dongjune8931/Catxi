@@ -8,6 +8,7 @@ import java.util.concurrent.*;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.scheduling.TaskScheduler;
 import org.springframework.stereotype.Service;
@@ -23,14 +24,26 @@ import com.project.catxi.common.domain.RoomStatus;
 import lombok.RequiredArgsConstructor;
 
 @Service
-@RequiredArgsConstructor
 public class TimerService {
 
 	private static final Logger log = LoggerFactory.getLogger(TimerService.class);
+
 	private final RedisTemplate<String, String> redisTemplate;
 	private final TaskScheduler taskScheduler;
 	private final ChatRoomRepository chatRoomRepository;
 	private final ChatParticipantRepository chatParticipantRepository;
+
+	public TimerService(
+		RedisTemplate<String, String> redisTemplate,
+		@Qualifier("redisPubSubScheduler") TaskScheduler taskScheduler,
+		ChatRoomRepository chatRoomRepository,
+		ChatParticipantRepository chatParticipantRepository
+	) {
+		this.redisTemplate = redisTemplate;
+		this.taskScheduler = taskScheduler;
+		this.chatRoomRepository = chatRoomRepository;
+		this.chatParticipantRepository = chatParticipantRepository;
+	}
 
 	public void scheduleReadyTimeout(String roomId) {
 		ChatRoom room = chatRoomRepository.findById(Long.valueOf(roomId))

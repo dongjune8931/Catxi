@@ -3,6 +3,8 @@ package com.project.catxi.chat.service;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -37,8 +39,8 @@ public class ChatMessageService {
 	private final MemberRepository memberRepository;
 	private final ChatMessageRepository chatMessageRepository;
 	private final ChatParticipantRepository chatParticipantRepository;
-	private final RedisPubSubService pubSubService;
 	private final ObjectMapper objectMapper;
+	private final @Qualifier("chatPubSub") StringRedisTemplate redisTemplate;
 
 	public void saveMessage(Long roomId,ChatMessageSendReq req) {
 		ChatRoom room = chatRoomRepository.findById(roomId)
@@ -106,11 +108,10 @@ public class ChatMessageService {
 
 		try {
 			String json = objectMapper.writeValueAsString(dto);
-			pubSubService.publish("chat", json);
+			redisTemplate.convertAndSend("chat", json); // ✅
 		} catch (JsonProcessingException e) {
 			throw new RuntimeException("시스템 메시지 직렬화 실패", e);
 		}
-
 
 	}
 }
