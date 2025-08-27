@@ -32,9 +32,6 @@ public class RedisPubSubService implements MessageListener {
 		this.objectMapper=objectMapper;
 	}
 
-	public void publish(String channel, String message) {
-		stringRedisTemplate.convertAndSend(channel, message);
-	}
 
 	@Override
 	//pattern 에는 topic의 이름의 패턴이 담겨있고 이 패턴을 기반으로 다이나믹한 코딩

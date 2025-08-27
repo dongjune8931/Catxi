@@ -9,9 +9,11 @@ import org.springframework.data.redis.connection.RedisPassword;
 import org.springframework.data.redis.connection.RedisStandaloneConfiguration;
 import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory;
 import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.data.redis.listener.ChannelTopic;
 import org.springframework.data.redis.listener.PatternTopic;
 import org.springframework.data.redis.listener.RedisMessageListenerContainer;
 import org.springframework.data.redis.listener.adapter.MessageListenerAdapter;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 
 import com.project.catxi.chat.service.RedisPubSubService;
 
@@ -40,32 +42,52 @@ public class RedisConfig {
 		return new LettuceConnectionFactory(configuration);
 	}
 
-	//publish 객체
 	@Bean
+	@Qualifier("chatPubSub")
+	public StringRedisTemplate chatPubSubTemplate(
+		@Qualifier("chatRedisConnectionFactory") RedisConnectionFactory cf) {
+		StringRedisTemplate tpl = new StringRedisTemplate(cf);
+		// StringRedisTemplate 기본도 StringRedisSerializer(UTF-8)이지만 명시해도 ok
+		// var s = new StringRedisSerializer(StandardCharsets.UTF_8);
+		// tpl.setKeySerializer(s); tpl.setValueSerializer(s);
+		// tpl.setHashKeySerializer(s); tpl.setHashValueSerializer(s);
+		return tpl;
+	}
+
+	@Bean
+	public ThreadPoolTaskScheduler redisPubSubScheduler() {
+		ThreadPoolTaskScheduler scheduler = new ThreadPoolTaskScheduler();
+		scheduler.setPoolSize(4);
+		scheduler.setThreadNamePrefix("redis-pubsub-");
+		scheduler.initialize();
+		return scheduler;
+	}
+
+	//publish 객체
+	/*@Bean
 	@Qualifier("chatPubSub")
 	// 일반적으로 RedisTemplate< key 데이터 타입 , value 데이터타입> 을 사용
 	public StringRedisTemplate stringRedisTemplate( @Qualifier("chatRedisConnectionFactory")RedisConnectionFactory redisConnectionFactory) {
 		return new StringRedisTemplate(redisConnectionFactory);
-	}
+	}*/
 
 	//subscribe 객체
 	@Bean
 	public RedisMessageListenerContainer redisMessageListenerContainer(
-		@Qualifier("chatRedisConnectionFactory") RedisConnectionFactory redisConnectionFactory,
-		MessageListenerAdapter messageListenerAdapter
+		@Qualifier("chatRedisConnectionFactory") RedisConnectionFactory cf,
+		RedisPubSubService listener,
+		ThreadPoolTaskScheduler redisPubSubScheduler
 	) {
-		RedisMessageListenerContainer container=new RedisMessageListenerContainer();
-		container.setConnectionFactory(redisConnectionFactory);
-		container.addMessageListener(messageListenerAdapter, new PatternTopic("chat"));
-		container.addMessageListener(messageListenerAdapter, new PatternTopic("ready:*"));
+		RedisMessageListenerContainer container = new RedisMessageListenerContainer();
+		container.setConnectionFactory(cf);
+		container.setTaskExecutor(redisPubSubScheduler);
+
+		// 명시적 구독: 채널 + 패턴
+		container.addMessageListener(listener, new ChannelTopic("chat"));
+		container.addMessageListener(listener, new PatternTopic("ready:*"));
+		container.addMessageListener(listener, new PatternTopic("participants:*"));
+		container.addMessageListener(listener, new PatternTopic("kick:*"));
 		return container;
 	}
 
-
-	//redis에서 수신된 메시지를 처리하는 객체 생성
-	@Bean
-	public MessageListenerAdapter messageListenerAdapter(RedisPubSubService redisPubSubService){
-		//RedisPubSubService의 특정 메서드가 수신된 메시지를 처리할 수 있도록 지정
-		return new MessageListenerAdapter(redisPubSubService,"onMessage");
-	}
 }
