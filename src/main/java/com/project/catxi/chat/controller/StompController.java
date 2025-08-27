@@ -63,6 +63,6 @@ public class StompController {
 		);
 		ObjectMapper objectMapper = new ObjectMapper();
 		String message = objectMapper.writeValueAsString(enriched);
-		pubSubService.publish("map", message);
+		redisTemplate.convertAndSend("map", message);
 	}
 }
