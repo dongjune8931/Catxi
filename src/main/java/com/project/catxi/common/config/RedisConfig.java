@@ -84,6 +84,7 @@ public class RedisConfig {
 
 		// 명시적 구독: 채널 + 패턴
 		container.addMessageListener(listener, new ChannelTopic("chat"));
+		container.addMessageListener(listener, new ChannelTopic("map"));
 		container.addMessageListener(listener, new PatternTopic("ready:*"));
 		container.addMessageListener(listener, new PatternTopic("participants:*"));
 		container.addMessageListener(listener, new PatternTopic("kick:*"));

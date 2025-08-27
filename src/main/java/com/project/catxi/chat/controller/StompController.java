@@ -11,13 +11,16 @@ import org.springframework.messaging.simp.SimpMessageSendingOperations;
 import org.springframework.stereotype.Controller;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.project.catxi.chat.dto.ChatMessageSendReq;
 import com.project.catxi.chat.service.ChatMessageService;
 import com.project.catxi.chat.service.RedisPubSubService;
+
+import com.project.catxi.map.dto.CoordinateReq;
+import com.project.catxi.map.dto.CoordinateRes;
+import com.project.catxi.map.service.MapService;
 
 import lombok.RequiredArgsConstructor;
 
@@ -29,8 +32,7 @@ public class StompController {
 	private final ChatMessageService chatMessageService;
 	private final @Qualifier("chatPubSub") StringRedisTemplate redisTemplate;
 	private final ObjectMapper objectMapper;
-
-
+	private final MapService mapService;
 
 
 	@MessageMapping("/{roomId}")
@@ -46,5 +48,21 @@ public class StompController {
 		);
 		String message = objectMapper.writeValueAsString(enriched);
 		redisTemplate.convertAndSend("chat", message);
+	}
+
+	@MessageMapping("/map/{roomId}")
+	public void sendCoordinate(@DestinationVariable Long roomId, CoordinateReq coordinateReq) throws JsonProcessingException {
+		double distance = mapService.handleSaveCoordinateAndDistance(coordinateReq);
+
+		CoordinateRes enriched = new CoordinateRes(
+			coordinateReq.roomId(),
+			coordinateReq.email(),
+			coordinateReq.latitude(),
+			coordinateReq.longitude(),
+			distance
+		);
+		ObjectMapper objectMapper = new ObjectMapper();
+		String message = objectMapper.writeValueAsString(enriched);
+		redisTemplate.convertAndSend("map", message);
 	}
 }
