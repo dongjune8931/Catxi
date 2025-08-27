@@ -1,5 +1,6 @@
 package com.project.catxi.map.service;
 
+import java.time.Duration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -93,7 +94,7 @@ public class MapService {
 			coordMap.put("latitude", latitude);
 			coordMap.put("longitude", longitude);
 			String json = objectMapper.writeValueAsString(coordMap);
-			redisTemplate.opsForValue().set(key, json); //TTL 없이 저장
+			redisTemplate.opsForValue().set(key, json, Duration.ofHours(48)); //TTL 48시간
 		}catch (Exception e) {
 			throw new CatxiException(MapErrorCode.COORDINATE_SAVE_FAILED);
 		}

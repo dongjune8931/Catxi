@@ -42,8 +42,7 @@ public class MapController {
 
 	@PostMapping("/{roomId}/save-depart")
 	@Operation(summary = "출발지 좌표 저장 API", description = "출발지 좌표를 레디스에 저장합니다. "
-		+ "email 필드에는 departure 문자열을 담아주세요."
-		+ "지도 페이지 로딩 시 호출해주세요.")
+		+ "채팅방 생성 시 호출해주세요.")
 	public ResponseEntity<ApiResponse<Void>> saveDepart(@PathVariable Long roomId, @RequestBody DepartureReq req){
 		mapService.saveDepartureCoordinate( req.latitude(), req.longitude(), roomId);
 
