@@ -2,28 +2,19 @@ package com.project.catxi.common.auth.controller;
 
 import com.project.catxi.common.api.ApiResponse;
 import com.project.catxi.common.api.error.MemberErrorCode;
-import com.project.catxi.common.api.exception.CatxiException;
 import com.project.catxi.common.auth.infra.CodeCache;
 import com.project.catxi.common.auth.kakao.KakaoDTO;
 import com.project.catxi.common.auth.service.CustomOAuth2UserService;
-import com.project.catxi.common.auth.service.CustomUserDetailsService;
-import com.project.catxi.common.config.JwtConfig;
+import com.project.catxi.common.config.security.JwtConfig;
 import com.project.catxi.common.domain.MemberStatus;
-import com.project.catxi.common.jwt.JwtUtill;
+import com.project.catxi.common.jwt.JwtUtil;
+import com.project.catxi.common.jwt.JwtTokenProvider;
 import com.project.catxi.member.domain.Member;
 import com.project.catxi.member.dto.CustomUserDetails;
-import com.project.catxi.member.repository.MemberRepository;
-import com.project.catxi.member.service.MemberService;
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
-import java.io.IOException;
-import java.io.PrintWriter;
 import java.net.URI;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpHeaders;
@@ -32,9 +23,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
-import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -46,7 +35,8 @@ import org.springframework.web.bind.annotation.RestController;
 public class OAuthController {
 
   private final JwtConfig jwtConfig;
-  private final JwtUtill jwtUtill;
+  private final JwtUtil jwtUtil;
+  private final JwtTokenProvider jwtTokenProvider;
   private final CustomOAuth2UserService customOAuth2UserService;
   private final CodeCache codeCache;
 
@@ -71,8 +61,8 @@ public class OAuthController {
       String email = user.getEmail();
 
       // ✅ Access + Refresh Token 발급
-      String accessToken = jwtUtill.createJwt("access", email, "ROLE_USER", jwtConfig.getAccessTokenValidityInSeconds());
-      String refreshToken = jwtUtill.createJwt("refresh", email, "ROLE_USER", jwtConfig.getRefreshTokenValidityInSeconds());
+      String accessToken = jwtTokenProvider.generateAccessToken(email);
+      String refreshToken = jwtTokenProvider.generateRefreshToken(email);
 
       // ✅ 응답 헤더에 담기
       response.setHeader("access", accessToken);

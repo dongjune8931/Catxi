@@ -2,7 +2,7 @@ package com.project.catxi.common.jwt;
 
 import com.project.catxi.common.api.error.MemberErrorCode;
 import com.project.catxi.common.api.handler.MemberHandler;
-import com.project.catxi.common.config.JwtConfig;
+import com.project.catxi.common.config.security.JwtConfig;
 import com.project.catxi.common.domain.MemberStatus;
 import com.project.catxi.member.dto.CustomUserDetails;
 import com.project.catxi.member.domain.Member;
@@ -14,6 +14,8 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.util.Date;
+import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -25,7 +27,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 @RequiredArgsConstructor
 public class JwtFilter extends OncePerRequestFilter {
 
-  private final JwtUtill jwtUtill;
+  private final JwtUtil jwtUtil;
   private final JwtConfig jwtConfig;
   private final MemberRepository memberRepository;
 
@@ -39,6 +41,7 @@ public class JwtFilter extends OncePerRequestFilter {
     String uri = request.getRequestURI();
 
     // /connect, /auth/login/kakao로 시작하는 주소 JWT 검증 예외처리
+    //TODO: uri 필터 통과 고민
     if (uri.startsWith("/connect") || uri.equals("/auth/login/kakao")) {
       log.info("JWT 검증 제외 경로로 통과: {}", uri);
       filterChain.doFilter(request, response);
@@ -60,7 +63,7 @@ public class JwtFilter extends OncePerRequestFilter {
     //Claims 한 번에 전부 파싱
     Claims claims;
     try {
-      claims = jwtUtill.parseJwt(accessToken);
+      claims = jwtUtil.parseJwt(accessToken);
     } catch (ExpiredJwtException e) {
       throw new MemberHandler(MemberErrorCode.ACCESS_EXPIRED);
     } catch (Exception e) {
@@ -70,12 +73,12 @@ public class JwtFilter extends OncePerRequestFilter {
     }
 
     // 토큰 만료 여부 확인
-    if (jwtUtill.isExpired(claims)) {
+    if (jwtUtil.isExpired(claims).before(new Date())) {
       throw new MemberHandler(MemberErrorCode.ACCESS_EXPIRED);
     }
 
     // 토큰이 accessToken인지 확인
-    String category = jwtUtill.getType(claims);
+    String category = jwtUtil.getType(claims);
     if (!"access".equals(category)) {
       response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
       response.getWriter().print("AccessToken이 아닙니다");
@@ -83,7 +86,7 @@ public class JwtFilter extends OncePerRequestFilter {
     }
 
     // jwtUtill 객체에서 username 받아와 DB에서 회원 확인 및 상태 점검
-    String email = jwtUtill.getEmail(claims);
+    String email = jwtUtil.getEmail(claims);
     Member member = memberRepository.findByEmail(email).orElse(null);
     if (member == null) {
       response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);

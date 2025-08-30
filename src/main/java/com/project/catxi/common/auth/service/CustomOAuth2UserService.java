@@ -5,17 +5,14 @@ import com.project.catxi.common.api.exception.CatxiException;
 import com.project.catxi.common.api.handler.MemberHandler;
 import com.project.catxi.common.auth.kakao.KakaoDTO;
 import com.project.catxi.common.auth.kakao.KakaoUtill;
-import com.project.catxi.common.config.JwtConfig;
-import com.project.catxi.common.config.WebConfig;
 import com.project.catxi.common.domain.MemberStatus;
-import com.project.catxi.common.jwt.JwtUtill;
+import com.project.catxi.common.jwt.JwtUtil;
+import com.project.catxi.common.jwt.JwtTokenProvider;
 import com.project.catxi.member.domain.Member;
 import com.project.catxi.member.repository.MemberRepository;
-import com.project.catxi.member.service.MemberService;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.security.authentication.DisabledException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,11 +22,10 @@ import org.springframework.transaction.annotation.Transactional;
 public class CustomOAuth2UserService {
 
   private final KakaoUtill kakaoUtill;
-  private final JwtUtill jwtUtill;
+  private final JwtUtil jwtUtil;
+  private final JwtTokenProvider jwtTokenProvider;
   private final MemberRepository memberRepository;
   private final HttpServletResponse httpServletResponse;
-
-  private final JwtConfig jwtConfig;
 
   public Member oAuthLogin(String accessCode, HttpServletResponse response) {
     // 카카오 토큰 요청
@@ -87,8 +83,7 @@ public class CustomOAuth2UserService {
 
     String email = user.getEmail();
 
-    String access = jwtUtill.createJwt(
-        "access",email,"ROLE_USER",jwtConfig.getAccessTokenValidityInSeconds());
+    String access = jwtTokenProvider.generateAccessToken(email);
     httpServletResponse.setHeader("access", access);
     log.info("✅ [헤더에 담은 JWT] access = {}", httpServletResponse.getHeader("access"));
 

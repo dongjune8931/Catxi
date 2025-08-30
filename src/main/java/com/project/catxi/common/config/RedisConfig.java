@@ -4,17 +4,16 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+import org.springframework.context.annotation.Primary;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.connection.RedisPassword;
 import org.springframework.data.redis.connection.RedisStandaloneConfiguration;
 import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.listener.ChannelTopic;
 import org.springframework.data.redis.listener.PatternTopic;
 import org.springframework.data.redis.listener.RedisMessageListenerContainer;
 import org.springframework.data.redis.listener.adapter.MessageListenerAdapter;
-import org.springframework.data.redis.serializer.StringRedisSerializer;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 
 import com.project.catxi.chat.service.RedisPubSubService;
@@ -44,7 +43,8 @@ public class RedisConfig {
 		return new LettuceConnectionFactory(configuration);
 	}
 
-	@Bean
+	@Bean("chatPubSubTemplate")
+	@Primary
 	@Qualifier("chatPubSub")
 	public StringRedisTemplate chatPubSubTemplate(
 		@Qualifier("chatRedisConnectionFactory") RedisConnectionFactory cf) {
@@ -114,17 +114,10 @@ public class RedisConfig {
 		return new LettuceConnectionFactory(configuration);
 	}
 
-	// JWT 토큰 저장용 RedisTemplate (String,String -> 불필요한 역인덱스 방식 X)
-	@Bean
+	// JWT 토큰 저장용 StringRedisTemplate
+	@Bean("tokenRedisTemplate")
 	@Qualifier("tokenRedisTemplate")
-	public RedisTemplate<String, String> tokenRedisTemplate(@Qualifier("tokenRedisConnectionFactory") RedisConnectionFactory redisConnectionFactory) {
-		RedisTemplate<String, String> template = new RedisTemplate<>();
-		template.setConnectionFactory(redisConnectionFactory);
-		template.setKeySerializer(new StringRedisSerializer());
-		template.setValueSerializer(new StringRedisSerializer());
-		template.setHashKeySerializer(new StringRedisSerializer());
-		template.setHashValueSerializer(new StringRedisSerializer());
-		template.afterPropertiesSet();
-		return template;
+	public StringRedisTemplate tokenRedisTemplate(@Qualifier("tokenRedisConnectionFactory") RedisConnectionFactory redisConnectionFactory) {
+		return new StringRedisTemplate(redisConnectionFactory);
 	}
 }
