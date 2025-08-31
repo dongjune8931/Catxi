@@ -102,22 +102,22 @@ public class RedisConfig {
 	}
 
 	// JWT 토큰 저장용 Redis 연결
-	@Bean
-	@Qualifier("tokenRedisConnectionFactory")
-	public RedisConnectionFactory tokenRedisConnectionFactory() {
-		RedisStandaloneConfiguration configuration = new RedisStandaloneConfiguration();
-		configuration.setHostName(host);
-		configuration.setPort(port);
-		//리프레시 토큰용 DB 분리
-		configuration.setDatabase(1);
-		configuration.setPassword(RedisPassword.of(password));
-		return new LettuceConnectionFactory(configuration);
-	}
-
-	// JWT 토큰 저장용 StringRedisTemplate
-	@Bean("tokenRedisTemplate")
-	@Qualifier("tokenRedisTemplate")
-	public StringRedisTemplate tokenRedisTemplate(@Qualifier("tokenRedisConnectionFactory") RedisConnectionFactory redisConnectionFactory) {
-		return new StringRedisTemplate(redisConnectionFactory);
-	}
+//	@Bean
+//	@Qualifier("tokenRedisConnectionFactory")
+//	public RedisConnectionFactory tokenRedisConnectionFactory() {
+//		RedisStandaloneConfiguration configuration = new RedisStandaloneConfiguration();
+//		configuration.setHostName(host);
+//		configuration.setPort(port);
+//		//리프레시 토큰용 DB 분리
+//		configuration.setDatabase(1);
+//		configuration.setPassword(RedisPassword.of(password));
+//		return new LettuceConnectionFactory(configuration);
+//	}
+//
+//	// JWT 토큰 저장용 StringRedisTemplate
+//	@Bean("tokenRedisTemplate")
+//	@Qualifier("tokenRedisTemplate")
+//	public StringRedisTemplate tokenRedisTemplate(@Qualifier("tokenRedisConnectionFactory") RedisConnectionFactory redisConnectionFactory) {
+//		return new StringRedisTemplate(redisConnectionFactory);
+//	}
 }
