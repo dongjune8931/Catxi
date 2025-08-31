@@ -4,7 +4,7 @@ import com.project.catxi.common.api.error.MemberErrorCode;
 import com.project.catxi.common.api.exception.CatxiException;
 import com.project.catxi.common.api.handler.MemberHandler;
 import com.project.catxi.common.auth.kakao.KakaoDTO;
-import com.project.catxi.common.auth.kakao.KakaoUtill;
+import com.project.catxi.common.auth.kakao.KakaoUtil;
 import com.project.catxi.common.domain.MemberStatus;
 import com.project.catxi.common.jwt.JwtUtil;
 import com.project.catxi.common.jwt.JwtTokenProvider;
@@ -21,7 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Slf4j
 public class CustomOAuth2UserService {
 
-  private final KakaoUtill kakaoUtill;
+  private final KakaoUtil kakaoUtil;
   private final JwtUtil jwtUtil;
   private final JwtTokenProvider jwtTokenProvider;
   private final MemberRepository memberRepository;
@@ -29,9 +29,9 @@ public class CustomOAuth2UserService {
 
   public Member oAuthLogin(String accessCode, HttpServletResponse response) {
     // 카카오 토큰 요청
-    KakaoDTO.kakaoToken kakaoToken = kakaoUtill.requestToken(accessCode);
+    KakaoDTO.kakaoToken kakaoToken = kakaoUtil.requestToken(accessCode);
     // 사용자 정보 요청
-    KakaoDTO.KakaoProfile kakaoProfile = kakaoUtill.requestProfile(kakaoToken);
+    KakaoDTO.KakaoProfile kakaoProfile = kakaoUtil.requestProfile(kakaoToken);
     // 이메일로 기존 사용자 조회
     String requestEmail = kakaoProfile.kakao_account().email();
     Member user = memberRepository.findByEmail(requestEmail)

@@ -2,7 +2,6 @@ package com.project.catxi.common.jwt;
 
 import com.project.catxi.common.api.error.MemberErrorCode;
 import com.project.catxi.common.api.handler.MemberHandler;
-import com.project.catxi.common.config.security.JwtConfig;
 import com.project.catxi.common.domain.MemberStatus;
 import com.project.catxi.member.dto.CustomUserDetails;
 import com.project.catxi.member.domain.Member;
@@ -14,8 +13,6 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.util.Date;
-import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -28,11 +25,10 @@ import org.springframework.web.filter.OncePerRequestFilter;
 public class JwtFilter extends OncePerRequestFilter {
 
   private final JwtUtil jwtUtil;
-  private final JwtConfig jwtConfig;
   private final MemberRepository memberRepository;
 
   private static final String AUTH_HEADER = "Authorization";
-  private static final String BEARER_PREFIX = "Bearer";
+  private static final String BEARER_PREFIX = "Bearer ";
 
 
   @Override
@@ -41,7 +37,6 @@ public class JwtFilter extends OncePerRequestFilter {
     String uri = request.getRequestURI();
 
     // /connect, /auth/login/kakao로 시작하는 주소 JWT 검증 예외처리
-    //TODO: uri 필터 통과 고민
     if (uri.startsWith("/connect") || uri.equals("/auth/login/kakao")) {
       log.info("JWT 검증 제외 경로로 통과: {}", uri);
       filterChain.doFilter(request, response);
@@ -52,13 +47,13 @@ public class JwtFilter extends OncePerRequestFilter {
     //Request에서 Authorization 헤더를 찾음
     String authorization = request.getHeader(AUTH_HEADER);
     if(authorization == null || !authorization.startsWith(BEARER_PREFIX)) {
-      log.info("Token null");
+      log.info("Authorization 헤더가 없거나 Bearer 토큰이 아닙니다");
       filterChain.doFilter(request, response);
       return;
     }
 
     //토큰 추출 Prefix 제거
-    String accessToken = authorization.substring(BEARER_PREFIX.length()).trim();
+    String accessToken = authorization.substring(BEARER_PREFIX.length());
 
     //Claims 한 번에 전부 파싱
     Claims claims;
@@ -67,31 +62,21 @@ public class JwtFilter extends OncePerRequestFilter {
     } catch (ExpiredJwtException e) {
       throw new MemberHandler(MemberErrorCode.ACCESS_EXPIRED);
     } catch (Exception e) {
-      response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-      response.getWriter().print("유효하지 않은 토큰입니다");
-      return;
+      throw new MemberHandler(MemberErrorCode.INVALID_TOKEN);
     }
 
-    // 토큰 만료 여부 확인
-    if (jwtUtil.isExpired(claims).before(new Date())) {
-      throw new MemberHandler(MemberErrorCode.ACCESS_EXPIRED);
-    }
 
     // 토큰이 accessToken인지 확인
     String category = jwtUtil.getType(claims);
     if (!"access".equals(category)) {
-      response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-      response.getWriter().print("AccessToken이 아닙니다");
-      return;
+      throw new MemberHandler(MemberErrorCode.INVALID_TOKEN);
     }
 
-    // jwtUtill 객체에서 username 받아와 DB에서 회원 확인 및 상태 점검
+    // jwtUtil 객체에서 username 받아와 DB에서 회원 확인 및 상태 점검
     String email = jwtUtil.getEmail(claims);
     Member member = memberRepository.findByEmail(email).orElse(null);
     if (member == null) {
-      response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-      response.getWriter().print("Member not found");
-      return;
+      throw new MemberHandler(MemberErrorCode.MEMBER_NOT_FOUND);
     }
 
     // INACTIVE 회원 차단

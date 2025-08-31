@@ -16,7 +16,7 @@ import org.springframework.web.client.RestTemplate;
 
 @Component
 @Slf4j
-public class KakaoUtill {
+public class KakaoUtil {
 
   @Value("${spring.security.oauth2.client.registration.kakao.client-id}")
   private String client;
