@@ -2,15 +2,18 @@ package com.project.catxi.common.auth.infra;
 
 import java.time.Duration;
 import java.util.Optional;
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Repository;
 
 @Repository
-@RequiredArgsConstructor
 public class RefreshTokenRepository{
 
   private final RedisTemplate<String, String> tokenRedisTemplate;
+
+  public RefreshTokenRepository(@Qualifier("tokenRedisTemplate") RedisTemplate<String, String> tokenRedisTemplate) {
+    this.tokenRedisTemplate = tokenRedisTemplate;
+  }
 
   private static final String PREFIX = "refresh:";
 

@@ -9,7 +9,9 @@ import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.connection.RedisPassword;
 import org.springframework.data.redis.connection.RedisStandaloneConfiguration;
 import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.data.redis.serializer.StringRedisSerializer;
 import org.springframework.data.redis.listener.ChannelTopic;
 import org.springframework.data.redis.listener.PatternTopic;
 import org.springframework.data.redis.listener.RedisMessageListenerContainer;
@@ -102,22 +104,27 @@ public class RedisConfig {
 	}
 
 	// JWT 토큰 저장용 Redis 연결
-//	@Bean
-//	@Qualifier("tokenRedisConnectionFactory")
-//	public RedisConnectionFactory tokenRedisConnectionFactory() {
-//		RedisStandaloneConfiguration configuration = new RedisStandaloneConfiguration();
-//		configuration.setHostName(host);
-//		configuration.setPort(port);
-//		//리프레시 토큰용 DB 분리
-//		configuration.setDatabase(1);
-//		configuration.setPassword(RedisPassword.of(password));
-//		return new LettuceConnectionFactory(configuration);
-//	}
-//
-//	// JWT 토큰 저장용 StringRedisTemplate
-//	@Bean("tokenRedisTemplate")
-//	@Qualifier("tokenRedisTemplate")
-//	public StringRedisTemplate tokenRedisTemplate(@Qualifier("tokenRedisConnectionFactory") RedisConnectionFactory redisConnectionFactory) {
-//		return new StringRedisTemplate(redisConnectionFactory);
-//	}
+	@Bean
+	@Qualifier("tokenRedisConnectionFactory")
+	public RedisConnectionFactory tokenRedisConnectionFactory() {
+		RedisStandaloneConfiguration configuration = new RedisStandaloneConfiguration();
+		configuration.setHostName(host);
+		configuration.setPort(port);
+
+		//리프레시 토큰용 DB 분리
+		configuration.setDatabase(1);
+		configuration.setPassword(RedisPassword.of(password));
+		return new LettuceConnectionFactory(configuration);
+	}
+
+	// JWT 토큰 저장용 RedisTemplate
+	@Bean("tokenRedisTemplate")
+	@Qualifier("tokenRedisTemplate")
+	public RedisTemplate<String, String> tokenRedisTemplate(
+			@Qualifier("tokenRedisConnectionFactory") RedisConnectionFactory redisConnectionFactory) {
+		RedisTemplate<String, String> template = new RedisTemplate<>();
+		template.setConnectionFactory(redisConnectionFactory);
+		template.setDefaultSerializer(new StringRedisSerializer());
+		return template;
+	}
 }
