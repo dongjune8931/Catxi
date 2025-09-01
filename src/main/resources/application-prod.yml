@@ -82,16 +82,15 @@ management:
     metrics:
       enabled: true
   metrics:
-    export:
-      prometheus:
-        enabled: true
     distribution:
       percentiles-histogram:
         http.server.requests: true
       percentiles:
         http.server.requests: 0.5, 0.95, 0.99
-      slo:
-        http.server.requests: 10ms,50ms,100ms,200ms,500ms
+  prometheus:
+    metrics:
+      export:
+        enabled: true
 
 logging:
   level:
