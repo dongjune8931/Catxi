@@ -47,4 +47,7 @@ public interface ChatParticipantRepository extends JpaRepository<ChatParticipant
 	@Query("SELECT cp.member.nickname FROM ChatParticipant cp WHERE cp.chatRoom = :chatRoom")
 	List<String> findParticipantNicknamesByChatRoom(ChatRoom chatRoom);
 
+	@Query("SELECT new com.project.catxi.chat.dto.ParticipantInfo(cp.member.email, cp.member.nickname) FROM ChatParticipant cp WHERE cp.chatRoom = :chatRoom")
+	List<com.project.catxi.chat.dto.ParticipantInfo> findParticipantInfoByChatRoom(ChatRoom chatRoom);
+
 }

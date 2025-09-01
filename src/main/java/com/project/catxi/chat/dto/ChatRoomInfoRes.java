@@ -2,6 +2,7 @@ package com.project.catxi.chat.dto;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.project.catxi.chat.domain.ChatRoom;
@@ -21,15 +22,15 @@ public record ChatRoomInfoRes(
 	@JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss", timezone = "Asia/Seoul")
 	LocalDateTime departAt
 ) {
-	public static ChatRoomInfoRes from(ChatRoom chatRoom, List<String> participantEmails, List<String> participantNicknames) {
+	public static ChatRoomInfoRes from(ChatRoom chatRoom, List<ParticipantInfo> participants) {
 		return new ChatRoomInfoRes(
 			(long) chatRoom.getParticipants().size(),
 			chatRoom.getMaxCapacity(),
 			chatRoom.getStatus(),
 			chatRoom.getHost().getEmail(),
 			chatRoom.getHost().getNickname(),
-			participantEmails,
-			participantNicknames,
+			participants.stream().map(ParticipantInfo::getEmail).collect(Collectors.toList()),
+			participants.stream().map(ParticipantInfo::getNickname).collect(Collectors.toList()),
 			chatRoom.getStartPoint(),
 			chatRoom.getEndPoint(),
 			chatRoom.getDepartAt()

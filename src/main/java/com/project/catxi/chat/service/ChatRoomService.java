@@ -236,14 +236,7 @@ public class ChatRoomService {
 			.orElseThrow(() -> new EntityNotFoundException("room not found"));
 		Member member = memberRepository.findByEmail(email)
 			.orElseThrow(() -> new EntityNotFoundException("member not found"));
-		List<ChatParticipant> chatParticipants = chatParticipantRepository.findByChatRoom(chatRoom);
-		for (ChatParticipant c : chatParticipants) {
-			if (c.getMember().equals(member)) {
-				return true;
-			}
-		}
-		return false;
-
+		return chatParticipantRepository.existsByChatRoomAndMember(chatRoom, member);
 	}
 
 	public void checkRoomEnter(Long roomId, String email) {
@@ -268,10 +261,9 @@ public class ChatRoomService {
 			throw new CatxiException(ChatParticipantErrorCode.PARTICIPANT_NOT_FOUND);
 		}
 
-		List<String> participantEmails = chatParticipantRepository.findParticipantEmailsByChatRoom(chatRoom);
-		List<String> participantNicknames = chatParticipantRepository.findParticipantNicknamesByChatRoom(chatRoom);
+		List<com.project.catxi.chat.dto.ParticipantInfo> participants = chatParticipantRepository.findParticipantInfoByChatRoom(chatRoom);
 
-		return ChatRoomInfoRes.from(chatRoom, participantEmails, participantNicknames);
+		return ChatRoomInfoRes.from(chatRoom, participants);
 
 	}
 
