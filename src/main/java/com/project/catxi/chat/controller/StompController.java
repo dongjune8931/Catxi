@@ -61,8 +61,7 @@ public class StompController {
 			coordinateReq.longitude(),
 			distance
 		);
-		ObjectMapper objectMapper = new ObjectMapper();
-		String message = objectMapper.writeValueAsString(enriched);
+		String message = this.objectMapper.writeValueAsString(enriched);
 		redisTemplate.convertAndSend("map", message);
 	}
 }

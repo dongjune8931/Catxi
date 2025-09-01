@@ -15,10 +15,10 @@ public class RefreshTokenService {
 
 	private final RedisTemplate<String, String> redisTemplate;
 
+	// 👇 생성자를 직접 만들고, 파라미터 앞에 @Qualifier를 붙여줍니다.
 	public RefreshTokenService(@Qualifier("tokenRedisTemplate") RedisTemplate<String, String> redisTemplate) {
 		this.redisTemplate = redisTemplate;
 	}
-    
     private static final String REFRESH_TOKEN_PREFIX = "refresh_token:";
     private static final String USER_TOKEN_MAPPING_PREFIX = "user_token:";
 

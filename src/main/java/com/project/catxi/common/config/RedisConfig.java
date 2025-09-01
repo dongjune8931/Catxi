@@ -96,12 +96,12 @@ public class RedisConfig {
 	}
 
 
-	//redis에서 수신된 메시지를 처리하는 객체 생성
+/*	//redis에서 수신된 메시지를 처리하는 객체 생성
 	@Bean
 	public MessageListenerAdapter messageListenerAdapter(RedisPubSubService redisPubSubService){
 		//RedisPubSubService의 특정 메서드가 수신된 메시지를 처리할 수 있도록 지정
 		return new MessageListenerAdapter(redisPubSubService,"onMessage");
-	}
+	}*/
 
 	// JWT 토큰 저장용 Redis 연결
 	@Bean
@@ -128,6 +128,16 @@ public class RedisConfig {
 		return template;
 	}
 
+	@Bean("chatKeyValueTemplate")
+	@Qualifier("chatKeyValueTemplate")
+	public RedisTemplate<String, String> chatKeyValueTemplate(
+		@Qualifier("chatRedisConnectionFactory") RedisConnectionFactory redisConnectionFactory) {
+		RedisTemplate<String, String> template = new RedisTemplate<>();
+		template.setConnectionFactory(redisConnectionFactory);
+		template.setDefaultSerializer(new StringRedisSerializer());
+		return template;
+	}
+
 	@Bean
 	public RedisTemplate<String, String> redisTemplate(
 			@Qualifier("chatRedisConnectionFactory") RedisConnectionFactory redisConnectionFactory) {
@@ -137,10 +147,5 @@ public class RedisConfig {
 		return template;
 	}
 
-	@Bean
-	public StringRedisTemplate stringRedisTemplate(
-			@Qualifier("chatRedisConnectionFactory") RedisConnectionFactory redisConnectionFactory) {
-		return new StringRedisTemplate(redisConnectionFactory);
-	}
 
 }

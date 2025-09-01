@@ -34,7 +34,7 @@ public class TimerService {
 	private final ChatParticipantRepository chatParticipantRepository;
 
 	public TimerService(
-		RedisTemplate<String, String> redisTemplate,
+		@Qualifier("chatKeyValueTemplate") RedisTemplate<String, String> redisTemplate,
 		@Qualifier("redisPubSubScheduler") TaskScheduler taskScheduler,
 		ChatRoomRepository chatRoomRepository,
 		ChatParticipantRepository chatParticipantRepository
