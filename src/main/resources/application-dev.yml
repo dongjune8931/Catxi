@@ -93,5 +93,17 @@ management:
 
 logging:
   level:
-      com.project.catxi.common.auth: DEBUG
-      org.springframework.web.client: DEBUG
+    com.project.catxi: DEBUG
+    com.project.catxi.common.auth: DEBUG
+    org.springframework.web.client: DEBUG
+    org.springframework.security: DEBUG
+    root: INFO
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+  file:
+    name: ./logs/catxi-backend-dev.log
+  logback:
+    rollingpolicy:
+      max-file-size: 10MB
+      max-history: 7
