@@ -9,12 +9,12 @@
     docker_image: "{{ docker_image | default(ansible_env.DOCKER_IMAGE) | default('catxi-backend:latest') }}"
     app_port: 8080
     health_check_timeout: 300
-    
+
   pre_tasks:
     - name: Display target server info
       debug:
         msg: "Deploying to {{ inventory_hostname }} ({{ ansible_host | default(ansible_default_ipv4.address) }})"
-        
+
   tasks:
     - name: Create application directory
       file:
@@ -41,7 +41,7 @@
         create: yes
 
     - name: Stop existing containers
-      docker_compose:
+      community.docker.docker_compose_v2:
         project_src: /opt/catxi
         state: absent
       ignore_errors: yes
@@ -60,7 +60,7 @@
         force_source: yes
 
     - name: Deploy with Docker Compose
-      docker_compose:
+      community.docker.docker_compose_v2:
         project_src: /opt/catxi
         state: present
         pull: yes
@@ -80,7 +80,7 @@
 
     - name: Verify deployment success
       debug:
-        msg: "✅ Deployment successful on {{ inventory_hostname }} ({{ ansible_host | default(ansible_default_ipv4.address) }})"
+        msg: "Deployment successful on {{ inventory_hostname }} ({{ ansible_host | default(ansible_default_ipv4.address) }})"
 
     - name: Clean up old Docker images
       shell: docker image prune -af
