@@ -3,13 +3,11 @@ plugin: amazon.aws.aws_ec2
 regions:
   - ap-northeast-2
 
-hostnames:
-  - ip_address
-
 keyed_groups:
+  - key: tags.Name
+    prefix: ""
   - key: tags.Role
-    prefix: tag_Role
+    prefix: tag_Role_
 
 compose:
-  lb_servers: "tags.Role == 'lb'"
-  app_servers: "tags.Role == 'app'"
+  ansible_host: public_ip_address
