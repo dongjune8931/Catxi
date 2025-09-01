@@ -5,23 +5,32 @@
   serial: 1
   max_fail_percentage: 0
   vars:
-    docker_image: "{{ docker_image | default('xms1228/catxi-backend:latest') }}"
-    docker_registry_username: "{{ docker_registry_username | default('') }}"
-    docker_registry_password: "{{ docker_registry_password | default('') }}"
-    docker_registry_url: "{{ docker_registry_url | default('https://index.docker.io/v1/') }}"
+    default_docker_image: "xms1228/catxi-backend:latest"
+    default_docker_registry_username: ""
+    default_docker_registry_password: ""
+    default_docker_registry_url: "https://index.docker.io/v1/"
     app_port: 8080
     health_check_timeout: 300
-    build_number: "{{ build_number | default('unknown') }}"
-    git_branch: "{{ git_branch | default('unknown') }}"
+    default_build_number: "unknown"
+    default_git_branch: "unknown"
 
   pre_tasks:
+    - name: Set deployment variables
+      set_fact:
+        final_docker_image: "{{ docker_image if docker_image is defined and docker_image != '' else default_docker_image }}"
+        final_docker_registry_username: "{{ docker_registry_username if docker_registry_username is defined and docker_registry_username != '' else default_docker_registry_username }}"
+        final_docker_registry_password: "{{ docker_registry_password if docker_registry_password is defined and docker_registry_password != '' else default_docker_registry_password }}"
+        final_docker_registry_url: "{{ docker_registry_url if docker_registry_url is defined and docker_registry_url != '' else default_docker_registry_url }}"
+        final_build_number: "{{ build_number if build_number is defined and build_number != '' else default_build_number }}"
+        final_git_branch: "{{ git_branch if git_branch is defined and git_branch != '' else default_git_branch }}"
+
     - name: Display deployment information
       debug:
         msg:
           - "Deploying to: {{ inventory_hostname }}"
-          - "Docker Image: {{ docker_image }}"
-          - "Build Number: {{ build_number }}"
-          - "Git Branch: {{ git_branch }}"
+          - "Docker Image: {{ final_docker_image }}"
+          - "Build Number: {{ final_build_number }}"
+          - "Git Branch: {{ final_git_branch }}"
 
   tasks:
     - name: Create application directory
@@ -50,19 +59,17 @@
 
     - name: Login to Docker Registry
       docker_login:
-        username: "{{ docker_registry_username }}"
-        password: "{{ docker_registry_password }}"
-        registry_url: "{{ docker_registry_url }}"
+        username: "{{ final_docker_registry_username }}"
+        password: "{{ final_docker_registry_password }}"
+        registry_url: "{{ final_docker_registry_url }}"
       when:
-        - docker_registry_username is defined
-        - docker_registry_username != ""
-        - docker_registry_password is defined
-        - docker_registry_password != ""
+        - final_docker_registry_username != ""
+        - final_docker_registry_password != ""
       ignore_errors: yes
 
     - name: Pull Docker image
       docker_image:
-        name: "{{ docker_image }}"
+        name: "{{ final_docker_image }}"
         source: pull
         force_source: yes
       register: pull_result
@@ -104,7 +111,7 @@
 
     - name: Verify deployment success
       debug:
-        msg: "✅ Deployment successful on {{ inventory_hostname }} with image {{ docker_image }}"
+        msg: "✅ Deployment successful on {{ inventory_hostname }} with image {{ final_docker_image }}"
 
     - name: Clean up old Docker images
       shell: docker image prune -af
