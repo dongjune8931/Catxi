@@ -5,59 +5,44 @@
   serial: 1
   max_fail_percentage: 0
   vars:
-    docker_image: "{{ docker_image | default('xms1228/catxi-backend:latest') }}"
+    docker_image: "xms1228/catxi-backend:latest"
     app_port: 8080
     health_check_timeout: 300
 
   pre_tasks:
     - name: Display target server info
       debug:
-        msg: "Deploying to {{ inventory_hostname }} ({{ ansible_host | default(ansible_default_ipv4.address) }})"
+        msg: "Deploying to {{ inventory_hostname }} with image {{ docker_image }}"
 
   tasks:
     - name: Create application directory
-      file:
-        path: /opt/catxi
-        state: directory
-        mode: '0755'
+      file: { path: /opt/catxi, state: directory, mode: '0755' }
 
     - name: Copy docker-compose.yml
-      copy:
-        src: ../docker-compose.yml
-        dest: /opt/catxi/docker-compose.yml
-        mode: '0644'
+      copy: { src: ../docker-compose.yml, dest: /opt/catxi/docker-compose.yml, mode: '0644' }
 
-    - name: Copy environment file
+    - name: Create environment file with all variables
       template:
         src: templates/env.j2
         dest: /opt/catxi/.env
         mode: '0600'
 
     - name: Stop existing containers
-      community.docker.docker_compose_v2:
-        project_src: /opt/catxi
-        state: absent
+      community.docker.docker_compose_v2: { project_src: /opt/catxi, state: absent }
       ignore_errors: yes
 
     - name: Login to Docker Registry
       docker_login:
-        username: "{{ ansible_env.DOCKER_REGISTRY_USERNAME | default(docker_registry_username) }}"
-        password: "{{ ansible_env.DOCKER_REGISTRY_PASSWORD | default(docker_registry_password) }}"
-        registry_url: "{{ ansible_env.DOCKER_REGISTRY_URL | default(docker_registry_url) | default('https://index.docker.io/v1/') }}"
+        username: "{{ docker_registry_username }}"
+        password: "{{ docker_registry_password }}"
+        registry_url: "{{ docker_registry_url | default('https://index.docker.io/v1/') }}"
       when: docker_registry_username is defined and docker_registry_username != ""
 
     - name: Pull latest Docker image
-      docker_image:
-        name: "{{ docker_image }}"
-        source: pull
-        force_source: yes
+      docker_image: { name: "{{ docker_image }}", source: pull, force_source: yes }
 
     - name: Deploy with Docker Compose
-      community.docker.docker_compose_v2:
-        project_src: /opt/catxi
-        state: present
-        pull: yes
-        recreate: always
+      community.docker.docker_compose_v2: { project_src: /opt/catxi, state: present, pull: yes, recreate: always }
 
     - name: Wait for application to be ready
       uri:
@@ -73,7 +58,7 @@
 
     - name: Verify deployment success
       debug:
-        msg: "Deployment successful on {{ inventory_hostname }} ({{ ansible_host | default(ansible_default_ipv4.address) }})"
+        msg: "✅ Deployment successful on {{ inventory_hostname }}"
 
     - name: Clean up old Docker images
       shell: docker image prune -af
