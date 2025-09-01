@@ -87,16 +87,18 @@
 
     - name: Wait for container to start
       pause:
-        seconds: 45  # 더 긴 시간 대기
+        seconds: 45
 
     - name: Check if container is running
-      shell: docker ps --format "table {{.Names}}\t{{.Status}}" | grep catxi-backend || echo "Container not found"
+      shell: docker ps | grep catxi-backend
       register: container_status
       ignore_errors: yes
 
     - name: Display container status
       debug:
-        msg: "Container status: {{ container_status.stdout }}"
+        msg:
+          - "Container check result: {{ 'RUNNING' if container_status.rc == 0 else 'NOT FOUND' }}"
+          - "Details: {{ container_status.stdout if container_status.rc == 0 else 'Container not running or not found' }}"
 
     - name: Simple health check (optional)
       uri:
@@ -110,7 +112,7 @@
 
     - name: Display health check result
       debug:
-        msg: "Health check result: {{ 'SUCCESS' if simple_health.status == 200 else 'FAILED - but deployment may still be working' }}"
+        msg: "Health check result: {{ 'SUCCESS' if simple_health.status is defined and simple_health.status == 200 else 'FAILED - but deployment may still be working' }}"
 
     - name: Verify deployment success
       debug:
