@@ -1,6 +1,6 @@
 ---
 - name: Deploy Catxi Backend Application
-  hosts: tag_Role__app
+  hosts: tag_Role_app
   become: yes
   serial: 1
   max_fail_percentage: 0
