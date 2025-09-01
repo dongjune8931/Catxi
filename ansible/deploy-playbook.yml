@@ -5,7 +5,7 @@
   serial: 1
   max_fail_percentage: 0
   vars:
-    docker_image: "catxi-backend:latest"
+    docker_image: "{{ docker_image | default('xms1228/catxi-backend:latest') }}"
     app_port: 8080
     health_check_timeout: 300
 
@@ -33,12 +33,6 @@
         dest: /opt/catxi/.env
         mode: '0600'
 
-    - name: Set DOCKER_IMAGE environment variable in .env
-      lineinfile:
-        path: /opt/catxi/.env
-        line: "DOCKER_IMAGE={{ docker_image }}"
-        create: yes
-
     - name: Stop existing containers
       community.docker.docker_compose_v2:
         project_src: /opt/catxi
@@ -50,7 +44,7 @@
         username: "{{ ansible_env.DOCKER_REGISTRY_USERNAME | default(docker_registry_username) }}"
         password: "{{ ansible_env.DOCKER_REGISTRY_PASSWORD | default(docker_registry_password) }}"
         registry_url: "{{ ansible_env.DOCKER_REGISTRY_URL | default(docker_registry_url) | default('https://index.docker.io/v1/') }}"
-      when: (ansible_env.DOCKER_REGISTRY_USERNAME is defined) or (docker_registry_username is defined)
+      when: docker_registry_username is defined and docker_registry_username != ""
 
     - name: Pull latest Docker image
       docker_image:
