@@ -46,7 +46,6 @@ public class RedisConfig {
 	}
 
 	@Bean("chatPubSubTemplate")
-	@Primary
 	@Qualifier("chatPubSub")
 	public StringRedisTemplate chatPubSubTemplate(
 		@Qualifier("chatRedisConnectionFactory") RedisConnectionFactory cf) {
@@ -58,7 +57,7 @@ public class RedisConfig {
 		return tpl;
 	}
 
-	@Bean
+	@Bean("commonTaskScheduler")
 	public ThreadPoolTaskScheduler redisPubSubScheduler() {
 		ThreadPoolTaskScheduler scheduler = new ThreadPoolTaskScheduler();
 		scheduler.setPoolSize(4);
@@ -80,7 +79,7 @@ public class RedisConfig {
 	public RedisMessageListenerContainer redisMessageListenerContainer(
 		@Qualifier("chatRedisConnectionFactory") RedisConnectionFactory cf,
 		RedisPubSubService listener,
-		ThreadPoolTaskScheduler redisPubSubScheduler
+		@Qualifier("commonTaskScheduler")ThreadPoolTaskScheduler redisPubSubScheduler
 	) {
 		RedisMessageListenerContainer container = new RedisMessageListenerContainer();
 		container.setConnectionFactory(cf);
@@ -128,19 +127,10 @@ public class RedisConfig {
 		return template;
 	}
 
-	@Bean("chatKeyValueTemplate")
-	@Qualifier("chatKeyValueTemplate")
-	public RedisTemplate<String, String> chatKeyValueTemplate(
-		@Qualifier("chatRedisConnectionFactory") RedisConnectionFactory redisConnectionFactory) {
-		RedisTemplate<String, String> template = new RedisTemplate<>();
-		template.setConnectionFactory(redisConnectionFactory);
-		template.setDefaultSerializer(new StringRedisSerializer());
-		return template;
-	}
-
 	@Bean
+	@Primary // RedisTemplate 중에서는 이것이 기본
 	public RedisTemplate<String, String> redisTemplate(
-			@Qualifier("chatRedisConnectionFactory") RedisConnectionFactory redisConnectionFactory) {
+		@Qualifier("chatRedisConnectionFactory") RedisConnectionFactory redisConnectionFactory) {
 		RedisTemplate<String, String> template = new RedisTemplate<>();
 		template.setConnectionFactory(redisConnectionFactory);
 		template.setDefaultSerializer(new StringRedisSerializer());
