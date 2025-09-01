@@ -3,16 +3,22 @@ package com.project.catxi.common.auth.service;
 import com.project.catxi.common.api.error.MemberErrorCode;
 import com.project.catxi.common.api.exception.CatxiException;
 import com.project.catxi.common.api.handler.MemberHandler;
+import com.project.catxi.common.auth.infra.CookieUtil;
+import com.project.catxi.common.auth.infra.RefreshTokenRepository;
 import com.project.catxi.common.auth.kakao.KakaoDTO;
 import com.project.catxi.common.auth.kakao.KakaoUtil;
+import com.project.catxi.common.auth.kakao.TokenDTO;
 import com.project.catxi.common.domain.MemberStatus;
 import com.project.catxi.common.jwt.JwtUtil;
 import com.project.catxi.common.jwt.JwtTokenProvider;
 import com.project.catxi.member.domain.Member;
 import com.project.catxi.member.repository.MemberRepository;
+import io.jsonwebtoken.Claims;
 import jakarta.servlet.http.HttpServletResponse;
+import java.time.Duration;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.ResponseCookie;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,7 +31,7 @@ public class CustomOAuth2UserService {
   private final JwtUtil jwtUtil;
   private final JwtTokenProvider jwtTokenProvider;
   private final MemberRepository memberRepository;
-  private final HttpServletResponse httpServletResponse;
+  private final RefreshTokenRepository refreshTokenRepository;
 
   public Member oAuthLogin(String accessCode, HttpServletResponse response) {
     // 카카오 토큰 요청
@@ -83,9 +89,19 @@ public class CustomOAuth2UserService {
 
     String email = user.getEmail();
 
+    // 액세스 토큰 생성 및 헤더 설정
     String access = jwtTokenProvider.generateAccessToken(email);
     httpServletResponse.setHeader("access", access);
     log.info("✅ [헤더에 담은 JWT] access = {}", httpServletResponse.getHeader("access"));
+
+    // 리프레시 토큰 생성 및 Redis 저장
+    String refreshToken = jwtTokenProvider.generateRefreshToken(email);
+    refreshTokenRepository.save(email, refreshToken, Duration.ofDays(30));
+    
+    // 리프레시 토큰 쿠키 설정
+    ResponseCookie refreshCookie = CookieUtil.createCookie(refreshToken, Duration.ofDays(30));
+    httpServletResponse.setHeader("Set-Cookie", refreshCookie.toString());
+    log.info("✅ [쿠키에 담은 RefreshToken] refresh = {}", refreshToken);
 
     return access;
   }
@@ -93,14 +109,15 @@ public class CustomOAuth2UserService {
   @Transactional
   public void catxiSignup(String email, KakaoDTO.CatxiSignUp dto) {
     Member member = memberRepository.findByEmail(email)
-        .orElseThrow(() -> {
-          log.warn("❌ [조회 실패] email = {}", email);
-          return new CatxiException(MemberErrorCode.MEMBER_NOT_FOUND);
-        });
+        .orElseThrow(() -> { return new CatxiException(MemberErrorCode.MEMBER_NOT_FOUND);});
 
     if (memberRepository.existsByStudentNo(dto.StudentNo())) {
       throw new CatxiException(MemberErrorCode.DUPLICATE_MEMBER_STUDENTNO);
     }
+
+    //TODO: 학번 검증 로직
+
+    //TODO: 가톨릭대 웹메일 인증
 
     member.setNickname(dto.nickname());
     member.setStudentNo(dto.StudentNo());
@@ -111,5 +128,73 @@ public class CustomOAuth2UserService {
         return memberRepository.existsByNickname(nickname);
   }
 
+  // Reissue
+  public TokenDTO.Response reissueAccessToken(String refreshToken, HttpServletResponse response) {
+
+    // 1. 리프레시 토큰 검사
+    if (refreshToken == null || refreshToken.trim().isEmpty()) {
+      throw new CatxiException(MemberErrorCode.REFRESH_TOKEN_NOT_FOUND);
+    }
+
+    // 2. 유효성 검사
+    if (!jwtUtil.validateToken(refreshToken)) {
+      throw new CatxiException(MemberErrorCode.REFRESH_TOKEN_EXPIRED);
+    }
+
+    // 3. 파싱 후 이메일 추출
+    Claims claims = jwtUtil.parseJwt(refreshToken);
+    String email = jwtUtil.getEmail(claims);
+
+    // 4. Redis RT와 비교
+    if (!refreshTokenRepository.isValid(email, refreshToken)) {
+      refreshTokenRepository.delete(email);
+      throw new CatxiException(MemberErrorCode.REFRESH_TOKEN_MISMATCH);
+    }
+
+    log.info("✅Rotate 이전 RT 값 : {}", refreshToken);
+    // 5. 토큰 생성
+    String newAccessToken = jwtTokenProvider.generateAccessToken(email);
+    String newRefreshToken = jwtTokenProvider.generateRefreshToken(email);
+
+    // 6. 토큰 rotate
+    refreshTokenRepository.rotate(email, refreshToken, newRefreshToken, Duration.ofDays(30));
+
+    // 7. RT 전송
+    ResponseCookie refreshCookie = CookieUtil.createCookie(newRefreshToken, Duration.ofDays(30));
+    response.setHeader("Set-Cookie", refreshCookie.toString());
+    log.info("🚨Rotate 이후 RT 값 : {}", newRefreshToken);
+
+    return new TokenDTO.Response(newAccessToken, newRefreshToken);
+  }
+
+  public void logout(String refreshToken, HttpServletResponse response) {
+    //쿠키 값 확인
+    if (refreshToken == null || refreshToken.isBlank()) {
+      response.addHeader("Set-Cookie", CookieUtil.deleteCookie().toString());
+      return;
+    }
+
+    //토큰 유효성 검사
+    try {
+      if (!jwtUtil.validateToken(refreshToken)) {
+        response.addHeader("Set-Cookie", CookieUtil.deleteCookie().toString());
+        return;
+      }
+
+      Claims claims = jwtUtil.parseJwt(refreshToken);
+      String email = jwtUtil.getEmail(claims);
+
+      // 요청이 온다면 일단 삭제(일치여부와 상관없이)
+      if (refreshTokenRepository.isValid(email, refreshToken)) {
+        refreshTokenRepository.deleteByToken(refreshToken);
+      } else {
+        refreshTokenRepository.deleteByToken(refreshToken);
+      }
+    } catch (Exception e) {
+      log.warn("🚨로그아웃 실패: {}", e.getMessage());
+    } finally {
+      response.addHeader("Set-Cookie", CookieUtil.deleteCookie().toString());
+    }
+  }
 
 }

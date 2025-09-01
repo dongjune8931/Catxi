@@ -4,6 +4,7 @@ import com.project.catxi.common.api.ApiResponse;
 import com.project.catxi.common.api.error.MemberErrorCode;
 import com.project.catxi.common.auth.infra.CodeCache;
 import com.project.catxi.common.auth.kakao.KakaoDTO;
+import com.project.catxi.common.auth.kakao.TokenDTO;
 import com.project.catxi.common.auth.service.CustomOAuth2UserService;
 import com.project.catxi.common.config.security.JwtConfig;
 import com.project.catxi.common.domain.MemberStatus;
@@ -21,8 +22,11 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.bind.annotation.CookieValue;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -60,13 +64,7 @@ public class OAuthController {
       Member user = customOAuth2UserService.oAuthLogin(accessCode, response);
       String email = user.getEmail();
 
-      // ✅ Access + Refresh Token 발급
-      String accessToken = jwtTokenProvider.generateAccessToken(email);
-      String refreshToken = jwtTokenProvider.generateRefreshToken(email);
-
-      // ✅ 응답 헤더에 담기
-      response.setHeader("access", accessToken);
-      response.setHeader("refresh", refreshToken);
+      // ✅ loginProcess에서 토큰 발급 및 저장 처리
 
       // 회원 상태에 따라 결과 반환
       if (user.getStatus() == MemberStatus.PENDING) {
@@ -96,5 +94,26 @@ public class OAuthController {
     return ResponseEntity.ok(isDuplicate);
   }
 
+  //Reissue
+  @Transactional
+  @PostMapping("/reissue")
+  public ApiResponse<TokenDTO.Response> reissue(
+      @CookieValue(name = "refresh", required = false) String refreshToken, HttpServletResponse response) {
+    log.info("🍪 [Reissue 요청] 전달된 refreshToken 쿠키 값: {}", refreshToken);
+    TokenDTO.Response tokenResponse = customOAuth2UserService.reissueAccessToken(refreshToken,response);
+    return ApiResponse.success(tokenResponse);
+  }
+
+  //로그아웃
+  @PostMapping("/logout")
+  public ApiResponse<?> logout(
+      @CookieValue(name = "refresh", required = false) String refreshToken, HttpServletResponse response
+  ) {
+    log.info("✅ logout 성공");
+    customOAuth2UserService.logout(refreshToken, response);
+    return ApiResponse.success("로그아웃 완료");
+  }
+
+  //TODO: 회원 탈퇴
 
 }

@@ -127,4 +127,20 @@ public class RedisConfig {
 		template.setDefaultSerializer(new StringRedisSerializer());
 		return template;
 	}
+
+	@Bean
+	public RedisTemplate<String, String> redisTemplate(
+			@Qualifier("chatRedisConnectionFactory") RedisConnectionFactory redisConnectionFactory) {
+		RedisTemplate<String, String> template = new RedisTemplate<>();
+		template.setConnectionFactory(redisConnectionFactory);
+		template.setDefaultSerializer(new StringRedisSerializer());
+		return template;
+	}
+
+	@Bean
+	public StringRedisTemplate stringRedisTemplate(
+			@Qualifier("chatRedisConnectionFactory") RedisConnectionFactory redisConnectionFactory) {
+		return new StringRedisTemplate(redisConnectionFactory);
+	}
+
 }

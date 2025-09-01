@@ -23,7 +23,7 @@ public class JwtFilterConfig {
   public void configureJwtFilters(HttpSecurity http) throws Exception {
     // JwtFilter - 토큰 검증 및 인증 객체 설정
     http.addFilterBefore(
-        new JwtFilter(jwtUtil, jwtConfig, memberRepository), UsernamePasswordAuthenticationFilter.class);
+        new JwtFilter(jwtUtil, memberRepository), UsernamePasswordAuthenticationFilter.class);
   }
 
 }

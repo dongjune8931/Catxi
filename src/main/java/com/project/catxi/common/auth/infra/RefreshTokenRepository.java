@@ -33,9 +33,29 @@ public class RefreshTokenRepository{
     return findByKey(key).map(saved -> saved.equals(token)).orElse(false);
   }
 
-  // 토큰 삭제
+  // 토큰 삭제 (이메일 키로)
   public void delete(String key) {
     tokenRedisTemplate.delete(PREFIX + key);
+  }
+
+  // 토큰 삭제 (토큰 값으로)
+  public void deleteByToken(String token) {
+    // Redis에서 모든 키를 순회하여 해당 토큰을 찾아 삭제
+    tokenRedisTemplate.keys(PREFIX + "*").forEach(key -> {
+      String storedToken = tokenRedisTemplate.opsForValue().get(key);
+      if (token.equals(storedToken)) {
+        tokenRedisTemplate.delete(key);
+      }
+    });
+  }
+
+  // 토큰 회전 (기존 토큰 삭제 후 새 토큰 저장)
+  public void rotate(String key, String oldToken, String newToken, Duration ttl) {
+    // 기존 토큰 검증 후 새 토큰으로 교체
+    if (isValid(key, oldToken)) {
+      delete(key);
+      save(key, newToken, ttl);
+    }
   }
 
 }
