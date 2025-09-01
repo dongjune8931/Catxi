@@ -1,0 +1,15 @@
+---
+plugin: amazon.aws.aws_ec2
+regions:
+  - ap-northeast-2
+
+hostnames:
+  - private-ip-address
+
+keyed_groups:
+  - key: tags.Role
+    prefix: tag_Role
+
+compose:
+  lb_servers: "tags.Role == 'lb'"
+  app_servers: "tags.Role == 'app'"

@@ -1,0 +1,15 @@
+---
+plugin: google.cloud.gcp_compute
+projects:
+  - ornate-producer-468811-h2
+auth_kind: serviceaccount
+
+hostnames:
+  - networkInterfaces[0].networkIP
+
+keyed_groups:
+  - key: labels.role
+    prefix: gcp_role
+
+compose:
+  monitoring_servers: "labels.role == 'monitoring'"
