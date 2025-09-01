@@ -87,36 +87,24 @@
 
     - name: Wait for container to start
       pause:
-        seconds: 45
+        seconds: 15
 
-    - name: Check if container is running
-      shell: docker ps | grep catxi-backend
-      register: container_status
-      ignore_errors: yes
-
-    - name: Display container status
-      debug:
-        msg:
-          - "Container check result: {{ 'RUNNING' if container_status.rc == 0 else 'NOT FOUND' }}"
-          - "Details: {{ container_status.stdout if container_status.rc == 0 else 'Container not running or not found' }}"
-
-    - name: Simple health check (optional)
+    - name: Wait for application to be ready
       uri:
         url: "http://{{ ansible_host | default(ansible_default_ipv4.address) }}:{{ app_port }}/actuator/health"
         method: GET
+        status_code: 200
         timeout: 5
-      register: simple_health
-      ignore_errors: yes
+      register: health_check
+      until: health_check.status == 200
+      retries: 12
+      delay: 5
       delegate_to: localhost
       become: no
 
-    - name: Display health check result
-      debug:
-        msg: "Health check result: {{ 'SUCCESS' if simple_health.status is defined and simple_health.status == 200 else 'FAILED - but deployment may still be working' }}"
-
     - name: Verify deployment success
       debug:
-        msg: "✅ Deployment completed on {{ inventory_hostname }} with image {{ final_docker_image }}"
+        msg: "✅ Application is healthy and ready!"
 
     - name: Clean up old Docker images
       shell: docker image prune -af
@@ -125,5 +113,5 @@
   post_tasks:
     - name: Pause between server deployments
       pause:
-        seconds: 30
+        seconds: 15
       when: inventory_hostname != ansible_play_hosts[-1]
