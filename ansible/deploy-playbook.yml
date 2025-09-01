@@ -5,7 +5,7 @@
   serial: 1
   max_fail_percentage: 0
   vars:
-    docker_image: "{{ docker_image | default('catxi-backend:latest') }}"
+    docker_image: "catxi-backend:latest"
     app_port: 8080
     health_check_timeout: 300
 
