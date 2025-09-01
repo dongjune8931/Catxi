@@ -15,39 +15,36 @@ import com.project.catxi.member.domain.Member;
 
 public interface ChatParticipantRepository extends JpaRepository<ChatParticipant,Long> {
 
-	boolean existsByMember(Member member);
+    boolean existsByMember(Member member);
 
-	List<ChatMessage> findByChatRoomOrderByCreatedTimeAsc(ChatRoom room);
+    List<ChatMessage> findByChatRoomOrderByCreatedTimeAsc(ChatRoom room);
 
-	boolean existsByChatRoomAndMember(ChatRoom room, Member member);
-
-
-	Optional<ChatParticipant> findByChatRoomAndMember(ChatRoom room, Member member);
+    boolean existsByChatRoomAndMember(ChatRoom room, Member member);
 
 
-	long countByChatRoom(ChatRoom room);
+    Optional<ChatParticipant> findByChatRoomAndMember(ChatRoom room, Member member);
 
-	long countByChatRoomAndIsReady(ChatRoom chatRoom, boolean ready);
 
-	List<ChatParticipant> findByChatRoom(ChatRoom chatRoom);
+    long countByChatRoom(ChatRoom room);
 
-	@Modifying(clearAutomatically = true)
-	@Transactional
-	@Query("UPDATE ChatParticipant cp SET cp.isReady = false WHERE cp.chatRoom.roomId = :roomId AND cp.isHost = false")
-	void updateIsReadyFalseExceptHost(Long roomId);
+    long countByChatRoomAndIsReady(ChatRoom chatRoom, boolean ready);
 
-	@Transactional
-	void deleteAllByChatRoomAndIsReadyFalse(ChatRoom chatroom);
+    List<ChatParticipant> findByChatRoom(ChatRoom chatRoom);
 
-	Optional<ChatParticipant> findByMember(Member member);
+    @Modifying(clearAutomatically = true)
+    @Transactional
+    @Query("UPDATE ChatParticipant cp SET cp.isReady = false WHERE cp.chatRoom.roomId = :roomId AND cp.isHost = false")
+    void updateIsReadyFalseExceptHost(Long roomId);
 
-	@Query("SELECT cp.member.email FROM ChatParticipant cp WHERE cp.chatRoom = :chatRoom")
-	List<String> findParticipantEmailsByChatRoom(ChatRoom chatRoom);
+    @Transactional
+    void deleteAllByChatRoomAndIsReadyFalse(ChatRoom chatroom);
 
-	@Query("SELECT cp.member.nickname FROM ChatParticipant cp WHERE cp.chatRoom = :chatRoom")
-	List<String> findParticipantNicknamesByChatRoom(ChatRoom chatRoom);
+    Optional<ChatParticipant> findByMember(Member member);
 
-	@Query("SELECT new com.project.catxi.chat.dto.ParticipantInfo(cp.member.email, cp.member.nickname) FROM ChatParticipant cp WHERE cp.chatRoom = :chatRoom")
-	List<com.project.catxi.chat.dto.ParticipantInfo> findParticipantInfoByChatRoom(ChatRoom chatRoom);
+    @Query("SELECT cp.member.email FROM ChatParticipant cp WHERE cp.chatRoom = :chatRoom")
+    List<String> findParticipantEmailsByChatRoom(ChatRoom chatRoom);
+
+    @Query("SELECT cp.member.nickname FROM ChatParticipant cp WHERE cp.chatRoom = :chatRoom")
+    List<String> findParticipantNicknamesByChatRoom(ChatRoom chatRoom);
 
 }
