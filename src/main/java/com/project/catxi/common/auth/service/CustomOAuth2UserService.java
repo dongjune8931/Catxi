@@ -112,12 +112,23 @@ public class CustomOAuth2UserService {
         .orElseThrow(() -> { return new CatxiException(MemberErrorCode.MEMBER_NOT_FOUND);});
 
     if (memberRepository.existsByStudentNo(dto.StudentNo())) {
-      throw new CatxiException(MemberErrorCode.DUPLICATE_MEMBER_STUDENTNO);
+      throw new CatxiException(MemberErrorCode.DUPLICATE_STUDENT_NO);
     }
 
-    //TODO: 학번 검증 로직
+    // 닉네임 길이 검증 (9자 이하)
+    if (dto.nickname() == null || dto.nickname().length() > 9) {
+      throw new CatxiException(MemberErrorCode.INVALID_NICKNAME_LENGTH);
+    }
 
-    //TODO: 가톨릭대 웹메일 인증
+    // 닉네임 중복 체크
+    if (memberRepository.existsByNickname(dto.nickname())) {
+      throw new CatxiException(MemberErrorCode.DUPLICATE_NICKNAME);
+    }
+
+    // 학번 검증 로직 (정확히 9자리 숫자)
+    if (dto.StudentNo() == null || !dto.StudentNo().matches("\\d{9}")) {
+      throw new CatxiException(MemberErrorCode.INVALID_STUDENT_NO);
+    }
 
     member.setNickname(dto.nickname());
     member.setStudentNo(dto.StudentNo());

@@ -41,7 +41,7 @@ public class MemberService {
       Member saved = memberRepository.save(member);
       return saved.getId();
     } catch (DataIntegrityViolationException ex) {
-      throw new CatxiException(MemberErrorCode.DUPLICATE_MEMBER_STUDENTNO);
+      throw new CatxiException(MemberErrorCode.DUPLICATE_STUDENT_NO);
     }
   }
 

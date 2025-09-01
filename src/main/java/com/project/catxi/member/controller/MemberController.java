@@ -93,7 +93,7 @@ public class MemberController {
 
   @Operation(summary = "학생 이름 입력시 학번 반환")
   @GetMapping("/stdNo")
-  public Long getStudentNo(@RequestParam("nickname") String nickname){
+  public String getStudentNo(@RequestParam("nickname") String nickname){
     Member member = memberRepository.findByNickname(nickname)
         .orElseThrow(() ->
             new ResponseStatusException(
@@ -104,7 +104,7 @@ public class MemberController {
     return member.getStudentNo();
   }
 
-  @Operation(summary = "회원삭제 API")
+  @Operation(summary = "회원탈퇴 API")
   @PatchMapping("/delete")
   public ApiResponse<String> delete(@AuthenticationPrincipal UserDetails userDetails) {
     memberService.delete(userDetails.getUsername());

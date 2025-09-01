@@ -36,7 +36,7 @@ public class Member extends BaseTimeEntity {
 
 	//학번
 	@Column(nullable = true, length = 20, unique = true)
-	private Long studentNo;
+	private String studentNo;
 
 	private String role;
 

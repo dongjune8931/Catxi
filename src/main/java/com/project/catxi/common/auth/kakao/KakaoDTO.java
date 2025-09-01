@@ -42,7 +42,7 @@ public class KakaoDTO {
       @NotBlank
       String nickname,
       @NotBlank
-      Long StudentNo
+      String StudentNo
   ) {}
 
 }
