@@ -15,6 +15,15 @@
     default_git_branch: "unknown"
 
   pre_tasks:
+    - name: Debug AWX variables
+      debug:
+        msg:
+          - "Raw docker_image: {{ docker_image | default('NOT_SET') }}"
+          - "Raw docker_registry_username: {{ docker_registry_username | default('NOT_SET') }}"
+          - "Raw docker_registry_password: {{ docker_registry_password | default('NOT_SET') }}"
+          - "Raw build_number: {{ build_number | default('NOT_SET') }}"
+          - "Raw git_branch: {{ git_branch | default('NOT_SET') }}"
+
     - name: Set deployment variables
       set_fact:
         final_docker_image: "{{ docker_image if docker_image is defined and docker_image != '' else default_docker_image }}"
@@ -24,13 +33,14 @@
         final_build_number: "{{ build_number if build_number is defined and build_number != '' else default_build_number }}"
         final_git_branch: "{{ git_branch if git_branch is defined and git_branch != '' else default_git_branch }}"
 
-    - name: Display deployment information
+    - name: Display final deployment variables
       debug:
         msg:
           - "Deploying to: {{ inventory_hostname }}"
-          - "Docker Image: {{ final_docker_image }}"
-          - "Build Number: {{ final_build_number }}"
-          - "Git Branch: {{ final_git_branch }}"
+          - "Final Docker Image: {{ final_docker_image }}"
+          - "Final Registry Username: {{ final_docker_registry_username }}"
+          - "Final Build Number: {{ final_build_number }}"
+          - "Final Git Branch: {{ final_git_branch }}"
 
   tasks:
     - name: Create application directory
@@ -56,6 +66,13 @@
         project_src: /opt/catxi
         state: absent
       ignore_errors: yes
+
+    - name: Debug Docker login conditions
+      debug:
+        msg:
+          - "Username empty: {{ final_docker_registry_username == '' }}"
+          - "Password empty: {{ final_docker_registry_password == '' }}"
+          - "Will login: {{ final_docker_registry_username != '' and final_docker_registry_password != '' }}"
 
     - name: Login to Docker Registry
       docker_login:
