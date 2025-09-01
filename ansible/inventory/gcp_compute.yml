@@ -13,3 +13,4 @@ keyed_groups:
 
 compose:
   monitoring_servers: "labels.role == 'monitoring'"
+  ansible_host: private_ip
