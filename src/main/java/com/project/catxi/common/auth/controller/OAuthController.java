@@ -6,10 +6,7 @@ import com.project.catxi.common.auth.infra.CodeCache;
 import com.project.catxi.common.auth.kakao.KakaoDTO;
 import com.project.catxi.common.auth.kakao.TokenDTO;
 import com.project.catxi.common.auth.service.CustomOAuth2UserService;
-import com.project.catxi.common.config.security.JwtConfig;
 import com.project.catxi.common.domain.MemberStatus;
-import com.project.catxi.common.jwt.JwtUtil;
-import com.project.catxi.common.jwt.JwtTokenProvider;
 import com.project.catxi.member.domain.Member;
 import com.project.catxi.member.dto.CustomUserDetails;
 import io.swagger.v3.oas.annotations.Operation;
@@ -23,14 +20,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.bind.annotation.CookieValue;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PatchMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequiredArgsConstructor
@@ -38,10 +28,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/auth")
 public class OAuthController {
 
-  private final JwtConfig jwtConfig;
-  private final JwtUtil jwtUtil;
-  private final JwtTokenProvider jwtTokenProvider;
-  private final CustomOAuth2UserService customOAuth2UserService;
+  private final CustomOAuth2UserService oAuth2UserService;
   private final CodeCache codeCache;
 
   @GetMapping("/kakao/callback")
@@ -61,7 +48,7 @@ public class OAuthController {
 
     try {
       // 로그인 처리
-      Member user = customOAuth2UserService.oAuthLogin(accessCode, response);
+      Member user = oAuth2UserService.oAuthLogin(accessCode, response);
       String email = user.getEmail();
 
       // ✅ loginProcess에서 토큰 발급 및 저장 처리
@@ -74,43 +61,43 @@ public class OAuthController {
       }
     } catch (Exception e) {
       log.error("[카카오 로그인 실패] code = {}, error = {}", accessCode, e.getMessage());
-      codeCache.remove(accessCode); // 재시도 허용
+      codeCache.remove(accessCode);
       return ApiResponse.error(MemberErrorCode.ACCESS_EXPIRED);
     }
   }
 
   // 추가 회원가입 단계
   @PatchMapping("/signUp/catxi")
-  public ResponseEntity<?> completeSignup (@RequestBody @Valid KakaoDTO.CatxiSignUp dto, @AuthenticationPrincipal CustomUserDetails userDetails){
-
-    customOAuth2UserService.catxiSignup(userDetails.getUsername(), dto);
-    return ResponseEntity.ok("추가 회원정보 등록 완료");
+  public ApiResponse<?> completeSignup(@RequestBody @Valid KakaoDTO.CatxiSignUp dto, 
+                                       @AuthenticationPrincipal CustomUserDetails userDetails) {
+    oAuth2UserService.catxiSignup(userDetails.getUsername(), dto);
+    return ApiResponse.success("추가 회원정보 등록 완료");
   }
 
   @Operation(summary = "닉네임 중복 조회")
   @GetMapping("/signUp/catxi/checkNN")
-  public ResponseEntity<?> checkNN(@RequestParam("nickname") String nickname) {
-    boolean isDuplicate = customOAuth2UserService.isNNDuplicate(nickname);
-    return ResponseEntity.ok(isDuplicate);
+  public ApiResponse<Boolean> checkNN(@RequestParam("nickname") String nickname) {
+    boolean isDuplicate = oAuth2UserService.isNNDuplicate(nickname);
+    return ApiResponse.success(isDuplicate);
   }
 
   //Reissue
   @Transactional
   @PostMapping("/reissue")
-  public ApiResponse<TokenDTO.Response> reissue(
-      @CookieValue(name = "refresh", required = false) String refreshToken, HttpServletResponse response) {
+  public ApiResponse<TokenDTO.Response> reissue(@CookieValue(name = "refresh", required = false)
+                                                String refreshToken, HttpServletResponse response) {
     log.info("🍪 [Reissue 요청] 전달된 refreshToken 쿠키 값: {}", refreshToken);
-    TokenDTO.Response tokenResponse = customOAuth2UserService.reissueAccessToken(refreshToken,response);
+    TokenDTO.Response tokenResponse = oAuth2UserService.reissueAccessToken(refreshToken, response);
     return ApiResponse.success(tokenResponse);
   }
 
   //로그아웃
   @PostMapping("/logout")
-  public ApiResponse<?> logout(
-      @CookieValue(name = "refresh", required = false) String refreshToken, HttpServletResponse response
+  public ApiResponse<?> logout(@CookieValue(name = "refresh", required = false)
+                               String refreshToken, HttpServletResponse response
   ) {
     log.info("✅ logout 성공");
-    customOAuth2UserService.logout(refreshToken, response);
+    oAuth2UserService.logout(refreshToken, response);
     return ApiResponse.success("로그아웃 완료");
   }
 

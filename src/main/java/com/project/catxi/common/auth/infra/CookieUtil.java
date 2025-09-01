@@ -13,20 +13,20 @@ public class CookieUtil {
 
     return ResponseCookie.from(REFRESH_TOKEN_COOKIE_NAME, token)
         .httpOnly(true)
-        .secure(true)
+        .secure(false)
         .path("/")
         .maxAge(ttl)
-        .sameSite("None")
+        .sameSite("Lax")
         .build();
   }
 
   public static ResponseCookie deleteCookie() {
     return ResponseCookie.from(REFRESH_TOKEN_COOKIE_NAME, "")
         .httpOnly(true)
-        .secure(true)
+        .secure(false)
         .path("/")
         .maxAge(0) // 즉시 만료
-        .sameSite("None")
+        .sameSite("Lax")  // None 대신 Lax 사용
         .build();
   }
 }
