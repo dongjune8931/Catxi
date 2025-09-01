@@ -4,7 +4,7 @@ regions:
   - ap-northeast-2
 
 hostnames:
-  - private-ip-address
+  - ip_address
 
 keyed_groups:
   - key: tags.Role
