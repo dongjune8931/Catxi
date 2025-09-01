@@ -7,6 +7,12 @@
     <changeSet id="004-create-kicked-participant-table" author="system">
         <comment>Create kicked_participant table</comment>
         
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="kicked_participant"/>
+            </not>
+        </preConditions>
+        
         <createTable tableName="kicked_participant">
             <column name="id" type="BIGINT" autoIncrement="true">
                 <constraints primaryKey="true" nullable="false"/>

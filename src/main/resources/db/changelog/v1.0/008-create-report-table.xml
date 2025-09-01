@@ -7,6 +7,12 @@
     <changeSet id="008-create-report-table" author="system">
         <comment>Create report table</comment>
         
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="report"/>
+            </not>
+        </preConditions>
+        
         <createTable tableName="report">
             <column name="id" type="BIGINT" autoIncrement="true">
                 <constraints primaryKey="true" nullable="false"/>

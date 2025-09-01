@@ -7,6 +7,12 @@
     <changeSet id="006-create-match-history-table" author="system">
         <comment>Create match_history table</comment>
         
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="match_history"/>
+            </not>
+        </preConditions>
+        
         <createTable tableName="match_history">
             <column name="id" type="BIGINT" autoIncrement="true">
                 <constraints primaryKey="true" nullable="false"/>

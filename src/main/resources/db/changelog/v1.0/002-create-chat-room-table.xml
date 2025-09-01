@@ -7,6 +7,12 @@
     <changeSet id="002-create-chat-room-table" author="system">
         <comment>Create chat_room table</comment>
         
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="chat_room"/>
+            </not>
+        </preConditions>
+        
         <createTable tableName="chat_room">
             <column name="room_id" type="BIGINT" autoIncrement="true">
                 <constraints primaryKey="true" nullable="false"/>

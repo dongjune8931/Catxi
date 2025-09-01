@@ -7,6 +7,12 @@
     <changeSet id="003-create-chat-participant-table" author="system">
         <comment>Create chat_participant table</comment>
         
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="chat_participant"/>
+            </not>
+        </preConditions>
+        
         <createTable tableName="chat_participant">
             <column name="id" type="BIGINT" autoIncrement="true">
                 <constraints primaryKey="true" nullable="false"/>

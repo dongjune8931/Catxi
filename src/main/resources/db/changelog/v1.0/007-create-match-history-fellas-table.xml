@@ -7,6 +7,12 @@
     <changeSet id="007-create-match-history-fellas-table" author="system">
         <comment>Create match_history_fellas table for ElementCollection</comment>
         
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="match_history_fellas"/>
+            </not>
+        </preConditions>
+        
         <createTable tableName="match_history_fellas">
             <column name="history_id" type="BIGINT">
                 <constraints nullable="false"/>

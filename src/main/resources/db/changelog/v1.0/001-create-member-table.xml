@@ -7,6 +7,12 @@
     <changeSet id="001-create-member-table" author="system">
         <comment>Create member table</comment>
         
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="member"/>
+            </not>
+        </preConditions>
+        
         <createTable tableName="member">
             <column name="id" type="BIGINT" autoIncrement="true">
                 <constraints primaryKey="true" nullable="false"/>
