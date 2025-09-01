@@ -104,7 +104,7 @@
 
     - name: Verify deployment success
       debug:
-        msg: "✅ Application is healthy and ready!"
+        msg: "✅ App is Healthy"
 
     - name: Clean up old Docker images
       shell: docker image prune -af
