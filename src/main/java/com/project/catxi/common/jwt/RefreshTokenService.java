@@ -11,11 +11,13 @@ import java.util.Optional;
 
 @Slf4j
 @Service
-@RequiredArgsConstructor
 public class RefreshTokenService {
 
-    @Qualifier("tokenRedisTemplate")
-    private final RedisTemplate<String, String> redisTemplate;
+	private final RedisTemplate<String, String> redisTemplate;
+
+	public RefreshTokenService(@Qualifier("tokenRedisTemplate") RedisTemplate<String, String> redisTemplate) {
+		this.redisTemplate = redisTemplate;
+	}
     
     private static final String REFRESH_TOKEN_PREFIX = "refresh_token:";
     private static final String USER_TOKEN_MAPPING_PREFIX = "user_token:";
