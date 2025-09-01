@@ -34,7 +34,7 @@ public class OAuthController {
   @GetMapping("/kakao/callback")
   public ResponseEntity<Void> kakaoCallback(@RequestParam("code") String code) {
     HttpHeaders headers = new HttpHeaders();
-    headers.setLocation(URI.create("https://catxi-university-taxi-b0936.web.app/home"));
+    headers.setLocation(URI.create("http://localhost:5173/callback/kakao?code=" + code));
     return new ResponseEntity<>(headers, HttpStatus.FOUND);
   }
 
