@@ -5,7 +5,7 @@ projects:
 auth_kind: serviceaccount
 
 hostnames:
-  - networkInterfaces[0].networkIP
+  - private_ip
 
 keyed_groups:
   - key: labels.role
