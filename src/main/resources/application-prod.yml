@@ -1,9 +1,9 @@
 spring:
   config:
     activate:
-      on-profile: dev
+      on-profile: prod
   datasource:
-    url: jdbc:mysql://${DB_HOST}:${DB_PORT}/catxi?allowPublicKeyRetrieval=true&useSSL=false&serverTimezone=Asia/Seoul&useLegacyDatetimeCode=false&connectionTimeZone=Asia/Seoul
+    url: jdbc:mysql://${DB_HOST}:${DB_PORT}/catxi?allowPublicKeyRetrieval=true&useSSL=true&serverTimezone=Asia/Seoul&useLegacyDatetimeCode=false&connectionTimeZone=Asia/Seoul
     username: ${DB_USER}
     password: ${DB_PW}
     driver-class-name: com.mysql.cj.jdbc.Driver
@@ -25,6 +25,7 @@ spring:
     header: authorization
     secret: ${SECRET_KEY}
     access-token-validity-in-seconds: 3600
+    refresh-token-validity-in-seconds: 604800
 
   security:
     oauth2:
@@ -94,5 +95,6 @@ management:
 
 logging:
   level:
-      com.project.catxi.common.auth: DEBUG
-      org.springframework.web.client: DEBUG
+    org.springframework.web.client: WARN
+    com.project.catxi: INFO
+    root: WARN
