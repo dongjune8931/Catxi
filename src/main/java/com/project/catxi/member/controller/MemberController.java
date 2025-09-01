@@ -2,8 +2,9 @@ package com.project.catxi.member.controller;
 
 import com.project.catxi.common.api.ApiResponse;
 import com.project.catxi.common.auth.service.CustomOAuth2UserService;
-import com.project.catxi.common.config.JwtConfig;
-import com.project.catxi.common.jwt.JwtUtill;
+import com.project.catxi.common.config.security.JwtConfig;
+import com.project.catxi.common.jwt.JwtUtil;
+import com.project.catxi.common.jwt.JwtTokenProvider;
 import com.project.catxi.member.dto.AuthDTO;
 import com.project.catxi.member.dto.AuthDTO.LoginResponse;
 import com.project.catxi.member.dto.IdResponse;
@@ -15,10 +16,8 @@ import com.project.catxi.member.repository.MemberRepository;
 import com.project.catxi.member.service.MatchHistoryService;
 import com.project.catxi.member.service.MemberService;
 import io.swagger.v3.oas.annotations.Operation;
-import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import java.net.URI;
-import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;
@@ -51,7 +50,8 @@ public class MemberController {
   private final MemberService memberService;
   private final MatchHistoryService matchHistoryService;
   private final CustomOAuth2UserService customOAuth2UserService;
-  private final JwtUtill jwtUtill;
+  private final JwtUtil jwtUtil;
+  private final JwtTokenProvider jwtTokenProvider;
   private final AuthenticationManager authenticationManager;
   private final JwtConfig jwtConfig;
   private final MemberRepository memberRepository;
@@ -86,16 +86,14 @@ public class MemberController {
         .orElse("ROLE_USER"); // 기본 권한 처리
 
     // JWT 생성
-    String token = jwtUtill.createJwt("access", username, role,
-        jwtConfig.getAccessTokenValidityInSeconds() // 유효 시간
-    );
+    String token = jwtTokenProvider.generateAccessToken(username);
 
     return ResponseEntity.ok(new LoginResponse(token));
   }
 
   @Operation(summary = "학생 이름 입력시 학번 반환")
   @GetMapping("/stdNo")
-  public Long getStudentNo(@RequestParam("nickname") String nickname){
+  public String getStudentNo(@RequestParam("nickname") String nickname){
     Member member = memberRepository.findByNickname(nickname)
         .orElseThrow(() ->
             new ResponseStatusException(
@@ -106,7 +104,7 @@ public class MemberController {
     return member.getStudentNo();
   }
 
-  @Operation(summary = "회원삭제 API")
+  @Operation(summary = "회원탈퇴 API")
   @PatchMapping("/delete")
   public ApiResponse<String> delete(@AuthenticationPrincipal UserDetails userDetails) {
     memberService.delete(userDetails.getUsername());

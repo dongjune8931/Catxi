@@ -2,6 +2,6 @@ package com.project.catxi.member.dto;
 
 public record MemberProfileRes(
     String membername,
-    Long studentNo,
+    String studentNo,
     int matchCount
 ){}

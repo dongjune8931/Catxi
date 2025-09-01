@@ -8,6 +8,7 @@ import java.time.LocalDateTime;
 
 import java.util.List;
 
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -54,7 +55,7 @@ public class ChatRoomService {
 	private final ChatMessageRepository chatMessageRepository;
 	private final ObjectMapper objectMapper;
 
-	private final StringRedisTemplate stringRedisTemplate;
+	private final @Qualifier("chatPubSub") StringRedisTemplate stringRedisTemplate;
 
 	private final KickedParticipantRepository kickedParticipantRepository;
 

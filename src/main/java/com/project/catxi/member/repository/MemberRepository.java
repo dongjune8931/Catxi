@@ -19,7 +19,7 @@ public interface MemberRepository   extends JpaRepository<Member, Long> {
   boolean existsByEmail(String email);
 
   //학번 검증용
-  boolean existsByStudentNo(Long studentNo);
+  boolean existsByStudentNo(String studentNo);
 
   //닉네임 중복 조회용
   boolean existsByNickname(String nickname);
