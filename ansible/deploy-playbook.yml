@@ -91,7 +91,6 @@
       community.docker.docker_compose_v2:
         project_src: /opt/catxi
         state: present
-        pull: yes
         recreate: always
 
     - name: Wait for container to start
