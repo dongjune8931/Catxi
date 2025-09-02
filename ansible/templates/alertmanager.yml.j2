@@ -23,15 +23,6 @@ receivers:
   webhook_configs:
   - url: '{{ lookup("env", "DISCORD_WEBHOOK_URL") }}'
     send_resolved: true
-    title: 'Catxi Monitoring Alert'
-    text: |
-      {{ "{{" }} range .Alerts {{ "}}" }}
-      **Alert**: {{ "{{" }} .Annotations.summary {{ "}}" }}
-      **Description**: {{ "{{" }} .Annotations.description {{ "}}" }}
-      **Instance**: {{ "{{" }} .Labels.instance {{ "}}" }}
-      **Job**: {{ "{{" }} .Labels.job {{ "}}" }}
-      **Status**: {{ "{{" }} .Status {{ "}}" }}
-      {{ "{{" }} end {{ "}}" }}
     http_config:
       follow_redirects: true
 {% else %}
@@ -43,20 +34,6 @@ receivers:
   webhook_configs:
   - url: '{{ lookup("env", "DISCORD_WEBHOOK_URL") }}'
     send_resolved: true
-    title: '🚨 CRITICAL: Catxi System Alert'
-    text: |
-      🔥 **CRITICAL ALERT** 🔥
-      
-      {{ "{{" }} range .Alerts {{ "}}" }}
-      **Alert**: {{ "{{" }} .Annotations.summary {{ "}}" }}
-      **Description**: {{ "{{" }} .Annotations.description {{ "}}" }}
-      **Instance**: {{ "{{" }} .Labels.instance {{ "}}" }}
-      **Job**: {{ "{{" }} .Labels.job {{ "}}" }}
-      **Severity**: {{ "{{" }} .Labels.severity {{ "}}" }}
-      **Status**: {{ "{{" }} .Status {{ "}}" }}
-      {{ "{{" }} end {{ "}}" }}
-      
-      ⚠️ **Action Required**: Immediate investigation needed!
     http_config:
       follow_redirects: true
 {% else %}
@@ -68,16 +45,6 @@ receivers:
   webhook_configs:
   - url: '{{ lookup("env", "DISCORD_WEBHOOK_URL") }}'
     send_resolved: true
-    title: '⚠️ Warning: Catxi System Alert'
-    text: |
-      ⚠️ **WARNING ALERT**
-      
-      {{ "{{" }} range .Alerts {{ "}}" }}
-      **Alert**: {{ "{{" }} .Annotations.summary {{ "}}" }}
-      **Description**: {{ "{{" }} .Annotations.description {{ "}}" }}
-      **Instance**: {{ "{{" }} .Labels.instance {{ "}}" }}
-      **Job**: {{ "{{" }} .Labels.job {{ "}}" }}
-      {{ "{{" }} end {{ "}}" }}
     http_config:
       follow_redirects: true
 {% else %}

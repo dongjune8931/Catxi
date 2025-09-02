@@ -5,14 +5,12 @@
                    http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
 
     <changeSet id="008-create-report-table" author="system">
-        <comment>Create report table</comment>
-        
         <preConditions onFail="MARK_RAN">
             <not>
                 <tableExists tableName="report"/>
             </not>
         </preConditions>
-        
+        <comment>Create report table</comment>
         <createTable tableName="report">
             <column name="id" type="BIGINT" autoIncrement="true">
                 <constraints primaryKey="true" nullable="false"/>
