@@ -45,7 +45,7 @@ public class SecurityConfig {
         .authorizeHttpRequests((auth)-> auth
             .requestMatchers("/swagger", "/swagger-ui/**", "/v3/api-docs/**", "/swagger-resources/**", "/webjars/**").permitAll() // Swagger 허용
             .requestMatchers("/connect/**").permitAll()
-            .requestMatchers("/auth/login/kakao").permitAll()
+            .requestMatchers("api/auth/login/kakao").permitAll()
             .requestMatchers("/actuator/**").permitAll()
             .anyRequest().authenticated()
         );
