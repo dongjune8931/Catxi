@@ -1,6 +1,6 @@
 ---
 - name: Deploy Catxi Monitoring Stack to GCP Management Server
-  hosts: tag_Role__management
+  hosts: gcp_role_monitoring
   become: yes
   vars:
     monitoring_dir: "/opt/catxi-monitoring"
