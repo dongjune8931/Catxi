@@ -3,6 +3,7 @@ package com.project.catxi.common.auth.service;
 import com.project.catxi.common.api.error.MemberErrorCode;
 import com.project.catxi.common.api.exception.CatxiException;
 import com.project.catxi.common.api.handler.MemberHandler;
+import com.project.catxi.common.auth.infra.CodeCache;
 import com.project.catxi.common.auth.infra.CookieUtil;
 import com.project.catxi.common.auth.infra.RefreshTokenRepository;
 import com.project.catxi.common.auth.kakao.KakaoDTO;
@@ -32,6 +33,21 @@ public class CustomOAuth2UserService {
   private final JwtTokenProvider jwtTokenProvider;
   private final MemberRepository memberRepository;
   private final RefreshTokenRepository refreshTokenRepository;
+  private final CodeCache codeCache;
+
+  public Member processKakaoLogin(String accessCode, HttpServletResponse response) {
+
+    // 중복 코드 차단
+    if (codeCache.isDuplicate(accessCode)) {
+      log.warn("🚨중복 code 요청 차단 code = {}", accessCode);
+      throw new CatxiException(MemberErrorCode.DUPLICATE_AUTHORIZE_CODE);  }
+    try {
+      return oAuthLogin(accessCode, response);  }
+    catch (Exception e) {
+      log.error("[카카오 로그인 실패] code = {}, error = {}", accessCode, e.getMessage());
+      codeCache.remove(accessCode);
+      throw new CatxiException(MemberErrorCode.ACCESS_EXPIRED);  }
+  }
 
   public Member oAuthLogin(String accessCode, HttpServletResponse response) {
 

@@ -38,32 +38,14 @@ public class OAuthController {
     return new ResponseEntity<>(headers, HttpStatus.FOUND);
   }
 
-  @GetMapping("/login/kakao")
-  public ApiResponse<?> kakaoLogin(@RequestParam("code") String accessCode, HttpServletResponse response) {
-    // 중복 코드 차단
-    if (codeCache.isDuplicate(accessCode)) {
-      log.warn("🚨중복 code 요청 차단 code = {}", accessCode);
-      return ApiResponse.error(MemberErrorCode.DUPLICATE_AUTHORIZE_CODE);
-    }
+  @GetMapping("/login/kakao")public ApiResponse<?> kakaoLogin(
+      @RequestParam("code") String accessCode, HttpServletResponse response) {
+    Member user = oAuth2UserService.processKakaoLogin(accessCode, response);
 
-    try {
-      // 로그인 처리
-      Member user = oAuth2UserService.oAuthLogin(accessCode, response);
-      String email = user.getEmail();
-
-      // ✅ loginProcess에서 토큰 발급 및 저장 처리
-
-      // 회원 상태에 따라 결과 반환
-      if (user.getStatus() == MemberStatus.PENDING) {
-        return ApiResponse.success("isNewUser");
-      } else {
-        return ApiResponse.success("로그인 성공");
-      }
-    } catch (Exception e) {
-      log.error("[카카오 로그인 실패] code = {}, error = {}", accessCode, e.getMessage());
-      codeCache.remove(accessCode);
-      return ApiResponse.error(MemberErrorCode.ACCESS_EXPIRED);
-    }
+    if (user.getStatus() == MemberStatus.PENDING) {
+      return ApiResponse.success("isNewUser");  }
+    else {
+      return ApiResponse.success("로그인 성공");  }
   }
 
   // 추가 회원가입 단계
