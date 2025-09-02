@@ -9,7 +9,7 @@ public class SignUpDTO {
 
   private String Membername;
   private String password;
-  private Long studentNo;
+  private String studentNo;
   private String nickname;
 
 }

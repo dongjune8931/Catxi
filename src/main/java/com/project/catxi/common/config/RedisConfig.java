@@ -4,11 +4,14 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+import org.springframework.context.annotation.Primary;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.connection.RedisPassword;
 import org.springframework.data.redis.connection.RedisStandaloneConfiguration;
 import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.data.redis.serializer.StringRedisSerializer;
 import org.springframework.data.redis.listener.ChannelTopic;
 import org.springframework.data.redis.listener.PatternTopic;
 import org.springframework.data.redis.listener.RedisMessageListenerContainer;
@@ -42,7 +45,7 @@ public class RedisConfig {
 		return new LettuceConnectionFactory(configuration);
 	}
 
-	@Bean
+	@Bean("chatPubSubTemplate")
 	@Qualifier("chatPubSub")
 	public StringRedisTemplate chatPubSubTemplate(
 		@Qualifier("chatRedisConnectionFactory") RedisConnectionFactory cf) {
@@ -54,7 +57,7 @@ public class RedisConfig {
 		return tpl;
 	}
 
-	@Bean
+	@Bean("commonTaskScheduler")
 	public ThreadPoolTaskScheduler redisPubSubScheduler() {
 		ThreadPoolTaskScheduler scheduler = new ThreadPoolTaskScheduler();
 		scheduler.setPoolSize(4);
@@ -76,7 +79,7 @@ public class RedisConfig {
 	public RedisMessageListenerContainer redisMessageListenerContainer(
 		@Qualifier("chatRedisConnectionFactory") RedisConnectionFactory cf,
 		RedisPubSubService listener,
-		ThreadPoolTaskScheduler redisPubSubScheduler
+		@Qualifier("commonTaskScheduler")ThreadPoolTaskScheduler redisPubSubScheduler
 	) {
 		RedisMessageListenerContainer container = new RedisMessageListenerContainer();
 		container.setConnectionFactory(cf);
@@ -90,5 +93,49 @@ public class RedisConfig {
 		container.addMessageListener(listener, new PatternTopic("kick:*"));
 		return container;
 	}
+
+
+/*	//redis에서 수신된 메시지를 처리하는 객체 생성
+	@Bean
+	public MessageListenerAdapter messageListenerAdapter(RedisPubSubService redisPubSubService){
+		//RedisPubSubService의 특정 메서드가 수신된 메시지를 처리할 수 있도록 지정
+		return new MessageListenerAdapter(redisPubSubService,"onMessage");
+	}*/
+
+	// JWT 토큰 저장용 Redis 연결
+	@Bean
+	@Qualifier("tokenRedisConnectionFactory")
+	public RedisConnectionFactory tokenRedisConnectionFactory() {
+		RedisStandaloneConfiguration configuration = new RedisStandaloneConfiguration();
+		configuration.setHostName(host);
+		configuration.setPort(port);
+
+		//리프레시 토큰용 DB 분리
+		configuration.setDatabase(1);
+		configuration.setPassword(RedisPassword.of(password));
+		return new LettuceConnectionFactory(configuration);
+	}
+
+	// JWT 토큰 저장용 RedisTemplate
+	@Bean("tokenRedisTemplate")
+	@Qualifier("tokenRedisTemplate")
+	public RedisTemplate<String, String> tokenRedisTemplate(
+			@Qualifier("tokenRedisConnectionFactory") RedisConnectionFactory redisConnectionFactory) {
+		RedisTemplate<String, String> template = new RedisTemplate<>();
+		template.setConnectionFactory(redisConnectionFactory);
+		template.setDefaultSerializer(new StringRedisSerializer());
+		return template;
+	}
+
+	@Bean
+	@Primary // RedisTemplate 중에서는 이것이 기본
+	public RedisTemplate<String, String> redisTemplate(
+		@Qualifier("chatRedisConnectionFactory") RedisConnectionFactory redisConnectionFactory) {
+		RedisTemplate<String, String> template = new RedisTemplate<>();
+		template.setConnectionFactory(redisConnectionFactory);
+		template.setDefaultSerializer(new StringRedisSerializer());
+		return template;
+	}
+
 
 }

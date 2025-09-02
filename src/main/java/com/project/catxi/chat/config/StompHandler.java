@@ -16,7 +16,7 @@ import org.springframework.stereotype.Component;
 import com.project.catxi.chat.service.ChatRoomService;
 import com.project.catxi.common.api.error.MemberErrorCode;
 import com.project.catxi.common.api.handler.MemberHandler;
-import com.project.catxi.common.jwt.JwtUtill;
+import com.project.catxi.common.jwt.JwtUtil;
 
 import io.jsonwebtoken.Claims;
 import lombok.RequiredArgsConstructor;
@@ -27,7 +27,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class StompHandler implements ChannelInterceptor {
 
-	private final JwtUtill jwtUtill;
+	private final JwtUtil jwtUtil;
 	private final ChatRoomService chatRoomService;
 
 	@Override
@@ -37,11 +37,11 @@ public class StompHandler implements ChannelInterceptor {
 		if (StompCommand.CONNECT == accessor.getCommand()) {
 			String token = extractToken(accessor);
 			try {
-				Claims claims = jwtUtill.parseJwt(token);
-				jwtUtill.isExpired(claims);
+				Claims claims = jwtUtil.parseJwt(token);
+				jwtUtil.isExpired(claims);
 				log.info("CONNECT - 토큰 유효성 검증 완료");
 
-				String email = jwtUtill.getEmail(claims);
+				String email = jwtUtil.getEmail(claims);
 				accessor.setUser(new UsernamePasswordAuthenticationToken(email, null, Collections.emptyList()));
 				log.info("CONNECT - 토큰 유효성 검증 및 Principal 설정 완료: {}", email);
 
@@ -94,8 +94,8 @@ public class StompHandler implements ChannelInterceptor {
 		// 2) SUBSCRIBE 헤더로 온 JWT (프론트가 매 프레임 Authorization을 넣는 경우)
 		String bearerToken = accessor.getFirstNativeHeader("Authorization");
 		if (bearerToken != null && bearerToken.startsWith("Bearer ")) {
-			Claims claims = jwtUtill.parseJwt(bearerToken.substring(7).trim());
-			return jwtUtill.getEmail(claims);
+			Claims claims = jwtUtil.parseJwt(bearerToken.substring(7).trim());
+			return jwtUtil.getEmail(claims);
 		}
 		// 3) 둘 다 없으면 인증정보 없음
 		throw new AuthenticationServiceException("인증 정보가 없습니다(Principal/Authorization)");
