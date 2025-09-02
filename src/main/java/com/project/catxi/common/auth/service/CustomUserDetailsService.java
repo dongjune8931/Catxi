@@ -1,5 +1,7 @@
 package com.project.catxi.common.auth.service;
 
+import com.project.catxi.common.api.error.MemberErrorCode;
+import com.project.catxi.common.api.exception.CatxiException;
 import com.project.catxi.common.domain.MemberStatus;
 import com.project.catxi.member.dto.CustomUserDetails;
 import com.project.catxi.member.domain.Member;
@@ -24,7 +26,7 @@ public class CustomUserDetailsService implements UserDetailsService {
 
     //Email 기준 조회
     Member member = memberRepository.findByEmail(username)
-        .orElseThrow(() -> new UsernameNotFoundException("회원이 존재하지 않습니다: " + username));
+        .orElseThrow(() -> new CatxiException(MemberErrorCode.MEMBER_NOT_FOUND));
 
     log.info("✅로그인 시도 : Email: {}, Status: {}", member.getEmail(), member.getStatus());
 

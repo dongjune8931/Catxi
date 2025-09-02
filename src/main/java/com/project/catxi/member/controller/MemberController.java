@@ -1,7 +1,6 @@
 package com.project.catxi.member.controller;
 
 import com.project.catxi.common.api.ApiResponse;
-import com.project.catxi.common.auth.service.CustomOAuth2UserService;
 import com.project.catxi.common.config.security.JwtConfig;
 import com.project.catxi.common.jwt.JwtUtil;
 import com.project.catxi.common.jwt.JwtTokenProvider;
@@ -49,7 +48,6 @@ public class MemberController {
 
   private final MemberService memberService;
   private final MatchHistoryService matchHistoryService;
-  private final CustomOAuth2UserService customOAuth2UserService;
   private final JwtUtil jwtUtil;
   private final JwtTokenProvider jwtTokenProvider;
   private final AuthenticationManager authenticationManager;
