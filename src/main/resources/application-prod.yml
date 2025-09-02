@@ -95,18 +95,18 @@ management:
 
 logging:
   level:
-    org.springframework.web.client: DEBUG
-    com.project.catxi: DEBUG
-    org.springframework.security: DEBUG
-    org.hibernate: DEBUG
-    root: DEBUG
+    org.springframework.web.client: WARN
+    com.project.catxi: INFO
+    org.springframework.security: WARN
+    org.hibernate: WARN
+    root: WARN
   pattern:
-    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
-    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} %5p %t --- [%15.15t] %-40.40logger{39} : %m%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss.SSS} %5p %t --- [%15.15t] %-40.40logger{39} : %m%n"
   file:
     name: /app/logs/catxi-backend-prod.log
   logback:
     rollingpolicy:
       max-file-size: 50MB
-      max-history: 90
-      total-size-cap: 1GB
+      max-history: 5
+      total-size-cap: 300MB
