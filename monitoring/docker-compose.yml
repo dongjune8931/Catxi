@@ -4,7 +4,7 @@ services:
     container_name: catxi_prometheus
     restart: unless-stopped
     ports:
-      - "127.0.0.1:9090:9090"
+      - "9090:9090"
     volumes:
       - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
       - prometheus_data:/prometheus
@@ -36,7 +36,7 @@ services:
     container_name: catxi_grafana
     restart: unless-stopped
     ports:
-      - "127.0.0.1:3000:3000"
+      - "3000:3000"
     environment:
       - GF_SECURITY_ADMIN_USER=admin
       - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD}
@@ -73,7 +73,7 @@ services:
     container_name: catxi_node_exporter
     restart: unless-stopped
     ports:
-      - "127.0.0.1:9100:9100"
+      - "9100:9100"
     volumes:
       - /proc:/host/proc:ro
       - /sys:/host/sys:ro
@@ -101,7 +101,9 @@ services:
     container_name: catxi_redis_exporter
     restart: unless-stopped
     ports:
-      - "127.0.0.1:9121:9121"
+      - "9121:9121"
+    env_file:
+      - ./.env
     environment:
       - REDIS_ADDR=redis://${REDIS_HOST}:${REDIS_PORT}
       - REDIS_PASSWORD=${REDIS_PW}
@@ -125,7 +127,7 @@ services:
     container_name: catxi_pushgateway
     restart: unless-stopped
     ports:
-      - "127.0.0.1:9091:9091"
+      - "9091:9091"
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:9091/metrics"]
       interval: 30s
@@ -143,7 +145,7 @@ services:
     container_name: catxi_alertmanager
     restart: unless-stopped
     ports:
-      - "127.0.0.1:9093:9093"
+      - "9093:9093"
     volumes:
       - ./alertmanager:/etc/alertmanager:ro
       - alertmanager_data:/alertmanager
@@ -151,7 +153,7 @@ services:
       - '--config.file=/etc/alertmanager/alertmanager.yml'
       - '--storage.path=/alertmanager'
       - '--web.external-url=http://localhost:9093'
-      - '--cluster.listen-address='
+      - '--cluster.listen-address='''
     deploy:
       resources:
         limits:
