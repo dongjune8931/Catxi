@@ -117,6 +117,11 @@
         group: "{{ ansible_user }}"
         mode: '0600'
 
+    - name: Create external catxi-logs Docker volume
+      community.docker.docker_volume:
+        name: catxi-logs
+        state: present
+
     - name: Stop existing monitoring containers
       community.docker.docker_compose_v2:
         project_src: "{{ monitoring_dir }}"
