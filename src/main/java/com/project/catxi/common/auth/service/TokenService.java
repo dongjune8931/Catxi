@@ -4,6 +4,7 @@ import com.project.catxi.common.api.error.MemberErrorCode;
 import com.project.catxi.common.api.exception.CatxiException;
 import com.project.catxi.common.auth.infra.CookieUtil;
 import com.project.catxi.common.auth.infra.RefreshTokenRepository;
+import com.project.catxi.common.auth.infra.TokenBlacklistRepository;
 import com.project.catxi.common.auth.kakao.KakaoDTO;
 import com.project.catxi.common.auth.kakao.TokenDTO;
 import com.project.catxi.common.domain.MemberStatus;
@@ -12,6 +13,7 @@ import com.project.catxi.common.jwt.JwtTokenProvider;
 import com.project.catxi.member.domain.Member;
 import com.project.catxi.member.repository.MemberRepository;
 import io.jsonwebtoken.Claims;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -20,16 +22,18 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
+import java.util.Date;
 
 @Service
 @RequiredArgsConstructor
 @Slf4j
-public class TokenManagementService {
+public class TokenService {
 
     private final JwtUtil jwtUtil;
     private final JwtTokenProvider jwtTokenProvider;
     private final MemberRepository memberRepository;
     private final RefreshTokenRepository refreshTokenRepository;
+    private final TokenBlacklistRepository tokenBlacklistRepository;
 
     //reissue
     public TokenDTO.Response reissueAccessToken(String refreshToken, HttpServletResponse response) {
@@ -62,18 +66,41 @@ public class TokenManagementService {
         return new TokenDTO.Response(newAccessToken, newRefreshToken);
     }
 
-    //로그아웃
-    public void logout(String refreshToken, HttpServletResponse response) {
+    //로그아웃 (AccessToken 블랙리스트 추가)
+    public void logout(HttpServletRequest request, String refreshToken, HttpServletResponse response) {
         try {
+            // AccessToken 블랙리스트에 추가
+            String authorization = request.getHeader("Authorization");
+
+            if (authorization != null && authorization.startsWith("Bearer ")) {
+                String accessToken = authorization.substring("Bearer ".length());
+                //토큰 유효성 검사
+                if (jwtUtil.validateToken(accessToken)) {
+                    // 토큰 유효기간 계산
+                    Claims claims = jwtUtil.parseJwt(accessToken);
+                    Date expiration = claims.getExpiration();
+                    long remainTime = expiration.getTime() - System.currentTimeMillis();
+                    
+                    if (remainTime > 0) {
+                        // 블랙리스트에 추가
+                        tokenBlacklistRepository.addTokenToBlacklist(accessToken, Duration.ofMillis(remainTime));
+                        log.info("✅ AccessToken 블랙리스트 등록: {}", accessToken);
+                    }
+                }
+            }
+
             if (refreshToken != null && !refreshToken.isBlank() && jwtUtil.validateToken(refreshToken)) {
+                //RefreshToken Redis에서 삭제
                 refreshTokenRepository.deleteByToken(refreshToken);
+                log.info("✅ RefreshToken 삭제 완료");
             }
         } catch (Exception e) {
-            log.warn("🚨로그아웃 실패: {}", e.getMessage());
+            log.warn("🚨로그아웃 중 오류 발생: {}", e.getMessage());
         } finally {
             response.addHeader("Set-Cookie", CookieUtil.deleteCookie().toString());
         }
     }
+    
 
     @Transactional
     public void catxiSignup(String email, KakaoDTO.CatxiSignUp dto) {

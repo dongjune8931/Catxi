@@ -2,6 +2,7 @@ package com.project.catxi.common.jwt;
 
 import com.project.catxi.common.api.error.MemberErrorCode;
 import com.project.catxi.common.api.handler.MemberHandler;
+import com.project.catxi.common.auth.infra.TokenBlacklistRepository;
 import com.project.catxi.common.domain.MemberStatus;
 import com.project.catxi.member.dto.CustomUserDetails;
 import com.project.catxi.member.domain.Member;
@@ -26,6 +27,7 @@ public class JwtFilter extends OncePerRequestFilter {
 
   private final JwtUtil jwtUtil;
   private final MemberRepository memberRepository;
+  private final TokenBlacklistRepository tokenBlacklistRepository;
 
   private static final String AUTH_HEADER = "Authorization";
   private static final String BEARER_PREFIX = "Bearer ";
@@ -72,6 +74,12 @@ public class JwtFilter extends OncePerRequestFilter {
       throw new MemberHandler(MemberErrorCode.INVALID_TOKEN);
     }
 
+    // accessToken 블랙리스트 여부 조회
+    if (tokenBlacklistRepository.isTokenBlacklisted(accessToken)) {
+      log.info("🚨 블랙리스트에 등록된 토큰: {}", accessToken);
+      throw new MemberHandler(MemberErrorCode.ACCESS_FORBIDDEN);
+    }
+
     // jwtUtil 객체에서 username 받아와 DB에서 회원 확인 및 상태 점검
     String email = jwtUtil.getEmail(claims);
     Member member = memberRepository.findByEmail(email).orElse(null);
@@ -82,6 +90,12 @@ public class JwtFilter extends OncePerRequestFilter {
     // INACTIVE 회원 차단
     if (member.getStatus() == MemberStatus.INACTIVE) {
       log.info("✅ JWT 필터에서 INACTIVE 회원 차단: {}", email);
+      throw new MemberHandler(MemberErrorCode.ACCESS_FORBIDDEN);
+    }
+
+    // User 블랙리스트 여부 조회
+    if (tokenBlacklistRepository.isUserBlacklisted(member.getId().toString())) {
+      log.info("🚨 블랙리스트에 등록된 사용자: {}", email);
       throw new MemberHandler(MemberErrorCode.ACCESS_FORBIDDEN);
     }
 
