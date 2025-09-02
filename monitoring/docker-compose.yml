@@ -55,7 +55,7 @@ services:
     volumes:
       - grafana_data:/var/lib/grafana
       - ./grafana/provisioning:/etc/grafana/provisioning
-      - ./grafana/dashboards:/var/lib/grafana/dashboards
+      - ./grafana/dashboards:/etc/grafana/dashboards
     deploy:
       resources:
         limits:
@@ -104,8 +104,6 @@ services:
     restart: unless-stopped
     ports:
       - "9121:9121"
-    env_file:
-      - ./.env
     environment:
       - REDIS_ADDR=redis://${REDIS_HOST}:${REDIS_PORT}
       - REDIS_PASSWORD=${REDIS_PW}
