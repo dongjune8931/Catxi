@@ -9,8 +9,13 @@ services:
       - SPRING_PROFILES_ACTIVE=prod
     env_file:
       - .env
+    volumes:
+      - catxi-logs:/app/logs
     networks:
       - catxi-network
+
+volumes:
+  catxi-logs:
 
 networks:
   catxi-network:

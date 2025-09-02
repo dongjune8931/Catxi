@@ -174,7 +174,10 @@ services:
       - ./promtail:/etc/promtail
       - /var/log:/var/log:ro
       - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - catxi-logs:/app/logs:ro
     command: -config.file=/etc/promtail/promtail.yml
+    external_links:
+      - catxi-backend
     deploy:
       resources:
         limits:
@@ -214,6 +217,8 @@ volumes:
   grafana_data:
   alertmanager_data:
   loki_data:
+  catxi-logs:
+    external: true
 
 networks:
   default:

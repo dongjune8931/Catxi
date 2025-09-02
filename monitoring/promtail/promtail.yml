@@ -57,7 +57,7 @@ scrape_configs:
         labels:
           job: catxi-backend
           environment: production
-          __path__: /var/log/catxi/*.log
+          __path__: /app/logs/*.log
 
     pipeline_stages:
       - multiline:
