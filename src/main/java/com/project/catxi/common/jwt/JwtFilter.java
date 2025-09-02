@@ -39,7 +39,7 @@ public class JwtFilter extends OncePerRequestFilter {
     String uri = request.getRequestURI();
 
     // /connect, /auth/login/kakao로 시작하는 주소 JWT 검증 예외처리
-    if (uri.startsWith("/connect") || uri.equals("/auth/login/kakao")) {
+    if (uri.startsWith("/connect") || uri.equals("api/auth/login/kakao")) {
       log.info("JWT 검증 제외 경로로 통과: {}", uri);
       filterChain.doFilter(request, response);
       return;
