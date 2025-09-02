@@ -20,7 +20,7 @@ import com.project.catxi.map.service.MapService;
 import io.swagger.v3.oas.annotations.Operation;
 
 @RestController
-@RequestMapping("/map")
+@RequestMapping("/api/map")
 public class MapController {
 
 	private final MapService mapService;

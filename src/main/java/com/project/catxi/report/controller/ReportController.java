@@ -12,7 +12,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping()
+@RequestMapping("/api")
 public class ReportController {
 
     private final ReportService reportService;

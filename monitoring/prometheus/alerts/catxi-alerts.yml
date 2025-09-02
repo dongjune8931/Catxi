@@ -1,0 +1,94 @@
+groups:
+- name: catxi.backend
+  rules:
+  - alert: HighMemoryUsage
+    expr: (jvm_memory_used_bytes{job="catxi-backend-instances",area="heap"} / jvm_memory_max_bytes{job="catxi-backend-instances",area="heap"}) * 100 > 85
+    for: 5m
+    labels:
+      severity: warning
+    annotations:
+      summary: "High JVM heap memory usage on {{ $labels.instance }}"
+      description: "JVM heap memory usage is above 85% for more than 5 minutes on {{ $labels.instance }}"
+
+  - alert: CriticalMemoryUsage
+    expr: (jvm_memory_used_bytes{job="catxi-backend-instances",area="heap"} / jvm_memory_max_bytes{job="catxi-backend-instances",area="heap"}) * 100 > 95
+    for: 2m
+    labels:
+      severity: critical
+    annotations:
+      summary: "Critical JVM heap memory usage on {{ $labels.instance }}"
+      description: "JVM heap memory usage is above 95% for more than 2 minutes on {{ $labels.instance }}"
+
+  - alert: HighResponseTime
+    expr: rate(http_server_requests_seconds_sum{job="catxi-backend-instances"}[5m]) / rate(http_server_requests_seconds_count{job="catxi-backend-instances"}[5m]) > 2
+    for: 3m
+    labels:
+      severity: warning
+    annotations:
+      summary: "High response time on {{ $labels.instance }}"
+      description: "Average response time is above 2 seconds for more than 3 minutes on {{ $labels.instance }}"
+
+  - alert: InstanceDown
+    expr: up{job="catxi-backend-instances"} == 0
+    for: 1m
+    labels:
+      severity: critical
+    annotations:
+      summary: "Catxi backend instance is down"
+      description: "{{ $labels.instance }} has been down for more than 1 minute"
+
+  - alert: DatabaseConnectionPoolHigh
+    expr: (hikaricp_connections_active{job="catxi-backend-instances"} / hikaricp_connections_max{job="catxi-backend-instances"}) > 0.8
+    for: 5m
+    labels:
+      severity: warning
+    annotations:
+      summary: "High database connection pool usage on {{ $labels.instance }}"
+      description: "Database connection pool usage is above 80% for more than 5 minutes on {{ $labels.instance }}"
+
+  - alert: LowRequestRate
+    expr: rate(http_server_requests_seconds_count{job="catxi-backend-instances"}[5m]) < 0.1
+    for: 10m
+    labels:
+      severity: warning
+    annotations:
+      summary: "Low request rate on {{ $labels.instance }}"
+      description: "Request rate is below 0.1 requests/second for more than 10 minutes on {{ $labels.instance }} - possible issue"
+
+- name: catxi.system
+  rules:
+  - alert: HighSystemCPU
+    expr: 100 - (avg(rate(node_cpu_seconds_total{job="node-exporter",mode="idle"}[5m])) * 100) > 80
+    for: 10m
+    labels:
+      severity: warning
+    annotations:
+      summary: "High system CPU usage on monitoring server"
+      description: "System CPU usage is above 80% for more than 10 minutes"
+
+  - alert: HighSystemMemory
+    expr: (node_memory_MemTotal_bytes{job="node-exporter"} - node_memory_MemAvailable_bytes{job="node-exporter"}) / node_memory_MemTotal_bytes{job="node-exporter"} * 100 > 85
+    for: 5m
+    labels:
+      severity: warning
+    annotations:
+      summary: "High system memory usage on monitoring server"
+      description: "System memory usage is above 85% for more than 5 minutes"
+
+  - alert: RedisDown
+    expr: up{job="redis-exporter"} == 0
+    for: 2m
+    labels:
+      severity: critical
+    annotations:
+      summary: "Redis server is down"
+      description: "Redis server has been unreachable for more than 2 minutes"
+
+  - alert: PrometheusDown
+    expr: up{job="prometheus"} == 0
+    for: 1m
+    labels:
+      severity: critical
+    annotations:
+      summary: "Prometheus is down"
+      description: "Prometheus has been down for more than 1 minute"

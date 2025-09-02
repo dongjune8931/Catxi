@@ -43,7 +43,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/members")
+@RequestMapping("/api/members")
 public class MemberController {
 
   private final MemberService memberService;

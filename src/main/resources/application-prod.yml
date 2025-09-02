@@ -1,9 +1,9 @@
 spring:
   config:
     activate:
-      on-profile: dev
+      on-profile: prod
   datasource:
-    url: jdbc:mysql://${DB_HOST}:${DB_PORT}/catxi?allowPublicKeyRetrieval=true&useSSL=false&serverTimezone=Asia/Seoul&useLegacyDatetimeCode=false&connectionTimeZone=Asia/Seoul
+    url: jdbc:mysql://${DB_HOST}:${DB_PORT}/catxi?allowPublicKeyRetrieval=true&useSSL=true&serverTimezone=Asia/Seoul&useLegacyDatetimeCode=false&connectionTimeZone=Asia/Seoul
     username: ${DB_USER}
     password: ${DB_PW}
     driver-class-name: com.mysql.cj.jdbc.Driver
@@ -26,6 +26,7 @@ spring:
     header: authorization
     secret: ${SECRET_KEY}
     access-token-validity-in-seconds: 3600
+    refresh-token-validity-in-seconds: 604800
 
   security:
     oauth2:
@@ -94,17 +95,18 @@ management:
 
 logging:
   level:
-    com.project.catxi: DEBUG
-    com.project.catxi.common.auth: DEBUG
-    org.springframework.web.client: DEBUG
-    org.springframework.security: DEBUG
-    root: INFO
+    org.springframework.web.client: WARN
+    com.project.catxi: INFO
+    org.springframework.security: WARN
+    org.hibernate: WARN
+    root: WARN
   pattern:
-    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
     file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
   file:
-    name: ./logs/catxi-backend-dev.log
+    name: ./logs/catxi-backend-prod.log
   logback:
     rollingpolicy:
-      max-file-size: 10MB
-      max-history: 7
+      max-file-size: 50MB
+      max-history: 90
+      total-size-cap: 1GB
