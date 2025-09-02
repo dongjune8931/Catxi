@@ -1,6 +1,7 @@
 global:
   scrape_interval: 30s
   evaluation_interval: 30s
+  scrape_timeout: 25s
 
 alerting:
   alertmanagers:
@@ -20,6 +21,7 @@ scrape_configs:
     static_configs:
       - targets: ['node-exporter:9100']
     scrape_interval: 30s
+    scrape_timeout: 25s
     metrics_path: /metrics
 
   - job_name: 'pushgateway'
@@ -31,6 +33,7 @@ scrape_configs:
     static_configs:
       - targets: ['redis-exporter:9121']
     scrape_interval: 30s
+    scrape_timeout: 25s
 
   - job_name: 'catxi-backend-instances'
     static_configs:

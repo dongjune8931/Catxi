@@ -49,38 +49,6 @@ scrape_configs:
           job: syslog
           __path__: /var/log/syslog
 
-  # Spring Boot application logs (for Catxi backend)
-  - job_name: catxi-backend
-    static_configs:
-      - targets:
-          - localhost
-        labels:
-          job: catxi-backend
-          environment: production
-          __path__: /app/logs/*.log
-
-    pipeline_stages:
-      - multiline:
-          firstline: '^\d{4}-\d{2}-\d{2}'
-          max_wait_time: 3s
-      - regex:
-          expression: '^(?P<timestamp>\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{3})\s+(?P<level>\w+)\s+(?P<pid>\d+)\s+---\s+\[(?P<thread>[^\]]+)\]\s+(?P<logger>\S+)\s*:\s+(?P<message>.*)'
-      - timestamp:
-          format: '2006-01-02 15:04:05.000'
-          source: timestamp
-      - labels:
-          level:
-          thread:
-          logger:
-
-  # Nginx/Apache logs
-  - job_name: nginx
-    static_configs:
-      - targets:
-          - localhost
-        labels:
-          job: nginx
-          __path__: /var/log/nginx/*.log
 
   # Docker daemon logs
   - job_name: docker
