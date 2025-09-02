@@ -59,16 +59,21 @@
         group: "{{ ansible_user }}"
         mode: '0644'
 
-    - name: Copy Grafana provisioning files
+    - name: Copy Grafana datasources provisioning
       copy:
-        src: "{{ item }}"
-        dest: "{{ monitoring_dir }}/grafana/provisioning/"
+        src: ../monitoring/grafana/provisioning/datasources/
+        dest: "{{ monitoring_dir }}/grafana/provisioning/datasources/"
         owner: "{{ ansible_user }}"
         group: "{{ ansible_user }}"
         mode: '0644'
-      loop:
-        - ../monitoring/grafana/provisioning/datasources/
-        - ../monitoring/grafana/provisioning/dashboards/
+
+    - name: Copy Grafana dashboards provisioning
+      copy:
+        src: ../monitoring/grafana/provisioning/dashboards/
+        dest: "{{ monitoring_dir }}/grafana/provisioning/dashboards/"
+        owner: "{{ ansible_user }}"
+        group: "{{ ansible_user }}"
+        mode: '0644'
 
     - name: Copy Grafana dashboards
       copy:
