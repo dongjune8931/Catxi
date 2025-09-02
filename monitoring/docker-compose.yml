@@ -81,10 +81,11 @@ services:
       - /sys:/host/sys:ro
       - /:/rootfs:ro
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:9100/metrics"]
+      test: [ "CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:9100/metrics" ]
       interval: 30s
-      timeout: 10s
+      timeout: 15s
       retries: 3
+      start_period: 30s
     command:
       - '--path.procfs=/host/proc'
       - '--path.rootfs=/rootfs'
@@ -94,9 +95,9 @@ services:
     deploy:
       resources:
         limits:
-          memory: 128m
+          memory: 256m
         reservations:
-          memory: 64m
+          memory: 128m
 
   redis-exporter:
     image: oliver006/redis_exporter:latest
