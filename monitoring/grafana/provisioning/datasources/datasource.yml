@@ -8,6 +8,7 @@ datasources:
     isDefault: true
     editable: false
     basicAuth: false
+    uid: prometheus
     jsonData:
       httpMethod: POST
       prometheusType: Prometheus
