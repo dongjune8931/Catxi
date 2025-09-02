@@ -44,3 +44,6 @@ src/main/resources/application.yml
 
 ### QueryDSL ###
 /src/main/generated/
+
+### logs ###
+/logs/
