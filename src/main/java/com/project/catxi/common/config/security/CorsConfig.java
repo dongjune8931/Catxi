@@ -15,7 +15,7 @@ public class CorsConfig {
     CorsConfiguration configuration = new CorsConfiguration();
 
     // 허용 오리진 목록
-    configuration.setAllowedOrigins(List.of("http://localhost:5173","http://localhost:8080"));
+    configuration.setAllowedOrigins(List.of("http://localhost:5173","http://localhost:8080","https://catxi-university-taxi-b0936.web.app"));
 
     configuration.addAllowedHeader("*");
     configuration.setExposedHeaders(List.of("access", "Authorization"));
