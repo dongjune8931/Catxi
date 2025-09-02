@@ -89,7 +89,7 @@ public class TokenService {
                         String email = jwtUtil.getEmail(claims);
                         refreshTokenRepository.delete(email);
                         
-                        log.info("✅ AccessToken 블랙리스트 등록 및 RefreshToken 삭제: {} ({})", accessToken, email);
+                        log.info("✅ AccessToken 블랙리스트 등록 및 RefreshToken 삭제: {}", email);
                     }
                 }
             }
@@ -125,9 +125,8 @@ public class TokenService {
 
     //리프레시토큰 검증
     private void validateRefreshToken(String refreshToken) {
-        log.info("🔍 [validateRefreshToken] 받은 토큰: {}", refreshToken);
+
         if (refreshToken == null || refreshToken.trim().isEmpty()) {
-            log.warn("🚨 RefreshToken이 null이거나 비어있음");
             throw new CatxiException(MemberErrorCode.REFRESH_TOKEN_NOT_FOUND);
         }
         if (!jwtUtil.validateToken(refreshToken)) {
