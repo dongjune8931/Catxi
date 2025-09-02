@@ -109,6 +109,8 @@ services:
       - REDIS_PASSWORD=${REDIS_PW}
       - REDIS_EXPORTER_CHECK_KEYS=*
       - REDIS_EXPORTER_SKIP_TLS_VERIFICATION=true
+    env_file:
+      - .env
     deploy:
       resources:
         limits:
@@ -116,11 +118,11 @@ services:
         reservations:
           memory: 64m
     healthcheck:
-      test: ["CMD-SHELL", "nc -z localhost 9121 || exit 1"]
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:9121/metrics"]
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 10s
+      start_period: 30s
 
   pushgateway:
     image: prom/pushgateway:latest
@@ -139,6 +141,47 @@ services:
           memory: 256m
         reservations:
           memory: 128m
+
+  loki:
+    image: grafana/loki:latest
+    container_name: catxi_loki
+    restart: unless-stopped
+    ports:
+      - "3100:3100"
+    volumes:
+      - ./loki:/etc/loki
+      - loki_data:/loki
+    command: -config.file=/etc/loki/loki.yml
+    deploy:
+      resources:
+        limits:
+          memory: 512m
+        reservations:
+          memory: 256m
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3100/ready"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  promtail:
+    image: grafana/promtail:latest
+    container_name: catxi_promtail
+    restart: unless-stopped
+    volumes:
+      - ./promtail:/etc/promtail
+      - /var/log:/var/log:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+    command: -config.file=/etc/promtail/promtail.yml
+    deploy:
+      resources:
+        limits:
+          memory: 128m
+        reservations:
+          memory: 64m
+    depends_on:
+      - loki
 
   alertmanager:
     image: prom/alertmanager:v0.27.0
@@ -169,6 +212,7 @@ volumes:
   prometheus_data:
   grafana_data:
   alertmanager_data:
+  loki_data:
 
 networks:
   default:

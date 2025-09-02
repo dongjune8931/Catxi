@@ -38,6 +38,8 @@
         - grafana/provisioning/dashboards
         - grafana/dashboards
         - alertmanager
+        - loki
+        - promtail
 
     - name: Note about Docker volumes
       debug:
@@ -91,6 +93,22 @@
         group: "{{ ansible_user }}"
         mode: '0644'
 
+    - name: Copy Loki configuration
+      copy:
+        src: ../monitoring/loki/loki.yml
+        dest: "{{ monitoring_dir }}/loki/loki.yml"
+        owner: "{{ ansible_user }}"
+        group: "{{ ansible_user }}"
+        mode: '0644'
+
+    - name: Copy Promtail configuration
+      copy:
+        src: ../monitoring/promtail/promtail.yml
+        dest: "{{ monitoring_dir }}/promtail/promtail.yml"
+        owner: "{{ ansible_user }}"
+        group: "{{ ansible_user }}"
+        mode: '0644'
+
     - name: Create environment file from variables
       template:
         src: monitoring.env.j2
@@ -137,6 +155,13 @@
         timeout: 60
         delay: 5
 
+    - name: Wait for Loki to be ready
+      wait_for:
+        port: 3100
+        host: "localhost"
+        timeout: 60
+        delay: 5
+
     - name: Check container health
       community.docker.docker_compose_v2:
         project_src: "{{ monitoring_dir }}"
@@ -169,12 +194,12 @@
           - "📈 Prometheus: http://{{ ansible_host }}:9090 (localhost only)"
           - "🔔 AlertManager: http://{{ ansible_host }}:9093 (localhost only)"
           - "📊 Pushgateway: http://{{ ansible_host }}:9091 (localhost only)"
+          - "📝 Loki: http://{{ ansible_host }}:3100 (localhost only)"
           - "👤 Grafana Login: admin / {{ GRAFANA_ADMIN_PASSWORD | default('catxi2024!') }}"
           - "🔍 Monitoring targets:"
           - "  - Load Balancer: https://catxi.kro.kr/actuator/prometheus"
           - "  - EC2 Instance 1: {{ EC2_INSTANCE_1 | default('undefined') }}:8080"
           - "  - EC2 Instance 2: {{ EC2_INSTANCE_2 | default('undefined') }}:8080"
-          - "  - Redis: {{ REDIS_HOST | default('host.docker.internal') }}:{{ REDIS_PORT | default('6379') }}"
           - "⚠️  Services are bound to localhost for security"
 
   post_tasks:
@@ -191,7 +216,7 @@
           echo ""
           
           echo "🔍 Service Health:"
-          for service in grafana:3000 prometheus:9090 pushgateway:9091 alertmanager:9093; do
+          for service in grafana:3000 prometheus:9090 pushgateway:9091 alertmanager:9093 loki:3100; do
             name=$(echo $service | cut -d: -f1)
             port=$(echo $service | cut -d: -f2)
             if curl -s -f http://localhost:$port >/dev/null 2>&1; then
