@@ -2,6 +2,7 @@ package com.project.catxi.common.auth.service;
 
 import com.project.catxi.common.api.error.MemberErrorCode;
 import com.project.catxi.common.api.exception.CatxiException;
+import com.project.catxi.common.auth.infra.RefreshTokenRepository;
 import com.project.catxi.common.auth.infra.TokenBlacklistRepository;
 import com.project.catxi.member.domain.Member;
 import com.project.catxi.member.repository.MemberRepository;
@@ -16,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class BlacklistService {
 
     private final TokenBlacklistRepository tokenBlacklistRepository;
+    private final RefreshTokenRepository refreshTokenRepository;
     private final MemberRepository memberRepository;
 
     // 사용자를 블랙리스트에 추가 (영구)
@@ -24,8 +26,13 @@ public class BlacklistService {
         Member member = memberRepository.findById(userId)
             .orElseThrow(() -> new CatxiException(MemberErrorCode.MEMBER_NOT_FOUND));
         
+        // 사용자를 블랙리스트에 추가
         tokenBlacklistRepository.addUserToBlacklist(userId.toString());
-        log.info("✅ 유저 블랙리스트 추가: {} ({})", member.getEmail(), userId);
+        
+        // 해당 사용자의 refreshToken을 Redis에서 삭제
+        refreshTokenRepository.delete(member.getEmail());
+        
+        log.info("✅ 유저 블랙리스트 추가 및 RefreshToken 삭제: {} ({})", member.getEmail(), userId);
     }
 
     // 사용자를 블랙리스트에서 제거

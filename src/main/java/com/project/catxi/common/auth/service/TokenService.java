@@ -84,7 +84,12 @@ public class TokenService {
                     if (remainTime > 0) {
                         // 블랙리스트에 추가
                         tokenBlacklistRepository.addTokenToBlacklist(accessToken, Duration.ofMillis(remainTime));
-                        log.info("✅ AccessToken 블랙리스트 등록: {}", accessToken);
+                        
+                        // 해당 사용자의 모든 refreshToken도 삭제 (보안 강화)
+                        String email = jwtUtil.getEmail(claims);
+                        refreshTokenRepository.delete(email);
+                        
+                        log.info("✅ AccessToken 블랙리스트 등록 및 RefreshToken 삭제: {} ({})", accessToken, email);
                     }
                 }
             }
