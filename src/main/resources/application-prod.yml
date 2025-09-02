@@ -95,11 +95,11 @@ management:
 
 logging:
   level:
-    org.springframework.web.client: WARN
-    com.project.catxi: INFO
-    org.springframework.security: WARN
-    org.hibernate: WARN
-    root: WARN
+    org.springframework.web.client: DEBUG
+    com.project.catxi: DEBUG
+    org.springframework.security: DEBUG
+    org.hibernate: DEBUG
+    root: DEBUG
   pattern:
     console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
     file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
