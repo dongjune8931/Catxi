@@ -46,9 +46,9 @@ services:
       - GF_ANALYTICS_REPORTING_ENABLED=false
       - GF_SECURITY_DISABLE_GRAVATAR=true
       - GF_SECURITY_COOKIE_SECURE=true
-      - GF_SECURITY_COOKIE_SAMESITE=strict
+      - GF_SECURITY_COOKIE_SAMESITE=lax
       - GF_LOG_LEVEL=info
-      - GF_SERVER_DOMAIN=localhost
+      - GF_SERVER_ROOT_URL=${GF_SERVER_ROOT_URL}
       - GF_SECURITY_SECRET_KEY=${GRAFANA_SECRET_KEY}
     volumes:
       - grafana_data:/var/lib/grafana
