@@ -1,11 +1,10 @@
 package com.project.catxi.common.auth.controller;
 
 import com.project.catxi.common.api.ApiResponse;
-import com.project.catxi.common.api.error.MemberErrorCode;
-import com.project.catxi.common.auth.infra.CodeCache;
 import com.project.catxi.common.auth.kakao.KakaoDTO;
 import com.project.catxi.common.auth.kakao.TokenDTO;
-import com.project.catxi.common.auth.service.CustomOAuth2UserService;
+import com.project.catxi.common.auth.service.OAuthLoginService;
+import com.project.catxi.common.auth.service.TokenManagementService;
 import com.project.catxi.common.domain.MemberStatus;
 import com.project.catxi.member.domain.Member;
 import com.project.catxi.member.dto.CustomUserDetails;
@@ -28,8 +27,8 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/auth")
 public class OAuthController {
 
-  private final CustomOAuth2UserService oAuth2UserService;
-  private final CodeCache codeCache;
+  private final OAuthLoginService oAuthLoginService;
+  private final TokenManagementService tokenManagementService;
 
   @GetMapping("/kakao/callback")
   public ResponseEntity<Void> kakaoCallback(@RequestParam("code") String code) {
@@ -38,9 +37,10 @@ public class OAuthController {
     return new ResponseEntity<>(headers, HttpStatus.FOUND);
   }
 
-  @GetMapping("/login/kakao")public ApiResponse<?> kakaoLogin(
+  @GetMapping("/login/kakao")
+  public ApiResponse<?> kakaoLogin(
       @RequestParam("code") String accessCode, HttpServletResponse response) {
-    Member user = oAuth2UserService.processKakaoLogin(accessCode, response);
+    Member user = oAuthLoginService.kakaoLoginProcess(accessCode, response);
 
     if (user.getStatus() == MemberStatus.PENDING) {
       return ApiResponse.success("isNewUser");  }
@@ -52,14 +52,14 @@ public class OAuthController {
   @PatchMapping("/signUp/catxi")
   public ApiResponse<?> completeSignup(@RequestBody @Valid KakaoDTO.CatxiSignUp dto, 
                                        @AuthenticationPrincipal CustomUserDetails userDetails) {
-    oAuth2UserService.catxiSignup(userDetails.getUsername(), dto);
+    tokenManagementService.catxiSignup(userDetails.getUsername(), dto);
     return ApiResponse.success("추가 회원정보 등록 완료");
   }
 
   @Operation(summary = "닉네임 중복 조회")
   @GetMapping("/signUp/catxi/checkNN")
   public ApiResponse<Boolean> checkNN(@RequestParam("nickname") String nickname) {
-    boolean isDuplicate = oAuth2UserService.isNNDuplicate(nickname);
+    boolean isDuplicate = tokenManagementService.isNNDuplicate(nickname);
     return ApiResponse.success(isDuplicate);
   }
 
@@ -69,7 +69,7 @@ public class OAuthController {
   public ApiResponse<TokenDTO.Response> reissue(@CookieValue(name = "refresh", required = false)
                                                 String refreshToken, HttpServletResponse response) {
     log.info("🍪 [Reissue 요청] 전달된 refreshToken 쿠키 값: {}", refreshToken);
-    TokenDTO.Response tokenResponse = oAuth2UserService.reissueAccessToken(refreshToken, response);
+    TokenDTO.Response tokenResponse = tokenManagementService.reissueAccessToken(refreshToken, response);
     return ApiResponse.success(tokenResponse);
   }
 
@@ -79,7 +79,7 @@ public class OAuthController {
                                String refreshToken, HttpServletResponse response
   ) {
     log.info("✅ logout 성공");
-    oAuth2UserService.logout(refreshToken, response);
+    tokenManagementService.logout(refreshToken, response);
     return ApiResponse.success("로그아웃 완료");
   }
 
