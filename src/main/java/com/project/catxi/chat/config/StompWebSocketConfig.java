@@ -21,8 +21,9 @@ public class StompWebSocketConfig implements WebSocketMessageBrokerConfigurer {
 	public void registerStompEndpoints(StompEndpointRegistry registry) {
 		registry.addEndpoint("/connect")
             .setAllowedOrigins("http://localhost:5173", "https://catxi-university-taxi-b0936.web.app", "https://catxi.kro.kr")
-			.withSockJS();
-	}
+			.withSockJS()
+            .setSuppressCors(false);
+    }
 
 	@Override
 	public void configureMessageBroker(MessageBrokerRegistry registry) {
