@@ -22,7 +22,7 @@ public class StompWebSocketConfig implements WebSocketMessageBrokerConfigurer {
         registry.addEndpoint("/connect")
             .setAllowedOriginPatterns("*")  // 모든 오리진 허용
             .withSockJS()
-            .setSuppressCors(false);
+            .setSuppressCors(true);
     }
 
 
