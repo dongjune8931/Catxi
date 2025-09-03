@@ -38,7 +38,7 @@ public class JwtFilter extends OncePerRequestFilter {
 
     String uri = request.getRequestURI();
 
-    // JWT 검증 예외 경로들
+    // JWT 검증 예외 경로
     if (uri.startsWith("/connect") ||
         uri.equals("/auth/login/kakao") ||
         uri.equals("/favicon.ico") ||
