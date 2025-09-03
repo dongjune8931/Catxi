@@ -20,8 +20,12 @@ public class StompWebSocketConfig implements WebSocketMessageBrokerConfigurer {
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
         registry.addEndpoint("/connect")
-            .setAllowedOriginPatterns("*")  // 모든 오리진 허용
+            .setAllowedOriginPatterns("*")
             .withSockJS()
+            .setClientLibraryUrl("https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js")
+            .setStreamBytesLimit(512 * 1024)
+            .setHttpMessageCacheSize(1000)
+            .setDisconnectDelay(30 * 1000)
             .setSuppressCors(true);
     }
 
