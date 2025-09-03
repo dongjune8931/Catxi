@@ -21,22 +21,22 @@ public class JwtTokenProvider {
     );
   }
 
-  public String generateAccessToken(String email) {
-    return createToken("access", email, jwtConfig.getAccessTokenValidityInSeconds());
+  public String generateAccessToken(String email, String role) {
+    return createToken("access", email, role, jwtConfig.getAccessTokenValidityInSeconds());
   }
 
-  public String generateRefreshToken(String email) {
-    return createToken("refresh", email, jwtConfig.getRefreshTokenValidityInSeconds());
+  public String generateRefreshToken(String email, String role) {
+    return createToken("refresh", email, role, jwtConfig.getRefreshTokenValidityInSeconds());
   }
 
-  private String createToken(String type, String email, Long expiredSeconds) {
+  private String createToken(String type, String email, String role, Long expiredSeconds) {
     long now = System.currentTimeMillis();
     return Jwts.builder()
         //이메일이 sub 주 키로 작용
         .subject(email)
         .claim("type", type)
         .claim("email", email)
-        .claim("role", "ROLE_USER")
+        .claim("role", role)
         .issuedAt(new Date(now))
         .expiration(new Date(now + expiredSeconds * 1000))
         .signWith(secretKey)

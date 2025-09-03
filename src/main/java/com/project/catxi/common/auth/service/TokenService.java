@@ -49,9 +49,13 @@ public class TokenService {
             throw new CatxiException(MemberErrorCode.REFRESH_TOKEN_MISMATCH);
         }
 
+        //사용자 정보 조회하여 role 가져오기
+        Member member = memberRepository.findByEmail(email)
+            .orElseThrow(() -> new CatxiException(MemberErrorCode.MEMBER_NOT_FOUND));
+        
         //토큰 생성
-        String newAccessToken = jwtTokenProvider.generateAccessToken(email);
-        String newRefreshToken = jwtTokenProvider.generateRefreshToken(email);
+        String newAccessToken = jwtTokenProvider.generateAccessToken(email, member.getRole());
+        String newRefreshToken = jwtTokenProvider.generateRefreshToken(email, member.getRole());
 
         //Token Rotate
         refreshTokenRepository.rotate(email, refreshToken, newRefreshToken, Duration.ofDays(30));

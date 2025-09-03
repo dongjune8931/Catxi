@@ -84,7 +84,7 @@ public class MemberController {
         .orElse("ROLE_USER"); // 기본 권한 처리
 
     // JWT 생성
-    String token = jwtTokenProvider.generateAccessToken(username);
+    String token = jwtTokenProvider.generateAccessToken(username, role);
 
     return ResponseEntity.ok(new LoginResponse(token));
   }
