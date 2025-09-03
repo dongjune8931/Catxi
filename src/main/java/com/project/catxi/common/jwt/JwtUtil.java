@@ -58,6 +58,10 @@ public class JwtUtil {
     return claims.get("type", String.class);
   }
 
+  public String getRole(Claims claims) {
+    return claims.get("role", String.class);
+  }
+
   public Date isExpired(Claims claims) {return claims.getExpiration();}
 
   public boolean isRefreshToken(Claims claims) {

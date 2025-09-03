@@ -22,6 +22,12 @@ public class BlacklistController {
   private final BlacklistService blacklistService;
   private final MemberRepository memberRepository;
 
+  //admin 헬스 체크
+  @GetMapping("/health")
+  public String checkAdmin() {
+    return "관리자 좋은데요~";
+  }
+
   //블랙리스트 등록
   @Operation(summary = "사용자 ID로 블랙리스트 등록", description = "사용자를 블랙리스트에 등록합니다.")
   @PostMapping("/uID/{userId}")
