@@ -99,7 +99,6 @@ services:
       - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
       - '--no-collector.ipvs'
       - '--web.max-requests=40'
-      - '--web.timeout=30s'
       - '--log.level=warn'
     deploy:
       resources:
