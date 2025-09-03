@@ -93,11 +93,12 @@ public class OAuthLoginService {
 
     private String loginProcess(HttpServletResponse response, Member user) {
         String email = user.getEmail();
+        String role = user.getRole();
 
-        String accessToken = jwtTokenProvider.generateAccessToken(email);
+        String accessToken = jwtTokenProvider.generateAccessToken(email, role);
         response.setHeader("access", accessToken);
         
-        String refreshToken = jwtTokenProvider.generateRefreshToken(email);
+        String refreshToken = jwtTokenProvider.generateRefreshToken(email, role);
         refreshTokenRepository.save(email, refreshToken, Duration.ofDays(30));
         
         ResponseCookie refreshCookie = CookieUtil.createCookie(refreshToken, Duration.ofDays(30));

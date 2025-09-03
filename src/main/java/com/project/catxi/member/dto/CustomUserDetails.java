@@ -18,8 +18,13 @@ public class CustomUserDetails implements UserDetails {
   // Role값 확인
   @Override
   public Collection<? extends GrantedAuthority> getAuthorities() {
+    //기본값 = ROLE_USER
+    String role =
+        (member.getRole() == null || member.getRole().isBlank())
+        ? "ROLE_USER"
+        : member.getRole();
 
-    return List.of(new SimpleGrantedAuthority("ROLE_USER"));
+    return List.of(new SimpleGrantedAuthority(role));
   }
 
   @Override
