@@ -47,6 +47,9 @@ public class SecurityConfig {
             .requestMatchers("/connect/**").permitAll()
             .requestMatchers("api/auth/login/kakao").permitAll()
             .requestMatchers("/actuator/**").permitAll()
+            //admin 권한 제어
+            .requestMatchers("/api/admin/**").hasRole("ADMIN")
+
             .anyRequest().authenticated()
         );
 
