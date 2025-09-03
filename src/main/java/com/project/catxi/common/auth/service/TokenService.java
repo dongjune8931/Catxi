@@ -142,17 +142,21 @@ public class TokenService {
 
     //회원가입 검증
     private void validateCatxiSignUp(KakaoDTO.CatxiSignUp dto) {
-        if (memberRepository.existsByStudentNo(dto.StudentNo())) {
-            throw new CatxiException(MemberErrorCode.DUPLICATE_STUDENT_NO);
-        }
+        //닉네임 제한
         if (dto.nickname() == null || dto.nickname().length() > 9) {
             throw new CatxiException(MemberErrorCode.INVALID_NICKNAME_LENGTH);
         }
+        //닉네임 중복체크
         if (memberRepository.existsByNickname(dto.nickname())) {
             throw new CatxiException(MemberErrorCode.DUPLICATE_NICKNAME);
         }
+        //학번 정확히 9글자 숫자
         if (dto.StudentNo() == null || !dto.StudentNo().matches("\\d{9}")) {
             throw new CatxiException(MemberErrorCode.INVALID_STUDENT_NO);
+        }
+        //학번 중복체크
+        if (memberRepository.existsByStudentNo(dto.StudentNo())) {
+            throw new CatxiException(MemberErrorCode.DUPLICATE_STUDENT_NO);
         }
     }
 }
