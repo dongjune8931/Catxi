@@ -41,17 +41,8 @@ public class JwtFilter extends OncePerRequestFilter {
     // JWT 검증 예외 경로
     if (uri.startsWith("/connect") ||
         uri.equals("/auth/login/kakao") ||
-        uri.equals("/favicon.ico") ||
-        uri.startsWith("/css") ||
-        uri.startsWith("/js") ||
-        uri.startsWith("/images") ||
-        uri.startsWith("/static") ||
-        uri.startsWith("/swagger") ||
-        uri.startsWith("/swagger-ui") ||
-        uri.startsWith("/v3/api-docs") ||
-        uri.startsWith("/webjars") ||
+        uri.startsWith("/webjars/**") ||
         uri.startsWith("/actuator")) {
-      log.info("JWT 검증 제외 경로로 통과: {}", uri);
       filterChain.doFilter(request, response);
       return;
     }
