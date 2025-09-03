@@ -7,9 +7,11 @@ services:
       - "8080:8080"
     environment:
       - SPRING_PROFILES_ACTIVE=prod
+      - TZ=Asia/Seoul
     env_file:
       - .env
     volumes:
+      - /etc/localtime:/etc/localtime:ro
       - catxi-logs:/app/logs
     networks:
       - catxi-network
