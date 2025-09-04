@@ -102,24 +102,12 @@ public class ChatRoomRepositoryCustomImpl implements ChatRoomRepositoryCustom {
 	private BooleanExpression filterByLocationAndPoint(Location location, String point) {
 		QChatRoom chatRoom = QChatRoom.chatRoom;
 		if (point.equals("TO_SCHOOL")) {
-			return filterByLocation(chatRoom.startPoint, location);
+			return chatRoom.startPoint.eq(location);
 		} else if (point.equals("FROM_SCHOOL")) {
-			return filterByLocation(chatRoom.endPoint, location);
+			return chatRoom.endPoint.eq(location);
 		} else {
 			throw new CatxiException(ChatRoomErrorCode.INVALID_CHATROOM_PARAMETER);
 		}
-	}
-
-	private BooleanExpression filterByLocation(EnumPath<Location> path, Location location){
-		Set<Location> locations = Set.of(Location.GURO_ST, Location.BUCHEON_ST, Location.SINDORIM_ST);
-
-		if(location == null)
-			return null;
-
-		if(locations.contains(location))
-			return path.in(locations);
-		else
-			return path.eq(location);
 	}
 
 

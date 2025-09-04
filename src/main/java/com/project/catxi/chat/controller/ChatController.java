@@ -70,7 +70,7 @@ public class ChatController {
 			+ """
 			한 페이지에 최대 10개의 채팅방이 포함됩니다.
 			- direction: 'FROM_SCHOOL' 또는 'TO_SCHOOL' 중 하나를 선택합니다.
-			- station: 'SOSA_ST' 또는 'YEOKGOK_ST' 또는 'ETC' 또는 'ALL' 중 하나를 선택합니다.
+			- station: 'SOSA_ST' 또는 'YEOKGOK_ST' 또는 'ALL' 중 하나를 선택합니다.
 			- sort: 'departAt' 또는 'createdTime' 중 하나를 선택합니다.
 			- page: 페이지 번호 (기본값은 0입니다).
 			""")
