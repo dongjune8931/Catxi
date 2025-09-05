@@ -58,6 +58,10 @@ public class Member extends BaseTimeEntity {
 	@Enumerated(EnumType.STRING)
 	private MemberStatus status;
 
+	// 카카오 고유ID
+	@Column(nullable = false, unique = true)
+	private Long kakaoId;
+
 	// 로그인했음 표시
 	public void setLogin(boolean isLogin) {
 		this.isLogin = isLogin;
