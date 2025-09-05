@@ -110,6 +110,3 @@ logging:
       max-file-size: 50MB
       max-history: 5
       total-size-cap: 300MB
-
-kakao:
-  admin-key: ${KAKAO_ADMIN_KEY}
