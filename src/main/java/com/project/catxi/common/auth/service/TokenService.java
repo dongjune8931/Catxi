@@ -12,7 +12,9 @@ import com.project.catxi.common.auth.kakao.TokenDTO;
 import com.project.catxi.common.domain.MemberStatus;
 import com.project.catxi.common.jwt.JwtUtil;
 import com.project.catxi.common.jwt.JwtTokenProvider;
+import com.project.catxi.member.domain.DeleteLog;
 import com.project.catxi.member.domain.Member;
+import com.project.catxi.member.repository.DeleteLogRepository;
 import com.project.catxi.member.repository.MemberRepository;
 import com.project.catxi.member.repository.MatchHistoryRepository;
 import com.project.catxi.chat.repository.ChatMessageRepository;
@@ -24,6 +26,7 @@ import feign.FeignException;
 import io.jsonwebtoken.Claims;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -52,6 +55,7 @@ public class TokenService {
     private final ChatParticipantRepository chatParticipantRepository;
     private final KickedParticipantRepository kickedParticipantRepository;
     private final ReportRepository reportRepository;
+    private final DeleteLogRepository deleteLogRepository;
 
 
     //reissue
@@ -206,13 +210,20 @@ public class TokenService {
     @Transactional
     protected void dropMemberData(Member member, String accessToken, String email) {
         try {
-            // 1. AccessToken 블랙리스트 등록
+            //1. AccessToken 블랙리스트 등록
             addAccessTokenToBlacklist(accessToken);
             
-            // 2. RefreshToken 삭제
+            //2. RefreshToken 삭제
             refreshTokenRepository.delete(email);
 
-            // 3. 연관 엔티티들 삭제
+            //3.멤버 삭제 로그화
+            deleteLogRepository.save(DeleteLog.builder()
+                .deletedEmail(email)
+                .memberId(member.getId())
+                .createdAt(LocalDateTime.now())
+                .build());
+
+            //3. 연관 엔티티들 삭제
             
             // 3-1. 신고 기록 삭제 (reporter, reportedMember)
             reportRepository.deleteAllByReporter(member);
