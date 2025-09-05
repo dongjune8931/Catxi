@@ -13,6 +13,7 @@ import com.project.catxi.common.api.error.ChatRoomErrorCode;
 import com.project.catxi.common.api.exception.CatxiException;
 import com.project.catxi.map.dto.CoordinateReq;
 import com.project.catxi.map.dto.CoordinateRes;
+import com.project.catxi.map.dto.MapInfoRes;
 import com.project.catxi.member.domain.Member;
 
 import lombok.RequiredArgsConstructor;
@@ -27,13 +28,13 @@ public class MapService {
 	private final ChatParticipantRepository chatParticipantRepository;
 	private final CoordinateProvider coordinateProvider;
 
-	public List<CoordinateRes> getCoordinates(Long roomId) {
+	public MapInfoRes getCoordinates(Long roomId) {
 		ChatRoom chatRoom = chatRoomRepository.findById(roomId)
 			.orElseThrow(() -> new CatxiException(ChatRoomErrorCode.CHATROOM_NOT_FOUND));
 
 		List<ChatParticipant> participants = chatParticipantRepository.findByChatRoom(chatRoom);
 
-		return participants.stream()
+		List<CoordinateRes> coordinateRes = participants.stream()
 			.map(participant -> {
 				Member member = participant.getMember();
 				Map<String, Double> coordMap = coordinateProvider.getCoordinate(roomId, member.getEmail());
@@ -44,6 +45,7 @@ public class MapService {
 					getValueFromMap(coordMap, "distance"));
 			})
 			.toList();
+		return new MapInfoRes(chatRoom.getStartPoint(), coordinateRes);
 	}
 
 	public void saveDepartureCoordinate(double latitude, double longitude, Long roomId) {
