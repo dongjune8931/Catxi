@@ -6,13 +6,13 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestParam;
 
-@FeignClient(name = "kakaoFeignClient", url = "https://kapi.kakao.com")
+@FeignClient(
+    name = "kakaoFeignClient",
+    url = "https://kapi.kakao.com",
+    contextId = "kakaoFeignClient")
 public interface KakaoFeignClient {
 
-    @PostMapping(value = "/v1/user/unlink", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
+    @PostMapping(value = "/v1/user/unlink")
     KakaoUnlinkRes unlinkUser(
-        @RequestHeader("Authorization") String authorization,
-        @RequestParam("target_id_type") String targetIdType,
-        @RequestParam("target_id") Long targetId
-    );
+        @RequestHeader("Authorization") String authorization);
 }

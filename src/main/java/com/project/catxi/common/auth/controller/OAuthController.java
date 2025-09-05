@@ -92,18 +92,26 @@ public class OAuthController {
   }
 
   //TODO: 회원 탈퇴
-  @Operation(summary = "회원 완전 탈퇴 API (Hard Delete + 카카오 연결 해제)")
-  @DeleteMapping("/withdraw")
-  public ApiResponse<String> withdrawMember(
-      @RequestHeader("Authorization") String authorization, @RequestParam("kakaoAccessToken") String kakaoAcessToken) {
+  @DeleteMapping("/withdrawal")
+  public ApiResponse<String> resignation(HttpServletRequest request) {
+    String authorization = request.getHeader("Authorization");
 
     if (authorization == null || !authorization.startsWith("Bearer ")) {
       throw new CatxiException(MemberErrorCode.INVALID_TOKEN);
     }
 
     String accessToken = authorization.substring("Bearer ".length());
-    tokenService.resignation(accessToken,kakaoAcessToken);
 
-    return ApiResponse.success("회원 탈퇴가 완료되었습니다.");
+    try {
+      tokenService.resignation(accessToken);
+      return ApiResponse.success("회원탈퇴가 완료되었습니다.");
+    }
+    catch (CatxiException e) {
+      log.error("회원탈퇴 실패: {}", e.getMessage());
+      throw e;
+    }
+
   }
+
+
 }
