@@ -23,10 +23,7 @@ import com.querydsl.core.types.Order;
 import com.querydsl.core.types.OrderSpecifier;
 import com.querydsl.core.types.Projections;
 import com.querydsl.core.types.dsl.BooleanExpression;
-import com.querydsl.core.types.dsl.CaseBuilder;
-import com.querydsl.core.types.dsl.EnumPath;
 import com.querydsl.core.types.dsl.PathBuilder;
-import com.querydsl.jpa.JPAExpressions;
 import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 
@@ -36,6 +33,7 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class ChatRoomRepositoryCustomImpl implements ChatRoomRepositoryCustom {
 	private final JPAQueryFactory jpaQueryFactory;
+	private static final Set<Location> STATIONS = Set.of(Location.SOSA_ST, Location.GURO_ST, Location.YEOKGOK_ST, Location.BUCHEON_ST, Location.SINDORIM_ST);
 
 	@Override
 	public Page<ChatRoomRes> findByLocationAndDirection(Location location, String point, Pageable pageable) {
@@ -69,6 +67,8 @@ public class ChatRoomRepositoryCustomImpl implements ChatRoomRepositoryCustom {
 			)
 			.groupBy(chatRoom.roomId)
 			.orderBy(getOrderSpecifier(pageable.getSort()))
+			.offset(pageable.getOffset())
+			.limit(pageable.getPageSize())
 			.fetch();
 
 		// 2. 전체 데이터 개수 조회
@@ -101,25 +101,14 @@ public class ChatRoomRepositoryCustomImpl implements ChatRoomRepositoryCustom {
 
 	private BooleanExpression filterByLocationAndPoint(Location location, String point) {
 		QChatRoom chatRoom = QChatRoom.chatRoom;
+		//ALL(null)일 경우 TO_SCHOOL은 역 -> 학교, FROM_SCHOOL은 학교 -> 역
 		if (point.equals("TO_SCHOOL")) {
-			return filterByLocation(chatRoom.startPoint, location);
+			return location == null ? chatRoom.startPoint.in(STATIONS) :chatRoom.startPoint.eq(location);
 		} else if (point.equals("FROM_SCHOOL")) {
-			return filterByLocation(chatRoom.endPoint, location);
+			return location == null ? chatRoom.endPoint.in(STATIONS) : chatRoom.endPoint.eq(location);
 		} else {
 			throw new CatxiException(ChatRoomErrorCode.INVALID_CHATROOM_PARAMETER);
 		}
-	}
-
-	private BooleanExpression filterByLocation(EnumPath<Location> path, Location location){
-		Set<Location> locations = Set.of(Location.GURO_ST, Location.BUCHEON_ST, Location.SINDORIM_ST);
-
-		if(location == null)
-			return null;
-
-		if(locations.contains(location))
-			return path.in(locations);
-		else
-			return path.eq(location);
 	}
 
 
