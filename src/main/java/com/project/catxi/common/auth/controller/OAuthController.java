@@ -1,6 +1,8 @@
 package com.project.catxi.common.auth.controller;
 
 import com.project.catxi.common.api.ApiResponse;
+import com.project.catxi.common.api.error.MemberErrorCode;
+import com.project.catxi.common.api.exception.CatxiException;
 import com.project.catxi.common.auth.kakao.KakaoDTO;
 import com.project.catxi.common.auth.kakao.TokenDTO;
 import com.project.catxi.common.auth.service.OAuthLoginService;
@@ -21,6 +23,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 @RestController
 @RequiredArgsConstructor
@@ -89,5 +92,18 @@ public class OAuthController {
   }
 
   //TODO: 회원 탈퇴
+  @Operation(summary = "회원 완전 탈퇴 API (Hard Delete + 카카오 연결 해제)")
+  @DeleteMapping("/withdraw")
+  public ApiResponse<String> withdrawMember(
+      @RequestHeader("Authorization") String authorization, @RequestParam("kakaoAccessToken") String kakaoAcessToken) {
 
+    if (authorization == null || !authorization.startsWith("Bearer ")) {
+      throw new CatxiException(MemberErrorCode.INVALID_TOKEN);
+    }
+
+    String accessToken = authorization.substring("Bearer ".length());
+    tokenService.resignation(accessToken,kakaoAcessToken);
+
+    return ApiResponse.success("회원 탈퇴가 완료되었습니다.");
+  }
 }

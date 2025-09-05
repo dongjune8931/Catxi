@@ -6,17 +6,20 @@ import com.project.catxi.common.auth.infra.CookieUtil;
 import com.project.catxi.common.auth.infra.RefreshTokenRepository;
 import com.project.catxi.common.auth.infra.TokenBlacklistRepository;
 import com.project.catxi.common.auth.kakao.KakaoDTO;
+import com.project.catxi.common.auth.kakao.KakaoFeignClient;
 import com.project.catxi.common.auth.kakao.TokenDTO;
 import com.project.catxi.common.domain.MemberStatus;
 import com.project.catxi.common.jwt.JwtUtil;
 import com.project.catxi.common.jwt.JwtTokenProvider;
 import com.project.catxi.member.domain.Member;
 import com.project.catxi.member.repository.MemberRepository;
+import feign.FeignException;
 import io.jsonwebtoken.Claims;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseCookie;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -34,6 +37,8 @@ public class TokenService {
     private final MemberRepository memberRepository;
     private final RefreshTokenRepository refreshTokenRepository;
     private final TokenBlacklistRepository tokenBlacklistRepository;
+    private final KakaoFeignClient kakaoFeignClient;
+
 
     //reissue
     public TokenDTO.Response reissueAccessToken(String refreshToken, HttpServletResponse response) {
@@ -110,7 +115,7 @@ public class TokenService {
         }
     }
     
-
+    //2차 회원가입
     @Transactional
     public void catxiSignup(String email, KakaoDTO.CatxiSignUp dto) {
         Member member = memberRepository.findByEmail(email)
@@ -125,6 +130,64 @@ public class TokenService {
 
     public boolean isNNDuplicate(String nickname) {
         return memberRepository.existsByNickname(nickname);
+    }
+
+    //회원 탈퇴
+    @Transactional
+    public void resignation(String accessToken, String kakaoAccessToken) {
+        try {
+            // 1. JWT 검증 & 사용자 식별
+            if (!jwtUtil.validateToken(accessToken)) {
+                throw new CatxiException(MemberErrorCode.INVALID_TOKEN);
+            }
+            
+            Claims claims = jwtUtil.parseJwt(accessToken);
+            String email = jwtUtil.getEmail(claims);
+
+            Member member = memberRepository.findByEmail(email)
+                .orElseThrow(() -> new CatxiException(MemberErrorCode.MEMBER_NOT_FOUND));
+
+            // 2. 카카오 연결 해제
+            try {
+                String bearerToken = "Bearer " + kakaoAccessToken;
+                kakaoFeignClient.unlinkUser(bearerToken);
+                log.info("✅ 카카오 연결 해제 완료: {}", email);
+            } catch (FeignException e) {
+                log.error("❌ 카카오 연결 해제 실패: {}", e.contentUTF8());
+                throw new CatxiException(MemberErrorCode.KAKAO_UNLINK_FAILED);
+            }
+
+            // 3. DB 정리 (카카오 연결 해제 성공 후에만 실행)
+            dropMemberData(member, accessToken, email);
+            
+        } catch (CatxiException e) {
+            log.error("❌ 회원 탈퇴 실패: {}", e.getMessage());
+            throw e;
+        } catch (Exception e) {
+            log.error("❌ 회원 탈퇴 처리 중 예상치 못한 오류 발생: {}", e.getMessage());
+            throw new CatxiException(MemberErrorCode.WITHDRAWAL_FAILED);
+        }
+    }
+
+
+    //멤버 drop
+    private void dropMemberData(Member member, String accessToken, String email) {
+        //AccessToken 블랙리스트 등록
+        Claims claims = jwtUtil.parseJwt(accessToken);
+        Date expiration = claims.getExpiration();
+        long remainTime = expiration.getTime() - System.currentTimeMillis();
+        if (remainTime > 0) {
+            tokenBlacklistRepository.addTokenToBlacklist(accessToken, Duration.ofMillis(remainTime));
+        }
+
+        refreshTokenRepository.delete(email);
+        log.info("✅ RefreshToken 삭제 완료: {}", email);
+
+        //회원 HardDelete
+        memberRepository.delete(member);
+        log.info("✅ 회원 탈퇴 완료: {}", email);
+
+        //TODO : 회원 삭제 로그 기록
     }
 
     //리프레시토큰 검증
