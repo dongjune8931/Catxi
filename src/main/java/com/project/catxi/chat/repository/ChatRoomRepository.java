@@ -6,8 +6,13 @@ import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import com.project.catxi.chat.domain.ChatRoom;
+import com.project.catxi.member.domain.Member;
 
 public interface ChatRoomRepository extends JpaRepository<ChatRoom, Long>, ChatRoomRepositoryCustom {
 	List<ChatRoom> findByDepartAtBefore(LocalDateTime time);
+	
+	List<ChatRoom> findAllByHost(Member host);
+	
+	void deleteAllByHost(Member host);
 }
 

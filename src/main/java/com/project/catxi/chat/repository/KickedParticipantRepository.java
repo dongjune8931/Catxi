@@ -8,4 +8,6 @@ import com.project.catxi.member.domain.Member;
 
 public interface KickedParticipantRepository extends JpaRepository<KickedParticipant, Long> {
 	boolean existsByChatRoomAndMember(ChatRoom room, Member member);
+	
+	void deleteAllByMember(Member member);
 }

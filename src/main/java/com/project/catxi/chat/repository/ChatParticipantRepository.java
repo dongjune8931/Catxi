@@ -47,4 +47,6 @@ public interface ChatParticipantRepository extends JpaRepository<ChatParticipant
     @Query("SELECT cp.member.nickname FROM ChatParticipant cp WHERE cp.chatRoom = :chatRoom")
     List<String> findParticipantNicknamesByChatRoom(ChatRoom chatRoom);
 
+    void deleteAllByMember(Member member);
+
 }

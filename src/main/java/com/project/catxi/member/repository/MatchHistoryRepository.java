@@ -30,5 +30,7 @@ public interface MatchHistoryRepository extends JpaRepository<MatchHistory, Long
       @Param("nickname") String nickname,
       Pageable pageable
   );
+
+  void deleteAllByUser(Member user);
 }
 

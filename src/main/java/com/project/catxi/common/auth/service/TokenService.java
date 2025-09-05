@@ -14,6 +14,12 @@ import com.project.catxi.common.jwt.JwtUtil;
 import com.project.catxi.common.jwt.JwtTokenProvider;
 import com.project.catxi.member.domain.Member;
 import com.project.catxi.member.repository.MemberRepository;
+import com.project.catxi.member.repository.MatchHistoryRepository;
+import com.project.catxi.chat.repository.ChatMessageRepository;
+import com.project.catxi.chat.repository.ChatRoomRepository;
+import com.project.catxi.chat.repository.ChatParticipantRepository;
+import com.project.catxi.chat.repository.KickedParticipantRepository;
+import com.project.catxi.report.repository.ReportRepository;
 import feign.FeignException;
 import io.jsonwebtoken.Claims;
 import jakarta.servlet.http.HttpServletRequest;
@@ -40,6 +46,12 @@ public class TokenService {
     private final TokenBlacklistRepository tokenBlacklistRepository;
     private final KakaoAccessTokenRepository kakaoAccessTokenRepository;
     private final KakaoFeignClient kakaoFeignClient;
+    private final MatchHistoryRepository matchHistoryRepository;
+    private final ChatMessageRepository chatMessageRepository;
+    private final ChatRoomRepository chatRoomRepository;
+    private final ChatParticipantRepository chatParticipantRepository;
+    private final KickedParticipantRepository kickedParticipantRepository;
+    private final ReportRepository reportRepository;
 
 
     //reissue
@@ -200,7 +212,28 @@ public class TokenService {
             // 2. RefreshToken 삭제
             refreshTokenRepository.delete(email);
 
-            // 3. 회원 삭제 (Hard Delete)
+            // 3. 연관 엔티티들 삭제
+            
+            // 3-1. 신고 기록 삭제 (reporter, reportedMember)
+            reportRepository.deleteAllByReporter(member);
+            reportRepository.deleteAllByReportedMember(member);
+            
+            // 3-2. 매치 히스토리 삭제
+            matchHistoryRepository.deleteAllByUser(member);
+            
+            // 3-3. 채팅 참가자 기록 삭제
+            chatParticipantRepository.deleteAllByMember(member);
+            
+            // 3-4. 강퇴된 참가자 기록 삭제
+            kickedParticipantRepository.deleteAllByMember(member);
+            
+            // 3-5. 채팅 메시지 삭제
+            chatMessageRepository.deleteAllByMember(member);
+            
+            // 3-6. 호스트로 생성한 채팅룸 삭제
+            chatRoomRepository.deleteAllByHost(member);
+
+            // 4. 최종 회원 삭제 (Hard Delete)
             memberRepository.delete(member);
             log.info("✅ 회원 DB삭제 완료: {}", email);
 
