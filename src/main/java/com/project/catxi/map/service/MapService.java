@@ -10,7 +10,6 @@ import com.project.catxi.chat.domain.ChatRoom;
 import com.project.catxi.chat.repository.ChatParticipantRepository;
 import com.project.catxi.chat.repository.ChatRoomRepository;
 import com.project.catxi.common.api.error.ChatRoomErrorCode;
-import com.project.catxi.common.api.error.MapErrorCode;
 import com.project.catxi.common.api.exception.CatxiException;
 import com.project.catxi.map.dto.CoordinateReq;
 import com.project.catxi.map.dto.CoordinateRes;
@@ -51,15 +50,14 @@ public class MapService {
 		coordinateProvider.saveDeparture(roomId, latitude, longitude);
 	}
 
-	public double handleSaveCoordinateAndDistance(CoordinateReq coordinateReq) {
+	public Double handleSaveCoordinateAndDistance(CoordinateReq coordinateReq) {
 		Map<String, Double> departure = coordinateProvider.getDeparture(coordinateReq.roomId());
 
-		if (departure == null || departure.get("latitude") == null || departure.get("longitude") == null) {
-			throw new CatxiException(MapErrorCode.DEPARTURE_NOT_FOUND);
+		Double distance = null;
+		if (departure != null && departure.get("latitude") != null && departure.get("longitude") != null) {
+			distance = calculateDistance(coordinateReq.latitude(), coordinateReq.longitude(),
+				getValueFromMap(departure, "latitude"), getValueFromMap(departure, "longitude"));
 		}
-
-		double distance = calculateDistance(coordinateReq.latitude(), coordinateReq.longitude(),
-			getValueFromMap(departure, "latitude"), getValueFromMap(departure, "longitude"));
 
 		coordinateProvider.saveCoordinateWithDistance(coordinateReq.roomId(), coordinateReq.email(),
 				coordinateReq.latitude(), coordinateReq.longitude(), distance);
