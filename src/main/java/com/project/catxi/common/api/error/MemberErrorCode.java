@@ -27,7 +27,10 @@ public enum MemberErrorCode implements ErrorCode{
 	USER_BLACKLISTED(HttpStatus.FORBIDDEN, "ACCESS409", "블랙리스트에 등록된 사용자입니다."),
 	TOKEN_CLAIM_INVALID(HttpStatus.UNAUTHORIZED, "ACCESS410", "토큰 클레임 정보가 유효하지 않습니다."),
 
-  MATCH_NOT_FOUND(HttpStatus.NOT_FOUND,"MATCH404","이용내역을 찾을 수 없습니다.");
+  MATCH_NOT_FOUND(HttpStatus.NOT_FOUND,"MATCH404","이용내역을 찾을 수 없습니다."),
+  
+  WITHDRAWAL_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "MEMBER500", "회원 탈퇴 처리 중 오류가 발생했습니다."),
+  KAKAO_UNLINK_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "MEMBER501", "카카오 연결 해제에 실패했습니다.");
 
 	private final HttpStatus httpStatus;
 	private final String code;

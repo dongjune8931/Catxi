@@ -4,6 +4,10 @@ plugins {
 	id 'io.spring.dependency-management' version '1.1.7'
 }
 
+ext {
+	set('springCloudVersion', "2023.0.2")
+}
+
 group = 'com.project'
 version = '0.0.1-SNAPSHOT'
 
@@ -56,6 +60,9 @@ dependencies {
 	implementation 'io.jsonwebtoken:jjwt-api:0.12.3'
 	implementation 'io.jsonwebtoken:jjwt-impl:0.12.3'
 	implementation 'io.jsonwebtoken:jjwt-jackson:0.12.3'
+
+	//Feign Client
+	implementation 'org.springframework.cloud:spring-cloud-starter-openfeign'
   
 
 	// Querydsl 추가 (Spring boot 3.x 이상)
@@ -78,6 +85,12 @@ sourceSets {
 
 clean {
 	delete file(generated)
+}
+
+dependencyManagement {
+	imports {
+		mavenBom "org.springframework.cloud:spring-cloud-dependencies:${springCloudVersion}"
+	}
 }
 
 tasks.named('test') {

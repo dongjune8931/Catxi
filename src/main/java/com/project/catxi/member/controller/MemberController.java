@@ -4,19 +4,14 @@ import com.project.catxi.common.api.ApiResponse;
 import com.project.catxi.common.config.security.JwtConfig;
 import com.project.catxi.common.jwt.JwtUtil;
 import com.project.catxi.common.jwt.JwtTokenProvider;
-import com.project.catxi.member.dto.AuthDTO;
-import com.project.catxi.member.dto.AuthDTO.LoginResponse;
-import com.project.catxi.member.dto.IdResponse;
 import com.project.catxi.member.dto.MatchHistoryRes;
 import com.project.catxi.member.dto.MemberProfileRes;
-import com.project.catxi.member.dto.SignUpDTO;
 import com.project.catxi.member.domain.Member;
 import com.project.catxi.member.repository.MemberRepository;
 import com.project.catxi.member.service.MatchHistoryService;
 import com.project.catxi.member.service.MemberService;
+import com.project.catxi.common.auth.service.TokenService;
 import io.swagger.v3.oas.annotations.Operation;
-import jakarta.validation.Valid;
-import java.net.URI;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;
@@ -25,19 +20,13 @@ import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.security.core.GrantedAuthority;
 import org.springframework.web.server.ResponseStatusException;
 
 
@@ -53,41 +42,42 @@ public class MemberController {
   private final AuthenticationManager authenticationManager;
   private final JwtConfig jwtConfig;
   private final MemberRepository memberRepository;
+  private final TokenService tokenService;
 
   //@Operation(summary = "SignUp Api")
-  @PostMapping("/signUp")
-  public ResponseEntity<IdResponse> signUp(@RequestBody @Valid SignUpDTO dto) {
-    Long id = memberService.signUp(dto);
-    return ResponseEntity
-        .created(URI.create("/api/members/" + id))
-        .body(new IdResponse(id));
-  }
-
-  @Operation(summary = "Login API")
-  @PostMapping("/login")
-  public ResponseEntity<LoginResponse> login(@RequestBody @Valid AuthDTO.LoginRequest request) {
-
-    Authentication authentication = authenticationManager.authenticate(
-        new UsernamePasswordAuthenticationToken(
-            request.membername(),
-            request.password()
-        )
-    );
-    UserDetails userDetails = (UserDetails) authentication.getPrincipal();
-
-    // 사용자 정보 추출
-    String username = userDetails.getUsername();
-    String role = userDetails.getAuthorities()
-        .stream()
-        .findFirst()
-        .map(GrantedAuthority::getAuthority)
-        .orElse("ROLE_USER"); // 기본 권한 처리
-
-    // JWT 생성
-    String token = jwtTokenProvider.generateAccessToken(username, role);
-
-    return ResponseEntity.ok(new LoginResponse(token));
-  }
+//  @PostMapping("/signUp")
+//  public ResponseEntity<IdResponse> signUp(@RequestBody @Valid SignUpDTO dto) {
+//    Long id = memberService.signUp(dto);
+//    return ResponseEntity
+//        .created(URI.create("/api/members/" + id))
+//        .body(new IdResponse(id));
+//  }
+//
+//  @Operation(summary = "Login API")
+//  @PostMapping("/login")
+//  public ResponseEntity<LoginResponse> login(@RequestBody @Valid AuthDTO.LoginRequest request) {
+//
+//    Authentication authentication = authenticationManager.authenticate(
+//        new UsernamePasswordAuthenticationToken(
+//            request.membername(),
+//            request.password()
+//        )
+//    );
+//    UserDetails userDetails = (UserDetails) authentication.getPrincipal();
+//
+//    // 사용자 정보 추출
+//    String username = userDetails.getUsername();
+//    String role = userDetails.getAuthorities()
+//        .stream()
+//        .findFirst()
+//        .map(GrantedAuthority::getAuthority)
+//        .orElse("ROLE_USER"); // 기본 권한 처리
+//
+//    // JWT 생성
+//    String token = jwtTokenProvider.generateAccessToken(username, role);
+//
+//    return ResponseEntity.ok(new LoginResponse(token));
+//  }
 
   @Operation(summary = "학생 이름 입력시 학번 반환")
   @GetMapping("/stdNo")
@@ -100,14 +90,6 @@ public class MemberController {
             )
         );
     return member.getStudentNo();
-  }
-
-  @Operation(summary = "회원탈퇴 API")
-  @PatchMapping("/delete")
-  public ApiResponse<String> delete(@AuthenticationPrincipal UserDetails userDetails) {
-    memberService.delete(userDetails.getUsername());
-
-    return ApiResponse.success("삭제 완료");
   }
 
   @Operation(summary = "회원 기본 정보 조회")
@@ -149,6 +131,5 @@ public class MemberController {
     Slice<MatchHistoryRes> slice = matchHistoryService.getScrollHistory(email, pageable);
     return ResponseEntity.ok(slice);
   }
-
 
 }

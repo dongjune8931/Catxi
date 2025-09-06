@@ -6,6 +6,7 @@ import com.project.catxi.common.api.handler.MemberHandler;
 import com.project.catxi.common.auth.infra.CodeCache;
 import com.project.catxi.common.auth.infra.CookieUtil;
 import com.project.catxi.common.auth.infra.RefreshTokenRepository;
+import com.project.catxi.common.auth.infra.KakaoAccessTokenRepository;
 import com.project.catxi.common.auth.kakao.KakaoDTO;
 import com.project.catxi.common.auth.kakao.KakaoUtil;
 import com.project.catxi.common.domain.MemberStatus;
@@ -29,6 +30,7 @@ public class OAuthLoginService {
     private final JwtTokenProvider jwtTokenProvider;
     private final MemberRepository memberRepository;
     private final RefreshTokenRepository refreshTokenRepository;
+    private final KakaoAccessTokenRepository kakaoAccessTokenRepository;
     private final CodeCache codeCache;
 
     public Member kakaoLoginProcess(String accessCode, HttpServletResponse response) {
@@ -59,6 +61,9 @@ public class OAuthLoginService {
             .orElseGet(() -> createNewUser(kakaoProfile));
 
         validateNewUser(user);
+        
+        // 카카오 액세스 토큰을 Redis에 저장
+        saveKakaoAccessToken(user.getEmail(), kakaoToken.access_token());
         
         //JWT 발급 후 응답 헤더에 추가
         String jwt = loginProcess(response, user);
@@ -122,5 +127,16 @@ public class OAuthLoginService {
     private void setNewUser(HttpServletResponse response, Member user) {
         boolean isNewUser = user.getStatus() == MemberStatus.PENDING;
         response.setHeader("isNewUser", String.valueOf(isNewUser));
+    }
+
+    // 카카오 액세스 토큰을 Redis에 저장
+    private void saveKakaoAccessToken(String email, String accessToken) {
+        try {
+            // 카카오 액세스 토큰은 보통 12시간 유효
+            kakaoAccessTokenRepository.save(email, accessToken, Duration.ofHours(12));
+            log.info("✅ 카카오 액세스 토큰 Redis 저장 완료: email = {}", email);
+        } catch (Exception e) {
+            log.warn("⚠️ 카카오 액세스 토큰 Redis 저장 실패: email = {}, error = {}", email, e.getMessage());
+        }
     }
 }
