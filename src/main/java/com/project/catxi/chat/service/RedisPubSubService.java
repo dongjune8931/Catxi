@@ -17,6 +17,7 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.project.catxi.chat.dto.ChatMessageSendReq;
 import com.project.catxi.chat.dto.ParticipantsUpdateMessage;
 import com.project.catxi.chat.dto.ReadyMessageRes;
+import com.project.catxi.chat.dto.RoomEventMessage;
 import com.project.catxi.map.dto.CoordinateRes;
 
 @Service
@@ -55,6 +56,9 @@ public class RedisPubSubService implements MessageListener {
 			} else if (channel.startsWith("kick:")) {
 				String email = channel.split(":",2)[1];
 				messageTemplate.convertAndSendToUser(email, "/queue/kick", "KICKED");
+			} else if (channel.startsWith("roomdeleted:")) {
+				RoomEventMessage evt = objectMapper.readValue(payload, RoomEventMessage.class);
+				messageTemplate.convertAndSend("/topic/room/" + evt.roomId() + "/deleted", evt);
 			}
 		} catch (JsonProcessingException e) {
 			throw new RuntimeException(e);
