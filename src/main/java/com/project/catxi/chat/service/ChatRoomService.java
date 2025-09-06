@@ -9,6 +9,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -28,6 +29,7 @@ import com.project.catxi.chat.dto.ChatRoomRes;
 import com.project.catxi.chat.dto.ParticipantsUpdateMessage;
 import com.project.catxi.chat.dto.RoomCreateReq;
 import com.project.catxi.chat.dto.RoomCreateRes;
+import com.project.catxi.chat.dto.RoomDeletedEvent;
 import com.project.catxi.chat.repository.ChatMessageRepository;
 import com.project.catxi.chat.repository.ChatParticipantRepository;
 import com.project.catxi.chat.repository.ChatRoomRepository;
@@ -54,6 +56,7 @@ public class ChatRoomService {
 	private final MemberRepository memberRepository;
 	private final ChatMessageRepository chatMessageRepository;
 	private final ObjectMapper objectMapper;
+	private final ApplicationEventPublisher applicationEventPublisher;
 
 	private final @Qualifier("chatPubSub") StringRedisTemplate stringRedisTemplate;
 
@@ -123,6 +126,13 @@ public class ChatRoomService {
 			.findByChatRoomAndMember(chatRoom, member)
 			.orElseThrow(() -> new CatxiException(ChatParticipantErrorCode.PARTICIPANT_NOT_FOUND));
 		if (chatParticipant.isHost()) {
+			Long id = chatRoom.getRoomId();
+			var emails = chatParticipantRepository.findParticipantEmailsByChatRoom(chatRoom);
+			var hostNickname = member.getNickname();
+
+			// 트랜잭션 커밋 후 Redis로 브로드캐스트되도록 이벤트 발행
+			applicationEventPublisher.publishEvent(new RoomDeletedEvent(id, emails, hostNickname));
+
 			chatMessageRepository.deleteAllByChatRoom(chatRoom);
 			chatRoomRepository.delete(chatRoom);
 			return;
