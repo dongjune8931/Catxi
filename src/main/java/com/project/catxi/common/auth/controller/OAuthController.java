@@ -5,6 +5,7 @@ import com.project.catxi.common.api.error.MemberErrorCode;
 import com.project.catxi.common.api.exception.CatxiException;
 import com.project.catxi.common.auth.kakao.KakaoDTO;
 import com.project.catxi.common.auth.kakao.TokenDTO;
+import com.project.catxi.common.auth.service.BlacklistService;
 import com.project.catxi.common.auth.service.OAuthLoginService;
 import com.project.catxi.common.auth.service.TokenService;
 import com.project.catxi.common.domain.MemberStatus;
@@ -33,6 +34,7 @@ public class OAuthController {
 
   private final OAuthLoginService oAuthLoginService;
   private final TokenService tokenService;
+  private final BlacklistService blacklistService;
 
   @Operation(summary = "인가코드 로그인", description = "카카오에서 인가코드를 받아와 JWT를 발급해줍니다.")
   @GetMapping("/kakao/callback")
@@ -92,25 +94,28 @@ public class OAuthController {
   }
 
   //TODO: 회원 탈퇴
-  @DeleteMapping("/withdrawal")
-  public ApiResponse<String> resignation(HttpServletRequest request) {
-    String authorization = request.getHeader("Authorization");
+  @DeleteMapping("/drop")
+  public ApiResponse<String> resignation(@AuthenticationPrincipal CustomUserDetails userDetails, HttpServletRequest request) {
 
+    if (userDetails == null) {
+      throw new CatxiException(MemberErrorCode.INVALID_TOKEN);
+    }
+    String email = userDetails.getUsername();
+
+    String authorization = request.getHeader("Authorization");
     if (authorization == null || !authorization.startsWith("Bearer ")) {
       throw new CatxiException(MemberErrorCode.INVALID_TOKEN);
     }
-
     String accessToken = authorization.substring("Bearer ".length());
 
     try {
-      tokenService.resignation(accessToken);
+      blacklistService.resignation(email, accessToken);
       return ApiResponse.success("회원탈퇴가 완료되었습니다.");
     }
     catch (CatxiException e) {
       log.error("회원탈퇴 실패: {}", e.getMessage());
       throw e;
     }
-
   }
 
 
