@@ -5,31 +5,18 @@ import com.project.catxi.common.api.exception.CatxiException;
 import com.project.catxi.common.auth.infra.CookieUtil;
 import com.project.catxi.common.auth.infra.RefreshTokenRepository;
 import com.project.catxi.common.auth.infra.TokenBlacklistRepository;
-import com.project.catxi.common.auth.infra.KakaoAccessTokenRepository;
 import com.project.catxi.common.auth.kakao.KakaoDTO;
-import com.project.catxi.common.auth.kakao.KakaoFeignClient;
 import com.project.catxi.common.auth.kakao.TokenDTO;
 import com.project.catxi.common.domain.MemberStatus;
 import com.project.catxi.common.jwt.JwtUtil;
 import com.project.catxi.common.jwt.JwtTokenProvider;
-import com.project.catxi.member.domain.DeleteLog;
 import com.project.catxi.member.domain.Member;
-import com.project.catxi.member.repository.DeleteLogRepository;
 import com.project.catxi.member.repository.MemberRepository;
-import com.project.catxi.member.repository.MatchHistoryRepository;
-import com.project.catxi.chat.repository.ChatMessageRepository;
-import com.project.catxi.chat.repository.ChatRoomRepository;
-import com.project.catxi.chat.repository.ChatParticipantRepository;
-import com.project.catxi.chat.repository.KickedParticipantRepository;
-import com.project.catxi.report.repository.ReportRepository;
-import feign.FeignException;
 import io.jsonwebtoken.Claims;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseCookie;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -47,7 +34,6 @@ public class TokenService {
     private final MemberRepository memberRepository;
     private final RefreshTokenRepository refreshTokenRepository;
     private final TokenBlacklistRepository tokenBlacklistRepository;
-
 
     //reissue
     public TokenDTO.Response reissueAccessToken(String refreshToken, HttpServletResponse response) {
@@ -124,7 +110,7 @@ public class TokenService {
         }
     }
     
-    //2차 회원가입
+
     @Transactional
     public void catxiSignup(String email, KakaoDTO.CatxiSignUp dto) {
         Member member = memberRepository.findByEmail(email)
