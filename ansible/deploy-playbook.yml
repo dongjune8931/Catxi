@@ -43,6 +43,12 @@
         state: directory
         mode: '0755'
 
+    - name: Create config directory for FCM
+      file:
+        path: /opt/catxi/config
+        state: directory
+        mode: '0755'
+
     - name: Copy existing docker-compose.yml
       copy:
         src: ../docker-compose.yml
@@ -54,6 +60,13 @@
         src: templates/env.j2
         dest: /opt/catxi/.env
         mode: '0600'
+
+    - name: Create FCM service account file
+      copy:
+        content: "{{ lookup('env', 'FCM_SERVICE_ACCOUNT_FILE') }}"
+        dest: /opt/catxi/config/fcm-service-account.json
+        mode: '0644'
+      when: lookup('env', 'FCM_SERVICE_ACCOUNT_FILE') != ""
 
     - name: Stop existing containers
       community.docker.docker_compose_v2:
