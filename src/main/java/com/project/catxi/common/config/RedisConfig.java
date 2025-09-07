@@ -19,6 +19,7 @@ import org.springframework.data.redis.listener.adapter.MessageListenerAdapter;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 
 import com.project.catxi.chat.service.RedisPubSubService;
+import com.project.catxi.fcm.service.FcmEventConsumer;
 
 @Configuration
 public class RedisConfig {
@@ -79,19 +80,24 @@ public class RedisConfig {
 	public RedisMessageListenerContainer redisMessageListenerContainer(
 		@Qualifier("chatRedisConnectionFactory") RedisConnectionFactory cf,
 		RedisPubSubService listener,
+		FcmEventConsumer fcmEventConsumer,
 		@Qualifier("commonTaskScheduler")ThreadPoolTaskScheduler redisPubSubScheduler
 	) {
 		RedisMessageListenerContainer container = new RedisMessageListenerContainer();
 		container.setConnectionFactory(cf);
 		container.setTaskExecutor(redisPubSubScheduler);
 
-		// 명시적 구독: 채널 + 패턴
+		// 기존 채널 구독
 		container.addMessageListener(listener, new ChannelTopic("chat"));
 		container.addMessageListener(listener, new ChannelTopic("map"));
 		container.addMessageListener(listener, new PatternTopic("ready:*"));
 		container.addMessageListener(listener, new PatternTopic("participants:*"));
 		container.addMessageListener(listener, new PatternTopic("kick:*"));
 		container.addMessageListener(listener, new PatternTopic("roomdeleted:*"));
+		
+		// FCM 채널 구독 추가
+		container.addMessageListener(fcmEventConsumer, new ChannelTopic("fcm-notifications"));
+		
 		return container;
 	}
 

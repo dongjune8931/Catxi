@@ -3,6 +3,7 @@ package com.project.catxi.chat.service;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
@@ -27,9 +28,11 @@ import com.project.catxi.common.api.exception.CatxiException;
 import com.project.catxi.common.domain.MessageType;
 import com.project.catxi.member.domain.Member;
 import com.project.catxi.member.repository.MemberRepository;
+import com.project.catxi.fcm.service.FcmEventPublisher;
 
 import lombok.RequiredArgsConstructor;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional
@@ -41,6 +44,7 @@ public class ChatMessageService {
 	private final ChatParticipantRepository chatParticipantRepository;
 	private final ObjectMapper objectMapper;
 	private final @Qualifier("chatPubSub") StringRedisTemplate redisTemplate;
+	private final FcmEventPublisher fcmEventPublisher;
 
 	public void saveMessage(Long roomId,ChatMessageSendReq req) {
 		ChatRoom room = chatRoomRepository.findById(roomId)
@@ -57,6 +61,32 @@ public class ChatMessageService {
 			.build();
 
 		chatMessageRepository.save(chatMsg);
+		
+		// FCM 알림 이벤트 발행 (상대방에게)
+		sendChatNotificationToOthers(room, sender, req.message());
+	}
+	
+	private void sendChatNotificationToOthers(ChatRoom room, Member sender, String message) {
+		try {
+			// 방에 참여한 다른 사용자들 조회 (발송자 제외)
+			List<ChatParticipant> participants = chatParticipantRepository.findByChatRoom(room);
+			
+			participants.stream()
+				.filter(participant -> participant.getMember() != null)
+				.filter(participant -> !participant.getMember().getId().equals(sender.getId()))
+				.forEach(participant -> {
+					fcmEventPublisher.publishChatNotification(
+						participant.getMember().getId(),
+						sender.getNickname() != null ? sender.getNickname() : sender.getMembername(),
+						message
+					);
+				});
+				
+		} catch (Exception e) {
+			// FCM 알림 실패가 채팅 저장을 방해하지 않도록 예외 처리
+			log.error("채팅 FCM 알림 이벤트 발행 실패 - Room ID: {}, Sender: {}", 
+				room.getRoomId(), sender.getId(), e);
+		}
 	}
 
 	public List<ChatMessageRes> getChatHistory(Long roomId, String email) {

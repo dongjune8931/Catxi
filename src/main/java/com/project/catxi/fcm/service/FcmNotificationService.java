@@ -7,7 +7,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
 
 @Slf4j
 @Service
@@ -22,29 +21,29 @@ public class FcmNotificationService {
     }
 
     /**
-     * 채팅 메시지 알림 발송
+     * 채팅 메시지 알림 발송 (동기 - Redis Consumer에서 호출용)
      * @param targetMember 알림을 받을 사용자
      * @param senderNickname 메시지 발송자 닉네임
      * @param message 채팅 내용
      */
-    public CompletableFuture<Void> sendChatNotification(Member targetMember, String senderNickname, String message) {
-        return CompletableFuture.runAsync(() -> {
-            try {
-                if (!isFirebaseInitialized()) {
-                    log.warn("Firebase가 초기화되지 않아 채팅 알림을 발송할 수 없습니다.");
-                    return;
-                }
-                
-                List<String> tokens = fcmTokenService.getActiveTokens(targetMember);
-                if (!tokens.isEmpty()) {
-                    String title = "새로운 채팅 메시지";
-                    String body = String.format("%s: %s", senderNickname, message);
-                    sendMulticastNotification(tokens, title, body, "CHAT");
-                }
-            } catch (Exception e) {
-                log.error("채팅 알림 발송 실패 - Member ID: {}", targetMember.getId(), e);
+    public void sendChatNotificationSync(Member targetMember, String senderNickname, String message) {
+        try {
+            if (!isFirebaseInitialized()) {
+                log.warn("Firebase가 초기화되지 않아 채팅 알림을 발송할 수 없습니다.");
+                return;
             }
-        });
+            
+            List<String> tokens = fcmTokenService.getActiveTokens(targetMember);
+            if (!tokens.isEmpty()) {
+                String title = "새로운 채팅 메시지";
+                String body = String.format("%s: %s", senderNickname, message);
+                sendMulticastNotification(tokens, title, body, "CHAT");
+                log.debug("채팅 알림 발송 완료 - Member ID: {}", targetMember.getId());
+            }
+            
+        } catch (Exception e) {
+            log.error("채팅 알림 발송 실패 - Member ID: {}", targetMember.getId(), e);
+        }
     }
 
     /**
@@ -52,27 +51,28 @@ public class FcmNotificationService {
      * @param targetMembers 알림을 받을 사용자들
      * @param roomId 채팅방 ID
      */
-    public CompletableFuture<Void> sendReadyRequestNotification(List<Member> targetMembers, Long roomId) {
-        return CompletableFuture.runAsync(() -> {
-            try {
-                if (!isFirebaseInitialized()) {
-                    log.warn("Firebase가 초기화되지 않아 준비요청 알림을 발송할 수 없습니다.");
-                    return;
-                }
-                
-                String title = "준비 요청";
-                String body = "방장이 준비요청을 보냈습니다";
-
-                for (Member member : targetMembers) {
-                    List<String> tokens = fcmTokenService.getActiveTokens(member);
-                    if (!tokens.isEmpty()) {
-                        sendMulticastNotification(tokens, title, body, "READY_REQUEST", roomId);
-                    }
-                }
-            } catch (Exception e) {
-                log.error("준비요청 알림 발송 실패 - Room ID: {}", roomId, e);
+    public void sendReadyRequestNotificationSync(List<Member> targetMembers, Long roomId) {
+        try {
+            if (!isFirebaseInitialized()) {
+                log.warn("Firebase가 초기화되지 않아 준비요청 알림을 발송할 수 없습니다.");
+                return;
             }
-        });
+            
+            String title = "준비 요청";
+            String body = "방장이 준비요청을 보냈습니다";
+
+            for (Member member : targetMembers) {
+                List<String> tokens = fcmTokenService.getActiveTokens(member);
+                if (!tokens.isEmpty()) {
+                    sendMulticastNotification(tokens, title, body, "READY_REQUEST", roomId);
+                }
+            }
+            
+            log.debug("준비요청 알림 발송 완료 - Room ID: {}, Targets: {}", roomId, targetMembers.size());
+            
+        } catch (Exception e) {
+            log.error("준비요청 알림 발송 실패 - Room ID: {}", roomId, e);
+        }
     }
 
     /**

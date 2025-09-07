@@ -23,9 +23,14 @@ import com.project.catxi.common.domain.ReadyType;
 import com.project.catxi.common.domain.RoomStatus;
 import com.project.catxi.member.domain.Member;
 import com.project.catxi.member.repository.MemberRepository;
+import com.project.catxi.fcm.service.FcmEventPublisher;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
+import java.util.List;
+
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class ReadyService {
@@ -34,6 +39,7 @@ public class ReadyService {
 	private final MemberRepository memberRepository;
 	private final ChatRoomRepository chatRoomRepository;
 	private final TimerService timerService;
+	private final FcmEventPublisher fcmEventPublisher;
 
 	@Transactional
 	public void requestReady(Long roomId, String email){
@@ -63,6 +69,9 @@ public class ReadyService {
 		*/
 		ReadyMessageRes payload = ReadyMessageRes.readyRequest(roomId, member);
 		eventPublisher.publishEvent(new ReadyMessageEvent("ready:" + roomId, payload));
+
+		// FCM 준비 요청 알림 발송 (방장 제외한 모든 참여자에게)
+		sendReadyRequestNotification(room, member);
 
 		timerService.scheduleReadyTimeout(roomId.toString());
 
@@ -105,6 +114,30 @@ public class ReadyService {
 		ReadyMessageRes payload = ReadyMessageRes.readyDeny(roomId, member);
 		eventPublisher.publishEvent(new ReadyMessageEvent("ready:" + roomId, payload));
 
+	}
+	
+	private void sendReadyRequestNotification(ChatRoom room, Member host) {
+		try {
+			// 방에 참여한 다른 사용자들 조회 (방장 제외)
+			List<ChatParticipant> participants = chatParticipantRepository.findByChatRoom(room);
+			
+			List<Long> targetMemberIds = participants.stream()
+				.filter(participant -> participant.getMember() != null)
+				.filter(participant -> !participant.getMember().getId().equals(host.getId()))
+				.map(participant -> participant.getMember().getId())
+				.toList();
+				
+			if (!targetMemberIds.isEmpty()) {
+				fcmEventPublisher.publishReadyRequestNotification(targetMemberIds, room.getRoomId());
+				log.info("FCM 준비요청 알림 이벤트 발행 완료 - Room ID: {}, Targets: {}", 
+					room.getRoomId(), targetMemberIds.size());
+			}
+				
+		} catch (Exception e) {
+			// FCM 알림 실패가 준비 요청을 방해하지 않도록 예외 처리
+			log.error("준비요청 FCM 알림 이벤트 발행 실패 - Room ID: {}, Host: {}", 
+				room.getRoomId(), host.getId(), e);
+		}
 	}
 
 	private void checkParticipant(ChatRoom room, ChatParticipant participant) {
