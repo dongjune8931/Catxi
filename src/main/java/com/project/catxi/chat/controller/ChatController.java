@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.project.catxi.chat.dto.ChatMessageRes;
 import com.project.catxi.chat.dto.ChatRoomInfoRes;
+import com.project.catxi.chat.dto.ChatRoomPageRes;
 import com.project.catxi.chat.dto.ChatRoomRes;
 import com.project.catxi.chat.dto.KickRequest;
 import com.project.catxi.chat.dto.RoomCreateReq;
@@ -23,10 +24,8 @@ import com.project.catxi.chat.dto.RoomCreateRes;
 import com.project.catxi.chat.service.ChatMessageService;
 import com.project.catxi.chat.service.ChatRoomService;
 import com.project.catxi.common.api.ApiResponse;
-import com.project.catxi.common.api.CommonPageResponse;
 import com.project.catxi.common.api.exception.CatxiException;
 import com.project.catxi.member.dto.CustomUserDetails;
-import com.project.catxi.member.domain.Member;
 import com.project.catxi.member.service.MatchHistoryService;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -75,15 +74,24 @@ public class ChatController {
 			- page: 페이지 번호 (기본값은 0입니다).
 			""")
 	@GetMapping("/rooms")
-	public ResponseEntity<ApiResponse<CommonPageResponse<ChatRoomRes>>> getRoomList(
+	public ResponseEntity<ApiResponse<ChatRoomPageRes>> getRoomList(
 		@RequestParam("direction") String direction,
 		@RequestParam("station")String station,
 		@RequestParam("sort") String sort,
-		@RequestParam(value = "page", defaultValue = "0") int page
+		@RequestParam(value = "page", defaultValue = "0") int page,
+		@AuthenticationPrincipal CustomUserDetails userDetails
 	) {
 		Page<ChatRoomRes> roomList = chatRoomService.getChatRoomList(direction, station, sort, page);
-		return ResponseEntity.ok(ApiResponse.success(CommonPageResponse.of(roomList)));
+		Long myRoomId;
+		try {
+			myRoomId = chatRoomService.getMyChatRoomId(userDetails.getUsername());
+		} catch (CatxiException e) {
+			myRoomId = null;
+		}
+
+		return ResponseEntity.ok(ApiResponse.success(ChatRoomPageRes.of(roomList, myRoomId)));
 	}
+
 	@Operation(summary = "채팅방 나가기", description = "로그인한 사용자가 해당 채팅방에서 나갑니다.")
 	@DeleteMapping("/{roomId}/leave")
 	public ResponseEntity<ApiResponse<Void>> leaveRoom(
