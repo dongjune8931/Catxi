@@ -3,7 +3,9 @@ package com.project.catxi.fcm.controller;
 import com.project.catxi.common.api.ApiResponse;
 import com.project.catxi.fcm.dto.FcmTokenUpdateReq;
 import com.project.catxi.fcm.dto.FcmTokenUpdateRes;
+import com.project.catxi.fcm.dto.FcmActiveStatusReq;
 import com.project.catxi.fcm.service.FcmTokenService;
+import com.project.catxi.fcm.service.FcmActiveStatusService;
 import com.project.catxi.member.dto.CustomUserDetails;
 import com.project.catxi.member.repository.MemberRepository;
 import com.project.catxi.member.domain.Member;
@@ -21,6 +23,7 @@ import org.springframework.web.bind.annotation.*;
 public class FcmController {
 
     private final FcmTokenService fcmTokenService;
+    private final FcmActiveStatusService fcmActiveStatusService;
     private final MemberRepository memberRepository;
 
     @PutMapping("/token")
@@ -35,4 +38,16 @@ public class FcmController {
         
         return ResponseEntity.ok(ApiResponse.success(response));
     }
+
+    @PutMapping("/active-status")
+    public ResponseEntity<ApiResponse<Void>> updateActiveStatus(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            @Valid @RequestBody FcmActiveStatusReq request) {
+        
+        String email = userDetails.getUsername();
+        fcmActiveStatusService.updateUserActiveStatus(email, request.roomId(), request.isActive());
+        
+        return ResponseEntity.ok(ApiResponse.successWithNoData());
+    }
+
 }

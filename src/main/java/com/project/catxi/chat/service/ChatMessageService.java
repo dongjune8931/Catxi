@@ -29,6 +29,7 @@ import com.project.catxi.common.domain.MessageType;
 import com.project.catxi.member.domain.Member;
 import com.project.catxi.member.repository.MemberRepository;
 import com.project.catxi.fcm.service.FcmEventPublisher;
+import com.project.catxi.fcm.service.FcmActiveStatusService;
 
 import lombok.RequiredArgsConstructor;
 
@@ -45,6 +46,7 @@ public class ChatMessageService {
 	private final ObjectMapper objectMapper;
 	private final @Qualifier("chatPubSub") StringRedisTemplate redisTemplate;
 	private final FcmEventPublisher fcmEventPublisher;
+	private final FcmActiveStatusService fcmActiveStatusService;
 
 	public void saveMessage(Long roomId,ChatMessageSendReq req) {
 		ChatRoom room = chatRoomRepository.findById(roomId)
@@ -74,6 +76,8 @@ public class ChatMessageService {
 			participants.stream()
 				.filter(participant -> participant.getMember() != null)
 				.filter(participant -> !participant.getMember().getId().equals(sender.getId()))
+				.filter(participant -> !fcmActiveStatusService.isUserActiveInRoom(
+					participant.getMember().getId(), room.getRoomId()))
 				.forEach(participant -> {
 					fcmEventPublisher.publishChatNotification(
 						participant.getMember().getId(),
