@@ -19,6 +19,7 @@ import org.springframework.data.redis.listener.adapter.MessageListenerAdapter;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 
 import com.project.catxi.chat.service.RedisPubSubService;
+import com.project.catxi.fcm.service.FcmEventConsumer;
 
 @Configuration
 public class RedisConfig {
@@ -76,11 +77,12 @@ public class RedisConfig {
 
 	//subscribe 객체
 	@Bean
-	public RedisMessageListenerContainer redisMessageListenerContainer(
-		@Qualifier("chatRedisConnectionFactory") RedisConnectionFactory cf,
-		RedisPubSubService listener,
-		@Qualifier("commonTaskScheduler")ThreadPoolTaskScheduler redisPubSubScheduler
-	) {
+    public RedisMessageListenerContainer redisMessageListenerContainer(
+            @Qualifier("chatRedisConnectionFactory") RedisConnectionFactory cf,
+            RedisPubSubService listener,
+            FcmEventConsumer fcmEventConsumer,
+            @Qualifier("commonTaskScheduler")ThreadPoolTaskScheduler redisPubSubScheduler
+    ) {
 		RedisMessageListenerContainer container = new RedisMessageListenerContainer();
 		container.setConnectionFactory(cf);
 		container.setTaskExecutor(redisPubSubScheduler);
@@ -92,7 +94,11 @@ public class RedisConfig {
 		container.addMessageListener(listener, new PatternTopic("participants:*"));
 		container.addMessageListener(listener, new PatternTopic("kick:*"));
 		container.addMessageListener(listener, new PatternTopic("roomdeleted:*"));
-		container.addMessageListener(listener, new PatternTopic("readyresult:*"));
+        container.addMessageListener(listener, new PatternTopic("readyresult:*"));
+
+		// FCM 채널 구독 추가
+		container.addMessageListener(fcmEventConsumer, new ChannelTopic("fcm-notifications"));
+
 		return container;
 	}
 

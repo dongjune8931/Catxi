@@ -24,6 +24,9 @@ public interface MemberRepository   extends JpaRepository<Member, Long> {
   //닉네임 중복 조회용
   boolean existsByNickname(String nickname);
 
+  // FCM 토큰으로 회원 조회
+  Member findByFcmToken(String fcmToken);
+
   //삭제된 회원 조회 불가
   //Optional<Member> findByEmailAndDeletedFalse(String email, MemberStatus status);
 }

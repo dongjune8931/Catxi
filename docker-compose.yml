@@ -8,11 +8,13 @@ services:
     environment:
       - SPRING_PROFILES_ACTIVE=prod
       - TZ=Asia/Seoul
+      - FCM_SERVICE_ACCOUNT_FILE=/opt/catxi/config/fcm-service-account.json
     env_file:
       - .env
     volumes:
       - /etc/localtime:/etc/localtime:ro
       - catxi-logs:/app/logs
+      - /opt/catxi/config/fcm-service-account.json:/opt/catxi/config/fcm-service-account.json:ro
     networks:
       - catxi-network
 

@@ -61,6 +61,9 @@ spring:
   jackson:
     time-zone: Asia/Seoul
 
+fcm:
+  service-account-file: ${FCM_SERVICE_ACCOUNT_FILE}
+
 server:
   port: 8080
 

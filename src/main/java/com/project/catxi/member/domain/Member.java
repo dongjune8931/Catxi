@@ -58,6 +58,13 @@ public class Member extends BaseTimeEntity {
 	@Enumerated(EnumType.STRING)
 	private MemberStatus status;
 
+	// FCM 토큰
+	@Column(name = "fcm_token", columnDefinition = "TEXT")
+	private String fcmToken;
+
+	@Column(name = "fcm_token_updated_at")
+	private LocalDateTime fcmTokenUpdatedAt;
+
 	// 로그인했음 표시
 	public void setLogin(boolean isLogin) {
 		this.isLogin = isLogin;
@@ -68,5 +75,9 @@ public class Member extends BaseTimeEntity {
 		this.status = MemberStatus.INACTIVE;
 	}
 
-
+	// FCM 토큰 업데이트
+	public void updateFcmToken(String token) {
+		this.fcmToken = token;
+		this.fcmTokenUpdatedAt = LocalDateTime.now();
+	}
 }

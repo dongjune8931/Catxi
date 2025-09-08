@@ -14,5 +14,6 @@
     <include file="v1.0/007-create-match-history-fellas-table.xml" relativeToChangelogFile="true"/>
     <include file="v1.0/008-create-report-table.xml" relativeToChangelogFile="true"/>
     <include file="v1.0/009-fix-report-nullable-constraints.xml" relativeToChangelogFile="true"/>
+    <include file="v1.0/010-create-fcm-token-table.xml" relativeToChangelogFile="true"/>
     
 </databaseChangeLog>
