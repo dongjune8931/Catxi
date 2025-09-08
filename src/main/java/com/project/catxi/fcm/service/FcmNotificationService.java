@@ -7,6 +7,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
 @Slf4j
 @Service
@@ -89,43 +90,70 @@ public class FcmNotificationService {
                 return;
             }
 
+            // 토큰 유효성 검사
+            List<String> validTokens = tokens.stream()
+                    .filter(this::isValidFcmToken)
+                    .toList();
+
+            if (validTokens.isEmpty()) {
+                log.warn("유효한 FCM 토큰이 없습니다.");
+                return;
+            }
+
             Notification notification = Notification.builder()
                     .setTitle(title)
                     .setBody(body)
                     .build();
 
-            MulticastMessage.Builder messageBuilder = MulticastMessage.builder()
-                    .setNotification(notification)
-                    .addAllTokens(tokens)
-                    .putData("type", type);
+            AtomicInteger successCount = new AtomicInteger(0);
+            AtomicInteger failureCount = new AtomicInteger(0);
 
-            if (roomId != null) {
-                messageBuilder.putData("roomId", roomId.toString());
-            }
+            // 개별 토큰으로 전송
+            for (String token : validTokens) {
+                Message.Builder messageBuilder = Message.builder()
+                        .setToken(token)
+                        .setNotification(notification)
+                        .putData("type", type);
 
-            MulticastMessage message = messageBuilder.build();
+                if (roomId != null) {
+                    messageBuilder.putData("roomId", roomId.toString());
+                }
 
-            BatchResponse response = firebaseMessaging.sendMulticast(message);
-            
-            log.info("FCM 알림 발송 완료 - 성공: {}, 실패: {}, 타입: {}", 
-                    response.getSuccessCount(), response.getFailureCount(), type);
+                Message message = messageBuilder.build();
 
-            // 실패한 토큰들 로깅 (토큰 만료 등의 이유로 실패할 수 있음)
-            if (response.getFailureCount() > 0) {
-                List<SendResponse> responses = response.getResponses();
-                for (int i = 0; i < responses.size(); i++) {
-                    if (!responses.get(i).isSuccessful()) {
-                        log.warn("FCM 토큰 발송 실패 - Token: {}, Error: {}", 
-                                tokens.get(i).substring(0, Math.min(20, tokens.get(i).length())) + "...",
-                                responses.get(i).getException().getMessage());
+                try {
+                    String response = firebaseMessaging.send(message);
+                    successCount.incrementAndGet();
+                    log.debug("FCM 메시지 전송 성공 - Response: {}", response);
+                } catch (FirebaseMessagingException e) {
+                    failureCount.incrementAndGet();
+                    log.warn("FCM 토큰 발송 실패 - Token: {}, Error: {}", 
+                            token.substring(0, Math.min(20, token.length())) + "...",
+                            e.getMessage());
+                    
+                    // 토큰 만료나 잘못된 토큰의 경우 정리
+                    if (e.getMessagingErrorCode() == MessagingErrorCode.UNREGISTERED ||
+                        e.getMessagingErrorCode() == MessagingErrorCode.INVALID_ARGUMENT) {
+                        log.info("유효하지 않은 FCM 토큰 발견: {}", 
+                                token.substring(0, Math.min(20, token.length())) + "...");
+                        // 유효하지 않은 토큰을 DB에서 제거
+                        fcmTokenService.removeInvalidFcmToken(token);
                     }
                 }
             }
+            
+            log.info("FCM 알림 발송 완료 - 성공: {}, 실패: {}, 타입: {}", 
+                    successCount.get(), failureCount.get(), type);
 
-        } catch (FirebaseMessagingException e) {
-            log.error("Firebase 메시징 오류: {}", e.getMessage(), e);
         } catch (Exception e) {
             log.error("FCM 알림 발송 중 예외 발생: {}", e.getMessage(), e);
         }
+    }
+
+    /**
+     * FCM 토큰 유효성 검사
+     */
+    private boolean isValidFcmToken(String token) {
+        return token != null && !token.trim().isEmpty() && token.length() > 100;
     }
 }

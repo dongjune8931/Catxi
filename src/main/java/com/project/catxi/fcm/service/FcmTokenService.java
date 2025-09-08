@@ -69,4 +69,20 @@ public class FcmTokenService {
             return List.of(); // 빈 리스트 반환으로 알림 시스템 중단 방지
         }
     }
+
+    @Transactional
+    public void removeInvalidFcmToken(String invalidToken) {
+        try {
+            Member member = memberRepository.findByFcmToken(invalidToken);
+            if (member != null) {
+                member.updateFcmToken(null);
+                memberRepository.save(member);
+                log.info("유효하지 않은 FCM 토큰 제거 완료 - Member ID: {}", member.getId());
+            }
+        } catch (Exception e) {
+            log.error("FCM 토큰 제거 실패 - Token: {}, Error: {}", 
+                    invalidToken != null ? invalidToken.substring(0, Math.min(20, invalidToken.length())) + "..." : "null", 
+                    e.getMessage(), e);
+        }
+    }
 }

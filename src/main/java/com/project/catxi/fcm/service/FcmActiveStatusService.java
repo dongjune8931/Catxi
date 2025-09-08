@@ -22,7 +22,9 @@ public class FcmActiveStatusService {
     private final MemberRepository memberRepository;
     
     private static final String ACTIVE_STATUS_KEY_PREFIX = "chat:active:room:%d:user:%d";
+    private static final String MEMBER_CACHE_KEY_PREFIX = "member:email:%s";
     private static final int ACTIVE_STATUS_TTL_MINUTES = 5; // 5분 TTL
+    private static final int MEMBER_CACHE_TTL_MINUTES = 30; // 멤버 캐시 30분 TTL
 
     /**
      * 사용자 활성 상태 업데이트
@@ -33,19 +35,17 @@ public class FcmActiveStatusService {
      */
     public void updateUserActiveStatus(String email, Long roomId, boolean isActive) {
         try {
-            Member member = memberRepository.findByEmail(email)
-                    .orElseThrow(() -> new CatxiException(MemberErrorCode.MEMBER_NOT_FOUND));
-
-            String key = String.format(ACTIVE_STATUS_KEY_PREFIX, roomId, member.getId());
+            Long memberId = getMemberIdFromCacheOrDb(email);
+            String key = String.format(ACTIVE_STATUS_KEY_PREFIX, roomId, memberId);
 
             if (isActive) {
                 // 활성 상태로 설정 (TTL 5분)
                 redisTemplate.opsForValue().set(key, "true", ACTIVE_STATUS_TTL_MINUTES, TimeUnit.MINUTES);
-                log.debug("사용자 활성 상태 설정 - MemberId: {}, RoomId: {}", member.getId(), roomId);
+                log.debug("사용자 활성 상태 설정 - MemberId: {}, RoomId: {}", memberId, roomId);
             } else {
                 // 비활성 상태로 설정 (키 삭제)
                 redisTemplate.delete(key);
-                log.debug("사용자 비활성 상태 설정 - MemberId: {}, RoomId: {}", member.getId(), roomId);
+                log.debug("사용자 비활성 상태 설정 - MemberId: {}, RoomId: {}", memberId, roomId);
             }
 
         } catch (Exception e) {
@@ -74,4 +74,46 @@ public class FcmActiveStatusService {
         }
     }
 
+    /**
+     * 이메일로 멤버 ID를 캐시 또는 DB에서 조회
+     * 
+     * @param email 사용자 이메일
+     * @return 멤버 ID
+     * @throws CatxiException 멤버가 존재하지 않을 경우
+     */
+    private Long getMemberIdFromCacheOrDb(String email) {
+        String cacheKey = String.format(MEMBER_CACHE_KEY_PREFIX, email);
+        
+        try {
+            // 1. 캐시에서 먼저 조회
+            String cachedMemberId = redisTemplate.opsForValue().get(cacheKey);
+            if (cachedMemberId != null) {
+                log.debug("캐시에서 멤버 ID 조회 성공 - Email: {}, MemberId: {}", email, cachedMemberId);
+                return Long.parseLong(cachedMemberId);
+            }
+            
+            // 2. 캐시에 없으면 DB에서 조회
+            Member member = memberRepository.findByEmail(email)
+                    .orElseThrow(() -> new CatxiException(MemberErrorCode.MEMBER_NOT_FOUND));
+            
+            // 3. 조회 결과를 캐시에 저장 (30분 TTL)
+            redisTemplate.opsForValue().set(cacheKey, member.getId().toString(), 
+                    MEMBER_CACHE_TTL_MINUTES, TimeUnit.MINUTES);
+            
+            log.debug("DB에서 멤버 조회 및 캐시 저장 - Email: {}, MemberId: {}", email, member.getId());
+            return member.getId();
+            
+        } catch (NumberFormatException e) {
+            log.warn("캐시된 멤버 ID 파싱 실패 - Email: {}, CachedValue: {}", email, 
+                    redisTemplate.opsForValue().get(cacheKey));
+            // 파싱 실패시 캐시 삭제 후 DB에서 재조회
+            redisTemplate.delete(cacheKey);
+            Member member = memberRepository.findByEmail(email)
+                    .orElseThrow(() -> new CatxiException(MemberErrorCode.MEMBER_NOT_FOUND));
+            
+            redisTemplate.opsForValue().set(cacheKey, member.getId().toString(), 
+                    MEMBER_CACHE_TTL_MINUTES, TimeUnit.MINUTES);
+            return member.getId();
+        }
+    }
 }
