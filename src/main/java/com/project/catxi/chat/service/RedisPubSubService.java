@@ -59,6 +59,9 @@ public class RedisPubSubService implements MessageListener {
 			} else if (channel.startsWith("roomdeleted:")) {
 				RoomEventMessage evt = objectMapper.readValue(payload, RoomEventMessage.class);
 				messageTemplate.convertAndSend("/topic/room/" + evt.roomId() + "/deleted", evt);
+			} else if(channel.startsWith("readyresult:")){
+				RoomEventMessage evt = objectMapper.readValue(payload, RoomEventMessage.class);
+				messageTemplate.convertAndSend("/topic/ready/" + evt.roomId() + "/result", evt);
 			}
 		} catch (JsonProcessingException e) {
 			throw new RuntimeException(e);

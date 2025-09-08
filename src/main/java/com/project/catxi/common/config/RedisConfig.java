@@ -92,6 +92,7 @@ public class RedisConfig {
 		container.addMessageListener(listener, new PatternTopic("participants:*"));
 		container.addMessageListener(listener, new PatternTopic("kick:*"));
 		container.addMessageListener(listener, new PatternTopic("roomdeleted:*"));
+		container.addMessageListener(listener, new PatternTopic("readyresult:*"));
 		return container;
 	}
 
