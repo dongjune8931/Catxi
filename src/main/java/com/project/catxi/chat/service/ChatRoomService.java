@@ -6,6 +6,7 @@ import static com.project.catxi.chat.domain.QChatRoom.*;
 
 import java.time.LocalDateTime;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -26,6 +27,7 @@ import com.project.catxi.chat.domain.ChatRoom;
 import com.project.catxi.chat.domain.KickedParticipant;
 import com.project.catxi.chat.dto.ChatRoomInfoRes;
 import com.project.catxi.chat.dto.ChatRoomRes;
+import com.project.catxi.chat.dto.ParticipantBrief;
 import com.project.catxi.chat.dto.ParticipantsUpdateMessage;
 import com.project.catxi.chat.dto.RoomCreateReq;
 import com.project.catxi.chat.dto.RoomCreateRes;
@@ -287,7 +289,16 @@ public class ChatRoomService {
 
 	private void sendParticipantUpdateMessage(ChatRoom chatRoom) {
 		List<String> nicknames = chatParticipantRepository.findParticipantNicknamesByChatRoom(chatRoom);
-		ParticipantsUpdateMessage update = new ParticipantsUpdateMessage(chatRoom.getRoomId(), nicknames);
+		List<String> emails    = chatParticipantRepository.findParticipantEmailsByChatRoom(chatRoom);
+
+		int size = Math.min(nicknames.size(), emails.size());
+		List<ParticipantBrief> participants = new ArrayList<>(size);
+		for (int i = 0; i < size; i++) {
+			participants.add(new ParticipantBrief(nicknames.get(i), emails.get(i)));
+		}
+
+		ParticipantsUpdateMessage update =
+			new ParticipantsUpdateMessage(chatRoom.getRoomId(), participants);
 
 		try {
 			String json = objectMapper.writeValueAsString(update);

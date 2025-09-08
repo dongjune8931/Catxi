@@ -4,5 +4,5 @@ import java.util.List;
 
 public record ParticipantsUpdateMessage(
 	Long roomId,
-	List<String> participantNicknames
+	List<ParticipantBrief> participants
 ) {}
