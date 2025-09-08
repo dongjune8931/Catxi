@@ -80,24 +80,24 @@ public class RedisConfig {
 	public RedisMessageListenerContainer redisMessageListenerContainer(
 		@Qualifier("chatRedisConnectionFactory") RedisConnectionFactory cf,
 		RedisPubSubService listener,
-		FcmEventConsumer fcmEventConsumer,
 		@Qualifier("commonTaskScheduler")ThreadPoolTaskScheduler redisPubSubScheduler
 	) {
 		RedisMessageListenerContainer container = new RedisMessageListenerContainer();
 		container.setConnectionFactory(cf);
 		container.setTaskExecutor(redisPubSubScheduler);
 
-		// 기존 채널 구독
+		// 명시적 구독: 채널 + 패턴
 		container.addMessageListener(listener, new ChannelTopic("chat"));
 		container.addMessageListener(listener, new ChannelTopic("map"));
 		container.addMessageListener(listener, new PatternTopic("ready:*"));
 		container.addMessageListener(listener, new PatternTopic("participants:*"));
 		container.addMessageListener(listener, new PatternTopic("kick:*"));
 		container.addMessageListener(listener, new PatternTopic("roomdeleted:*"));
-		
+        container.addMessageListener(listener, new PatternTopic("readyresult:*"));
+
 		// FCM 채널 구독 추가
 		container.addMessageListener(fcmEventConsumer, new ChannelTopic("fcm-notifications"));
-		
+
 		return container;
 	}
 

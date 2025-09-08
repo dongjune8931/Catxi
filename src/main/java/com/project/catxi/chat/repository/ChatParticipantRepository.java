@@ -39,6 +39,9 @@ public interface ChatParticipantRepository extends JpaRepository<ChatParticipant
     @Transactional
     void deleteAllByChatRoomAndIsReadyFalse(ChatRoom chatroom);
 
+    @Query("SELECT cp.member.nickname FROM ChatParticipant cp WHERE cp.chatRoom = :chatRoom AND cp.isReady = false")
+    List<String> findNickNameByChatRoomAndIsReadyFalse(ChatRoom chatRoom);
+
     Optional<ChatParticipant> findByMember(Member member);
 
     @Query("SELECT cp.member.email FROM ChatParticipant cp WHERE cp.chatRoom = :chatRoom")
