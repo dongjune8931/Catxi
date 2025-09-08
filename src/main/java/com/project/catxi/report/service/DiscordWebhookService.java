@@ -47,11 +47,11 @@ public class DiscordWebhookService {
                         
                         --- 신고자 정보 ---
                         이름 (닉네임)  : %s (%s)
-                        학번         : %d
+                        학번         : %s
                         
                         --- 피신고자 정보 ---
                         이름 (닉네임)  : %s (%s)
-                        학번         : %d
+                        학번         : %s
                         
                         --- 신고 내용 ---
                         사유         : %s
@@ -68,6 +68,7 @@ public class DiscordWebhookService {
                 report.getReason(),
                 report.getCreatedTime()
         );
+        
         return objectMapper.writeValueAsString(new DiscordWebhookPayload(content));
     }
 
