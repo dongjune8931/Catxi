@@ -77,11 +77,12 @@ public class RedisConfig {
 
 	//subscribe 객체
 	@Bean
-	public RedisMessageListenerContainer redisMessageListenerContainer(
-		@Qualifier("chatRedisConnectionFactory") RedisConnectionFactory cf,
-		RedisPubSubService listener,
-		@Qualifier("commonTaskScheduler")ThreadPoolTaskScheduler redisPubSubScheduler
-	) {
+    public RedisMessageListenerContainer redisMessageListenerContainer(
+            @Qualifier("chatRedisConnectionFactory") RedisConnectionFactory cf,
+            RedisPubSubService listener,
+            FcmEventConsumer fcmEventConsumer,
+            @Qualifier("commonTaskScheduler")ThreadPoolTaskScheduler redisPubSubScheduler
+    ) {
 		RedisMessageListenerContainer container = new RedisMessageListenerContainer();
 		container.setConnectionFactory(cf);
 		container.setTaskExecutor(redisPubSubScheduler);
