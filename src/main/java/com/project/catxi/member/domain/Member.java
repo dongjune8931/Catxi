@@ -80,12 +80,4 @@ public class Member extends BaseTimeEntity {
 		this.fcmToken = token;
 		this.fcmTokenUpdatedAt = LocalDateTime.now();
 	}
-
-	// FCM 토큰 제거
-	public void removeFcmToken() {
-		this.fcmToken = null;
-		this.fcmTokenUpdatedAt = null;
-	}
-
-
 }
