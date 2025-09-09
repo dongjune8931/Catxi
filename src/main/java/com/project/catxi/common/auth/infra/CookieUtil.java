@@ -16,7 +16,7 @@ public class CookieUtil {
         .secure(false)
         .path("/")
         .maxAge(ttl)
-        .sameSite("Lax")
+        .sameSite("None")
         .build();
   }
 
@@ -26,7 +26,7 @@ public class CookieUtil {
         .secure(false)
         .path("/")
         .maxAge(0) // 즉시 만료
-        .sameSite("Lax")  // None 대신 Lax 사용
+        .sameSite("None")  // None 대신 Lax 사용
         .build();
   }
 }
