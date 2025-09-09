@@ -171,62 +171,36 @@ public class TokenService {
     }
 
     //무중단 액세스 토큰 재발급 로직
-    public String zeroDownRefresh(Claims expiredClaims,
-                                       HttpServletRequest request, 
-                                       HttpServletResponse response) {
+    public String zeroDownRefresh(String email, HttpServletRequest request, HttpServletResponse response) {
         try {
-            // 만료된 토큰에서 이메일 추출
-            String email = jwtUtil.getEmail(expiredClaims);
 
-            // Refresh Token 추출
+            //Refresh Token 추출 및 검증
             String refreshToken = extractCookie(request, REFRESH_COOKIE);
-            if (refreshToken == null) {
-                writeUnauthorized(response, MemberErrorCode.ACCESS_EXPIRED);
+            if (refreshToken == null || !jwtUtil.validateToken(refreshToken) || !refreshTokenRepository.isValid(email, refreshToken)) {
                 return null;
             }
 
-            // Refresh Token 서명/만료/클레임 검증 + Redis 저장값 일치 확인
-            boolean valid = jwtUtil.validateToken(refreshToken) &&
-                           refreshTokenRepository.isValid(email, refreshToken);
-
-            if (!valid) {
-                writeUnauthorized(response, MemberErrorCode.REFRESH_TOKEN_MISMATCH);
-                return null;
-            }
-
-            // 사용자 정보 재확인 (블랙리스트/상태 체크)
             Member member = memberRepository.findByEmail(email).orElse(null);
-            if (member == null || member.getStatus() == MemberStatus.INACTIVE
-                || tokenBlacklistRepository.isUserBlacklisted(member.getId().toString())) {
-                writeForbidden(response, MemberErrorCode.ACCESS_FORBIDDEN);
+            if (member == null || member.getStatus() == MemberStatus.INACTIVE) {
                 return null;
             }
 
-            // 새 Access Token 및 Refresh Token 발급
+            //토큰 생성
             String newAccessToken = jwtTokenProvider.generateAccessToken(email, member.getRole());
             String newRefreshToken = jwtTokenProvider.generateRefreshToken(email, member.getRole());
 
-            // Refresh Token rotate
+            //토큰 rotate
             refreshTokenRepository.rotate(email, refreshToken, newRefreshToken, Duration.ofDays(30));
-
-            ResponseCookie refreshCookie = CookieUtil.createCookie(newRefreshToken, Duration.ofDays(30));
-            response.setHeader("Set-Cookie", refreshCookie.toString());
-
-            // Access Token 헤더에 전달
+            response.setHeader("Set-Cookie", CookieUtil.createCookie(newRefreshToken, Duration.ofDays(30)).toString());
             response.setHeader(AUTH_HEADER, BEARER_PREFIX + newAccessToken);
             response.setHeader(HEADER_REF, "true");
             exposeHeaders(response, AUTH_HEADER, HEADER_REF);
 
-            log.info("✅ AT, RT 재발급 : {}", email);
+            log.info("✅ 토큰 재발급: {}", email);
             return newAccessToken;
             
         } catch (Exception e) {
-            log.error("🚨 액세스토큰 재발급 처리 중 오류: {}", e.getMessage());
-            try {
-                writeUnauthorized(response, MemberErrorCode.ACCESS_EXPIRED);
-            } catch (IOException ioException) {
-                log.error("응답 작성 중 오류: {}", ioException.getMessage());
-            }
+            log.warn("토큰 재발급 실패: {}", e.getMessage());
             return null;
         }
     }
@@ -246,21 +220,5 @@ public class TokenService {
         String existing = response.getHeader(HEADER_EXP);
         String toAdd = String.join(",", headers);
         response.setHeader(HEADER_EXP, existing == null ? toAdd : existing + "," + toAdd);
-    }
-
-    private void writeUnauthorized(HttpServletResponse response, MemberErrorCode code) throws IOException {
-        response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-        response.setContentType("application/json;charset=UTF-8");
-        response.getWriter().write(
-            "{\"success\":false,\"code\":\"" + code.getCode() + 
-            "\",\"message\":\"" + code.getMessage() + "\"}");
-    }
-
-    private void writeForbidden(HttpServletResponse response, MemberErrorCode code) throws IOException {
-        response.setStatus(HttpServletResponse.SC_FORBIDDEN);
-        response.setContentType("application/json;charset=UTF-8");
-        response.getWriter().write(
-            "{\"success\":false,\"code\":\"" + code.getCode() + 
-            "\",\"message\":\"" + code.getMessage() + "\"}");
     }
 }
