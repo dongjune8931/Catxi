@@ -13,7 +13,7 @@ public class CookieUtil {
 
     return ResponseCookie.from(REFRESH_TOKEN_COOKIE_NAME, token)
         .httpOnly(true)
-        .secure(false)
+        .secure(true)
         .path("/")
         .maxAge(ttl)
         .sameSite("None")
@@ -23,7 +23,7 @@ public class CookieUtil {
   public static ResponseCookie deleteCookie() {
     return ResponseCookie.from(REFRESH_TOKEN_COOKIE_NAME, "")
         .httpOnly(true)
-        .secure(false)
+        .secure(true)
         .path("/")
         .maxAge(0) // 즉시 만료
         .sameSite("None")  // None 대신 Lax 사용
