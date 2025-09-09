@@ -3,6 +3,7 @@ package com.project.catxi.common.jwt;
 import com.project.catxi.common.api.error.MemberErrorCode;
 import com.project.catxi.common.api.handler.MemberHandler;
 import com.project.catxi.common.auth.infra.TokenBlacklistRepository;
+import com.project.catxi.common.auth.service.TokenService;
 import com.project.catxi.common.domain.MemberStatus;
 import com.project.catxi.member.dto.CustomUserDetails;
 import com.project.catxi.member.domain.Member;
@@ -26,6 +27,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 public class JwtFilter extends OncePerRequestFilter {
 
   private final JwtUtil jwtUtil;
+  private final TokenService tokenService;
   private final MemberRepository memberRepository;
   private final TokenBlacklistRepository tokenBlacklistRepository;
 
@@ -41,7 +43,7 @@ public class JwtFilter extends OncePerRequestFilter {
     // JWT 검증 예외 경로
     if (uri.startsWith("/connect") ||
         uri.equals("/auth/login/kakao") ||
-        uri.startsWith("/webjars/**") ||
+        uri.startsWith("/webjars/") ||
         uri.startsWith("/actuator")) {
       filterChain.doFilter(request, response);
       return;
@@ -64,8 +66,25 @@ public class JwtFilter extends OncePerRequestFilter {
     try {
       claims = jwtUtil.parseJwt(accessToken);
     } catch (ExpiredJwtException e) {
-      throw new MemberHandler(MemberErrorCode.ACCESS_EXPIRED);
+      // 만료된 토큰에서 이메일 추출하여 재발급
+      String email = jwtUtil.getEmail(e.getClaims());
+      String newAccessToken = tokenService.zeroDownRefresh(email, request, response);
+      
+      if (newAccessToken != null) {
+        // 재발급 성공 시 SecurityContext 설정 후 계속 진행
+        Member member = memberRepository.findByEmail(email).orElse(null);
+        if (member != null) {
+          setAuthentication(member);
+          filterChain.doFilter(request, response);
+          return;
+        }
+      }
+      
+      // 재발급 실패 401
+      response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+      return;
     } catch (Exception e) {
+      // 401
       throw new MemberHandler(MemberErrorCode.INVALID_TOKEN);
     }
 
@@ -101,16 +120,18 @@ public class JwtFilter extends OncePerRequestFilter {
       throw new MemberHandler(MemberErrorCode.ACCESS_FORBIDDEN);
     }
 
-    // UserDetails에 회원 정보 객체 담기
-    CustomUserDetails customUserDetails = new CustomUserDetails(member);
-
-    // 스프링 시큐리티 인증 토큰 생성
-    Authentication authToken = new UsernamePasswordAuthenticationToken(customUserDetails, null, customUserDetails.getAuthorities());
-    // 세션에 사용자 등록 (AuthToken 시큐리티 컨텍스트 홀더에 넣어줌)
-    SecurityContextHolder.getContext().setAuthentication(authToken);
-
-    // 그 다음 필터에 request,response 전달
+    // SecurityContext 설정 후 진행
+    setAuthentication(member);
     filterChain.doFilter(request, response);
   }
+
+
+  private void setAuthentication(Member member) {
+    CustomUserDetails customUserDetails = new CustomUserDetails(member);
+    Authentication authToken = new UsernamePasswordAuthenticationToken(
+        customUserDetails, null, customUserDetails.getAuthorities());
+    SecurityContextHolder.getContext().setAuthentication(authToken);
+  }
+
 
 }

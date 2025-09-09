@@ -13,6 +13,9 @@ import com.project.catxi.common.jwt.JwtTokenProvider;
 import com.project.catxi.member.domain.Member;
 import com.project.catxi.member.repository.MemberRepository;
 import io.jsonwebtoken.Claims;
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -21,6 +24,7 @@ import org.springframework.http.ResponseCookie;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.io.IOException;
 import java.time.Duration;
 import java.util.Date;
 
@@ -34,6 +38,12 @@ public class TokenService {
     private final MemberRepository memberRepository;
     private final RefreshTokenRepository refreshTokenRepository;
     private final TokenBlacklistRepository tokenBlacklistRepository;
+    
+    private static final String AUTH_HEADER = "Authorization";
+    private static final String BEARER_PREFIX = "Bearer ";
+    private static final String REFRESH_COOKIE = "refresh";
+    private static final String HEADER_REF = "X-Access-Token-Refreshed";
+    private static final String HEADER_EXP = "Access-Control-Expose-Headers";
 
     //reissue
     public TokenDTO.Response reissueAccessToken(String refreshToken, HttpServletResponse response) {
@@ -158,5 +168,57 @@ public class TokenService {
         if (memberRepository.existsByStudentNo(dto.StudentNo())) {
             throw new CatxiException(MemberErrorCode.DUPLICATE_STUDENT_NO);
         }
+    }
+
+    //무중단 액세스 토큰 재발급 로직
+    public String zeroDownRefresh(String email, HttpServletRequest request, HttpServletResponse response) {
+        try {
+
+            //Refresh Token 추출 및 검증
+            String refreshToken = extractCookie(request, REFRESH_COOKIE);
+            if (refreshToken == null || !jwtUtil.validateToken(refreshToken) || !refreshTokenRepository.isValid(email, refreshToken)) {
+                return null;
+            }
+
+            Member member = memberRepository.findByEmail(email).orElse(null);
+            if (member == null) {
+                return null;
+            }
+
+            //토큰 생성
+            String newAccessToken = jwtTokenProvider.generateAccessToken(email, member.getRole());
+            String newRefreshToken = jwtTokenProvider.generateRefreshToken(email, member.getRole());
+
+            //토큰 rotate
+            refreshTokenRepository.rotate(email, refreshToken, newRefreshToken, Duration.ofDays(30));
+            response.setHeader("Set-Cookie", CookieUtil.createCookie(newRefreshToken, Duration.ofDays(30)).toString());
+            response.setHeader(AUTH_HEADER, BEARER_PREFIX + newAccessToken);
+            response.setHeader(HEADER_REF, "true");
+            exposeHeaders(response, AUTH_HEADER, HEADER_REF);
+
+            log.info("✅ 토큰 재발급: {}", email);
+            return newAccessToken;
+            
+        } catch (Exception e) {
+            log.warn("토큰 재발급 실패: {}", e.getMessage());
+            return null;
+        }
+    }
+    
+    private String extractCookie(HttpServletRequest request, String name) {
+        Cookie[] cookies = request.getCookies();
+        if (cookies == null) return null;
+        for (Cookie cookie : cookies) {
+            if (name.equals(cookie.getName())) {
+                return cookie.getValue();
+            }
+        }
+        return null;
+    }
+
+    private void exposeHeaders(HttpServletResponse response, String... headers) {
+        String existing = response.getHeader(HEADER_EXP);
+        String toAdd = String.join(",", headers);
+        response.setHeader(HEADER_EXP, existing == null ? toAdd : existing + "," + toAdd);
     }
 }

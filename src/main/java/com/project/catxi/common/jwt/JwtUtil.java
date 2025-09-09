@@ -2,6 +2,7 @@ package com.project.catxi.common.jwt;
 
 import com.project.catxi.common.config.security.JwtConfig;
 import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.JwtParser;
 import io.jsonwebtoken.Jwts;
@@ -41,9 +42,12 @@ public class JwtUtil {
   }
 
   // 파싱
-  public Claims parseJwt(String token) {
+  public Claims parseJwt(String token) throws ExpiredJwtException {
     try {
       return jwtParser.parseSignedClaims(token).getPayload();
+    } catch (ExpiredJwtException e) {
+      // ExpiredJwtException 예외 X -> zeroDownRefresh 호출되도록
+      throw e;
     } catch (JwtException | IllegalArgumentException e) {
       log.error("claims 파싱 오류: {}", e.getMessage());
       throw new IllegalArgumentException("Invalid JWT token", e);
