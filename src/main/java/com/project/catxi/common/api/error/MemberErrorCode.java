@@ -15,8 +15,8 @@ public enum MemberErrorCode implements ErrorCode{
 	INVALID_STUDENT_NO(HttpStatus.BAD_REQUEST, "MEMBER404", "학번은 9자리 숫자로 입력해주세요"),
 
 	INVALID_TOKEN(HttpStatus.UNAUTHORIZED,"ACCESS400","유효하지 않은 토큰입니다"),
-	ACCESS_EXPIRED(HttpStatus.BAD_REQUEST,"ACCESS401","액세스 토큰이 만료되었습니다"),
-	DUPLICATE_AUTHORIZE_CODE(HttpStatus.BAD_REQUEST,"ACCESS402","인가 코드 중복 사용"),
+	ACCESS_EXPIRED(HttpStatus.UNAUTHORIZED,"ACCESS401","액세스 토큰이 만료되었습니다"),
+	DUPLICATE_AUTHORIZE_CODE(HttpStatus.UNAUTHORIZED,"ACCESS402","인가 코드 중복 사용"),
 	ACCESS_FORBIDDEN(HttpStatus.FORBIDDEN,"ACCESS403","탈퇴한 회원입니다."),
 
 	REFRESH_TOKEN_EXPIRED(HttpStatus.UNAUTHORIZED, "ACCESS404", "리프레시 토큰이 만료되었습니다."),
