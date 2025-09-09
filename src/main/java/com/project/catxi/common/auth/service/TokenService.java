@@ -181,7 +181,7 @@ public class TokenService {
             }
 
             Member member = memberRepository.findByEmail(email).orElse(null);
-            if (member == null || member.getStatus() == MemberStatus.INACTIVE) {
+            if (member == null) {
                 return null;
             }
 
