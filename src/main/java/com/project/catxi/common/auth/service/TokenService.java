@@ -202,14 +202,22 @@ public class TokenService {
                 return false;
             }
 
-            // 새 Access Token 발급
+            // 새 Access Token 및 Refresh Token 발급
             String newAccessToken = jwtTokenProvider.generateAccessToken(email, member.getRole());
+            String newRefreshToken = jwtTokenProvider.generateRefreshToken(email, member.getRole());
 
+            // Refresh Token rotate
+            refreshTokenRepository.rotate(email, refreshToken, newRefreshToken, Duration.ofDays(30));
+
+            ResponseCookie refreshCookie = CookieUtil.createCookie(newRefreshToken, Duration.ofDays(30));
+            response.setHeader("Set-Cookie", refreshCookie.toString());
+
+            // Access Token 헤더에 전달
             response.setHeader(AUTH_HEADER, BEARER_PREFIX + newAccessToken);
             response.setHeader(HEADER_REF, "true");
             exposeHeaders(response, AUTH_HEADER, HEADER_REF);
 
-            log.info("✅ 액세스토큰 재발급 완료: {}", email);
+            log.info("✅ AT, RT 재발급 : {}", email);
             return true;
             
         } catch (Exception e) {
