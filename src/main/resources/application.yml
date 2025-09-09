@@ -22,7 +22,7 @@ spring:
   jwt:
     header: authorization
     secret: ${SECRET_KEY}
-    access-token-validity-in-seconds: 90
+    access-token-validity-in-seconds: 30
     refresh-token-validity-in-seconds: 604800
 
   security:
