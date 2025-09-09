@@ -171,7 +171,7 @@ public class TokenService {
     }
 
     //무중단 액세스 토큰 재발급 로직
-    public boolean zeroDownRefresh(Claims expiredClaims,
+    public String zeroDownRefresh(Claims expiredClaims,
                                        HttpServletRequest request, 
                                        HttpServletResponse response) {
         try {
@@ -182,7 +182,7 @@ public class TokenService {
             String refreshToken = extractCookie(request, REFRESH_COOKIE);
             if (refreshToken == null) {
                 writeUnauthorized(response, MemberErrorCode.ACCESS_EXPIRED);
-                return false;
+                return null;
             }
 
             // Refresh Token 서명/만료/클레임 검증 + Redis 저장값 일치 확인
@@ -191,7 +191,7 @@ public class TokenService {
 
             if (!valid) {
                 writeUnauthorized(response, MemberErrorCode.REFRESH_TOKEN_MISMATCH);
-                return false;
+                return null;
             }
 
             // 사용자 정보 재확인 (블랙리스트/상태 체크)
@@ -199,7 +199,7 @@ public class TokenService {
             if (member == null || member.getStatus() == MemberStatus.INACTIVE
                 || tokenBlacklistRepository.isUserBlacklisted(member.getId().toString())) {
                 writeForbidden(response, MemberErrorCode.ACCESS_FORBIDDEN);
-                return false;
+                return null;
             }
 
             // 새 Access Token 및 Refresh Token 발급
@@ -218,7 +218,7 @@ public class TokenService {
             exposeHeaders(response, AUTH_HEADER, HEADER_REF);
 
             log.info("✅ AT, RT 재발급 : {}", email);
-            return true;
+            return newAccessToken;
             
         } catch (Exception e) {
             log.error("🚨 액세스토큰 재발급 처리 중 오류: {}", e.getMessage());
@@ -227,7 +227,7 @@ public class TokenService {
             } catch (IOException ioException) {
                 log.error("응답 작성 중 오류: {}", ioException.getMessage());
             }
-            return false;
+            return null;
         }
     }
     

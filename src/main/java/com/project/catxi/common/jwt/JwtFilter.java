@@ -67,13 +67,19 @@ public class JwtFilter extends OncePerRequestFilter {
       claims = jwtUtil.parseJwt(accessToken);
     } catch (ExpiredJwtException e) {
       Claims expiredClaims = e.getClaims();
-      if (tokenService.zeroDownRefresh(expiredClaims, request, response)) {
-        // 재발급 성공 시 SecurityContext 설정 후 계속 진행
-        String email = jwtUtil.getEmail(expiredClaims);
-        Member member = memberRepository.findByEmail(email).orElse(null);
-        if (member != null) {
-          setAuthentication(member);
-          filterChain.doFilter(request, response);
+      String newAccessToken = tokenService.zeroDownRefresh(expiredClaims, request, response);
+      if (newAccessToken != null) {
+        // 재발급 성공 시 새 토큰으로 Claims 파싱하여 SecurityContext 설정
+        try {
+          Claims newClaims = jwtUtil.parseJwt(newAccessToken);
+          String email = jwtUtil.getEmail(newClaims);
+          Member member = memberRepository.findByEmail(email).orElse(null);
+          if (member != null) {
+            setAuthentication(member);
+            filterChain.doFilter(request, response);
+          }
+        } catch (Exception parseException) {
+          log.error("새로 발급된 토큰 파싱 실패: {}", parseException.getMessage());
         }
       }
       return;
