@@ -13,6 +13,9 @@ import com.project.catxi.common.jwt.JwtTokenProvider;
 import com.project.catxi.member.domain.Member;
 import com.project.catxi.member.repository.MemberRepository;
 import io.jsonwebtoken.Claims;
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -21,6 +24,7 @@ import org.springframework.http.ResponseCookie;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.io.IOException;
 import java.time.Duration;
 import java.util.Date;
 
@@ -34,6 +38,12 @@ public class TokenService {
     private final MemberRepository memberRepository;
     private final RefreshTokenRepository refreshTokenRepository;
     private final TokenBlacklistRepository tokenBlacklistRepository;
+    
+    private static final String AUTH_HEADER = "Authorization";
+    private static final String BEARER_PREFIX = "Bearer ";
+    private static final String REFRESH_COOKIE = "refresh";
+    private static final String HEADER_REF = "X-Access-Token-Refreshed";
+    private static final String HEADER_EXP = "Access-Control-Expose-Headers";
 
     //reissue
     public TokenDTO.Response reissueAccessToken(String refreshToken, HttpServletResponse response) {
@@ -158,5 +168,91 @@ public class TokenService {
         if (memberRepository.existsByStudentNo(dto.StudentNo())) {
             throw new CatxiException(MemberErrorCode.DUPLICATE_STUDENT_NO);
         }
+    }
+
+    //무중단 액세스 토큰 재발급 로직
+    public boolean zeroDownRefresh(Claims expiredClaims,
+                                       HttpServletRequest request, 
+                                       HttpServletResponse response) {
+        try {
+            // 만료된 토큰에서 이메일 추출
+            String email = jwtUtil.getEmail(expiredClaims);
+
+            // Refresh Token 추출
+            String refreshToken = extractCookie(request, REFRESH_COOKIE);
+            if (refreshToken == null) {
+                writeUnauthorized(response, MemberErrorCode.ACCESS_EXPIRED);
+                return false;
+            }
+
+            // Refresh Token 서명/만료/클레임 검증 + Redis 저장값 일치 확인
+            boolean valid = jwtUtil.validateToken(refreshToken) &&
+                           refreshTokenRepository.isValid(email, refreshToken);
+
+            if (!valid) {
+                writeUnauthorized(response, MemberErrorCode.REFRESH_TOKEN_MISMATCH);
+                return false;
+            }
+
+            // 사용자 정보 재확인 (블랙리스트/상태 체크)
+            Member member = memberRepository.findByEmail(email).orElse(null);
+            if (member == null || member.getStatus() == MemberStatus.INACTIVE
+                || tokenBlacklistRepository.isUserBlacklisted(member.getId().toString())) {
+                writeForbidden(response, MemberErrorCode.ACCESS_FORBIDDEN);
+                return false;
+            }
+
+            // 새 Access Token 발급
+            String newAccessToken = jwtTokenProvider.generateAccessToken(email, member.getRole());
+
+            response.setHeader(AUTH_HEADER, BEARER_PREFIX + newAccessToken);
+            response.setHeader(HEADER_REF, "true");
+            exposeHeaders(response, AUTH_HEADER, HEADER_REF);
+
+            log.info("✅ 액세스토큰 재발급 완료: {}", email);
+            return true;
+            
+        } catch (Exception e) {
+            log.error("🚨 액세스토큰 재발급 처리 중 오류: {}", e.getMessage());
+            try {
+                writeUnauthorized(response, MemberErrorCode.ACCESS_EXPIRED);
+            } catch (IOException ioException) {
+                log.error("응답 작성 중 오류: {}", ioException.getMessage());
+            }
+            return false;
+        }
+    }
+    
+    private String extractCookie(HttpServletRequest request, String name) {
+        Cookie[] cookies = request.getCookies();
+        if (cookies == null) return null;
+        for (Cookie cookie : cookies) {
+            if (name.equals(cookie.getName())) {
+                return cookie.getValue();
+            }
+        }
+        return null;
+    }
+
+    private void exposeHeaders(HttpServletResponse response, String... headers) {
+        String existing = response.getHeader(HEADER_EXP);
+        String toAdd = String.join(",", headers);
+        response.setHeader(HEADER_EXP, existing == null ? toAdd : existing + "," + toAdd);
+    }
+
+    private void writeUnauthorized(HttpServletResponse response, MemberErrorCode code) throws IOException {
+        response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+        response.setContentType("application/json;charset=UTF-8");
+        response.getWriter().write(
+            "{\"success\":false,\"code\":\"" + code.getCode() + 
+            "\",\"message\":\"" + code.getMessage() + "\"}");
+    }
+
+    private void writeForbidden(HttpServletResponse response, MemberErrorCode code) throws IOException {
+        response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+        response.setContentType("application/json;charset=UTF-8");
+        response.getWriter().write(
+            "{\"success\":false,\"code\":\"" + code.getCode() + 
+            "\",\"message\":\"" + code.getMessage() + "\"}");
     }
 }
