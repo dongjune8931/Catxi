@@ -6,11 +6,14 @@ import com.project.catxi.member.domain.Member;
 import com.project.catxi.member.repository.MemberRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.redis.connection.Message;
 import org.springframework.data.redis.connection.MessageListener;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
@@ -22,12 +25,26 @@ public class FcmEventConsumer implements MessageListener {
     private final ObjectMapper objectMapper;
     private final MemberRepository memberRepository;
     private final FcmNotificationService fcmNotificationService;
+    private final @Qualifier("chatPubSub") StringRedisTemplate redisTemplate;
+    
+    private static final String PROCESSED_EVENT_KEY_PREFIX = "fcm:processed:";
+    private static final int PROCESSED_EVENT_TTL_SECONDS = 300; // 5분
     
     @Override
     public void onMessage(Message message, byte[] pattern) {
         try {
             String eventJson = new String(message.getBody());
             FcmNotificationEvent event = objectMapper.readValue(eventJson, FcmNotificationEvent.class);
+            
+            // 중복 처리 방지 체크
+            String processedKey = PROCESSED_EVENT_KEY_PREFIX + event.eventId();
+            Boolean isAlreadyProcessed = redisTemplate.opsForValue()
+                .setIfAbsent(processedKey, "processed", Duration.ofSeconds(PROCESSED_EVENT_TTL_SECONDS));
+            
+            if (Boolean.FALSE.equals(isAlreadyProcessed)) {
+                log.debug("FCM 이벤트 중복 처리 방지 - EventId: {}", event.eventId());
+                return;
+            }
             
             log.info("FCM 이벤트 수신 - EventId: {}, Type: {}", event.eventId(), event.type());
             
