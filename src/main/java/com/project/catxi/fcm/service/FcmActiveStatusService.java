@@ -24,10 +24,8 @@ public class FcmActiveStatusService {
     
     private static final String ACTIVE_STATUS_KEY_PREFIX = "chat:active:room:%d:user:%d";
     private static final String MEMBER_CACHE_KEY_PREFIX = "member:email:%s";
-    private static final String ACTIVE_STATUS_LOCK_PREFIX = "chat:active:lock:room:%d:user:%d";
     private static final int ACTIVE_STATUS_TTL_MINUTES = 5; // 5분 TTL
     private static final int MEMBER_CACHE_TTL_MINUTES = 30; // 멤버 캐시 30분 TTL
-    private static final int LOCK_TTL_SECONDS = 10; // 락 TTL 10초
 
     /**
      * 사용자 활성 상태 업데이트
@@ -40,29 +38,15 @@ public class FcmActiveStatusService {
         try {
             Long memberId = getMemberIdFromCacheOrDb(email);
             String key = String.format(ACTIVE_STATUS_KEY_PREFIX, roomId, memberId);
-            String lockKey = String.format(ACTIVE_STATUS_LOCK_PREFIX, roomId, memberId);
             
-            // 분산 락을 사용한 동시성 제어
-            Boolean lockAcquired = redisTemplate.opsForValue()
-                .setIfAbsent(lockKey, "locked", Duration.ofSeconds(LOCK_TTL_SECONDS));
-                
-            if (Boolean.TRUE.equals(lockAcquired)) {
-                try {
-                    if (isActive) {
-                        // 활성 상태로 설정 (TTL 5분)
-                        redisTemplate.opsForValue().set(key, "true", ACTIVE_STATUS_TTL_MINUTES, TimeUnit.MINUTES);
-                        log.debug("사용자 활성 상태 설정 - MemberId: {}, RoomId: {}", memberId, roomId);
-                    } else {
-                        // 비활성 상태로 설정 (키 삭제)
-                        redisTemplate.delete(key);
-                        log.debug("사용자 비활성 상태 설정 - MemberId: {}, RoomId: {}", memberId, roomId);
-                    }
-                } finally {
-                    // 락 해제
-                    redisTemplate.delete(lockKey);
-                }
+            if (isActive) {
+                // 활성 상태로 설정 (TTL 5분) - 락 없이 직접 설정
+                redisTemplate.opsForValue().set(key, "1", ACTIVE_STATUS_TTL_MINUTES, TimeUnit.MINUTES);
+                log.debug("사용자 활성 상태 설정 - MemberId: {}, RoomId: {}", memberId, roomId);
             } else {
-                log.debug("사용자 활성 상태 업데이트 락 획득 실패 - MemberId: {}, RoomId: {}", memberId, roomId);
+                // 비활성 상태로 설정 (비동기 삭제)
+                redisTemplate.unlink(key);
+                log.debug("사용자 비활성 상태 설정 - MemberId: {}, RoomId: {}", memberId, roomId);
             }
 
         } catch (Exception e) {
