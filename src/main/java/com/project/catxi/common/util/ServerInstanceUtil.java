@@ -33,17 +33,22 @@ public class ServerInstanceUtil {
      */
     public boolean shouldProcessFcmForRoom(Long roomId) {
         if (roomId == null) {
+            log.warn("FCM 처리 분기 - RoomId가 null입니다");
             return false;
         }
         
         // Room ID를 해시해서 서버 수로 나눈 나머지로 분기
         int serverIndex = Math.abs(roomId.hashCode()) % SERVER_COUNT;
-        boolean shouldProcess = getServerIndex() == serverIndex;
+        int currentServerIndex = getServerIndex();
+        boolean shouldProcess = currentServerIndex == serverIndex;
         
-        log.debug("FCM 처리 분기 - RoomId: {}, ServerIndex: {}, CurrentServer: {}, ShouldProcess: {}", 
-                roomId, serverIndex, getServerIndex(), shouldProcess);
+        // INFO 레벨로 로그 출력하여 디버깅
+        log.info("FCM 처리 분기 - RoomId: {}, RoomHash: {}, ServerIndex: {}, CurrentServerIndex: {}, ServerInstanceId: {}, ShouldProcess: {}", 
+                roomId, roomId.hashCode(), serverIndex, currentServerIndex, serverInstanceId, shouldProcess);
         
-        return shouldProcess;
+        // 임시로 모든 서버에서 처리하도록 true 반환 (디버깅용)
+        log.warn("임시 모드: 모든 서버에서 FCM 처리 허용");
+        return true;
     }
     
     /**

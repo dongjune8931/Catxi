@@ -81,16 +81,18 @@ public class FcmQueueConsumer {
             log.info("FCM 큐 메시지 처리 시작 - EventId: {}, BusinessKey: {}", 
                     event.eventId(), event.businessKey());
             
-            // Room ID 추출하여 현재 서버가 처리할지 확인
-            Long roomId = extractRoomIdFromEvent(event);
-            if (roomId != null && !serverInstanceUtil.shouldProcessFcmForRoom(roomId)) {
-                log.debug("FCM 처리 스킵 - 다른 서버에서 처리: RoomId={}, EventId={}, ServerId={}", 
-                        roomId, event.eventId(), serverInstanceUtil.getServerInstanceId());
+            // 임시: 서버 1에서만 처리하도록 하드코딩
+            String serverId = serverInstanceUtil.getServerInstanceId();
+            log.warn("FcmQueueConsumer 서버 인스턴스 ID 확인: {}", serverId);
+            
+            if (!serverId.contains("42-59")) {
+                log.warn("FcmQueueConsumer FCM 처리 스킵 - 서버 1(42-59)에서만 처리: EventId={}, ServerId={}", 
+                        event.eventId(), serverId);
                 return;
             }
             
-            log.debug("FCM 처리 시작 - 현재 서버에서 처리: RoomId={}, EventId={}, ServerId={}", 
-                    roomId, event.eventId(), serverInstanceUtil.getServerInstanceId());
+            log.warn("FcmQueueConsumer FCM 처리 시작 - 서버 1에서 처리: EventId={}, ServerId={}", 
+                    event.eventId(), serverId);
             
             // 대상 사용자 조회
             List<Member> targetMembers = memberRepository.findAllById(event.targetMemberIds());

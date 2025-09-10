@@ -120,15 +120,18 @@ public class ReadyService {
 	
 	private void sendReadyRequestNotification(ChatRoom room, Member host) {
 		try {
-			// 현재 서버가 이 Room의 FCM 처리를 담당하는지 확인
-			if (!serverInstanceUtil.shouldProcessFcmForRoom(room.getRoomId())) {
-				log.debug("FCM 처리 스킵 - 다른 서버에서 처리: RoomId={}, ServerId={}", 
-						room.getRoomId(), serverInstanceUtil.getServerInstanceId());
+			// 임시: 서버 인스턴스 ID로 하드코딩 분기
+			String serverId = serverInstanceUtil.getServerInstanceId();
+			log.warn("Ready 서버 인스턴스 ID 확인: {}", serverId);
+			
+			// 서버 1에서만 FCM 처리 (임시 하드코딩)
+			if (!serverId.contains("42-59")) {
+				log.warn("Ready FCM 처리 스킵 - 서버 1(42-59)에서만 처리: ServerId={}", serverId);
 				return;
 			}
 			
-			log.debug("FCM 처리 시작 - 현재 서버에서 처리: RoomId={}, ServerId={}", 
-					room.getRoomId(), serverInstanceUtil.getServerInstanceId());
+			log.warn("Ready FCM 처리 시작 - 서버 1에서 처리: RoomId={}, ServerId={}", 
+					room.getRoomId(), serverId);
 			
 			// 방에 참여한 다른 사용자들 조회 (방장 제외)
 			List<ChatParticipant> participants = chatParticipantRepository.findByChatRoom(room);
