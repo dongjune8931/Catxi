@@ -23,7 +23,7 @@ import com.project.catxi.common.domain.ReadyType;
 import com.project.catxi.common.domain.RoomStatus;
 import com.project.catxi.member.domain.Member;
 import com.project.catxi.member.repository.MemberRepository;
-import com.project.catxi.fcm.service.FcmEventPublisher;
+import com.project.catxi.fcm.service.FcmQueueService;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -39,7 +39,7 @@ public class ReadyService {
 	private final MemberRepository memberRepository;
 	private final ChatRoomRepository chatRoomRepository;
 	private final TimerService timerService;
-	private final FcmEventPublisher fcmEventPublisher;
+	private final FcmQueueService fcmQueueService;
 
 	@Transactional
 	public void requestReady(Long roomId, String email){
@@ -128,7 +128,7 @@ public class ReadyService {
 				.toList();
 				
 			if (!targetMemberIds.isEmpty()) {
-				fcmEventPublisher.publishReadyRequestNotification(targetMemberIds, room.getRoomId());
+				fcmQueueService.publishReadyRequestNotification(targetMemberIds, room.getRoomId());
 				log.info("FCM 준비요청 알림 이벤트 발행 완료 - Room ID: {}, Targets: {}", 
 					room.getRoomId(), targetMemberIds.size());
 			}

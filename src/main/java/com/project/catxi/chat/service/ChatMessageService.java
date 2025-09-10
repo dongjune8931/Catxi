@@ -28,7 +28,7 @@ import com.project.catxi.common.api.exception.CatxiException;
 import com.project.catxi.common.domain.MessageType;
 import com.project.catxi.member.domain.Member;
 import com.project.catxi.member.repository.MemberRepository;
-import com.project.catxi.fcm.service.FcmEventPublisher;
+import com.project.catxi.fcm.service.FcmQueueService;
 import com.project.catxi.fcm.service.FcmActiveStatusService;
 
 import lombok.RequiredArgsConstructor;
@@ -45,7 +45,7 @@ public class ChatMessageService {
 	private final ChatParticipantRepository chatParticipantRepository;
 	private final ObjectMapper objectMapper;
 	private final @Qualifier("chatPubSub") StringRedisTemplate redisTemplate;
-	private final FcmEventPublisher fcmEventPublisher;
+	private final FcmQueueService fcmQueueService;
 	private final FcmActiveStatusService fcmActiveStatusService;
 
 	public void saveMessage(Long roomId,ChatMessageSendReq req) {
@@ -79,7 +79,7 @@ public class ChatMessageService {
                 .filter(participant -> !fcmActiveStatusService.isUserActiveInRoom(
                     participant.getMember().getId(), room.getRoomId()))
                 .forEach(participant -> {
-                    fcmEventPublisher.publishChatNotification(
+                    fcmQueueService.publishChatNotification(
                         participant.getMember().getId(),
                         room.getRoomId(),
                         messageId, // 메시지 ID 포함
