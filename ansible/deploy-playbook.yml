@@ -100,7 +100,7 @@
 
     - name: Wait for container to start
       pause:
-        seconds: 45
+        seconds: 30
 
     - name: Wait for application to be ready
       shell: curl -f http://localhost:{{ app_port }}/actuator/health

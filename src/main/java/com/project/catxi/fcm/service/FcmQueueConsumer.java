@@ -5,10 +5,10 @@ import com.project.catxi.member.domain.Member;
 import com.project.catxi.member.repository.MemberRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.scheduling.annotation.Async;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
 
-import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -24,14 +24,17 @@ public class FcmQueueConsumer {
     
     private final AtomicBoolean running = new AtomicBoolean(false);
     
-    @PostConstruct
+    @EventListener(ApplicationReadyEvent.class)
     public void startConsumer() {
         log.info("FCM 큐 컨슈머 시작");
         running.set(true);
-        consumeEvents();
+        
+        // 별도 스레드에서 실행
+        Thread consumerThread = new Thread(this::consumeEvents, "FCM-Queue-Consumer");
+        consumerThread.setDaemon(true);
+        consumerThread.start();
     }
     
-    @Async("fcmTaskExecutor")
     public void consumeEvents() {
         log.info("FCM 큐 컨슈머 이벤트 처리 시작");
         
