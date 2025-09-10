@@ -20,15 +20,18 @@ public class FcmEventPublisher {
     private final ObjectMapper objectMapper;
     
     /**
-     * FCM 알림 이벤트를 Redis에 발행
+     * FCM 알림 이벤트를 Redis PubSub에 발행 (분산락으로 중복 처리 방지)
      */
     public void publishFcmEvent(FcmNotificationEvent event) {
         try {
+            log.info("FCM 이벤트 발행 시도 - EventId: {}, Type: {}, BusinessKey: {}, Targets: {}", 
+                    event.eventId(), event.type(), event.businessKey(), event.targetMemberIds().size());
+            
             String eventJson = objectMapper.writeValueAsString(event);
             redisTemplate.convertAndSend(FCM_CHANNEL, eventJson);
             
-            log.info("FCM 이벤트 발행 완료 - EventId: {}, Type: {}, Targets: {}", 
-                    event.eventId(), event.type(), event.targetMemberIds().size());
+            log.info("FCM 이벤트 발행 완료 - EventId: {}, BusinessKey: {}, Type: {}", 
+                    event.eventId(), event.businessKey(), event.type());
                     
         } catch (JsonProcessingException e) {
             log.error("FCM 이벤트 직렬화 실패 - EventId: {}, Error: {}", 

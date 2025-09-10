@@ -27,8 +27,8 @@ public class FcmEventConsumer implements MessageListener {
     private final FcmNotificationService fcmNotificationService;
     private final @Qualifier("chatPubSub") StringRedisTemplate redisTemplate;
     
-    private static final String PROCESSED_EVENT_KEY_PREFIX = "fcm:processed:";
-    private static final int PROCESSED_EVENT_TTL_SECONDS = 300; // 5분
+    private static final String LOCK_KEY_PREFIX = "fcm:lock:";
+    private static final int LOCK_TTL_SECONDS = 60; // 1분
     
     @Override
     public void onMessage(Message message, byte[] pattern) {
@@ -36,20 +36,36 @@ public class FcmEventConsumer implements MessageListener {
             String eventJson = new String(message.getBody());
             FcmNotificationEvent event = objectMapper.readValue(eventJson, FcmNotificationEvent.class);
             
-            // 중복 처리 방지 체크
-            String processedKey = PROCESSED_EVENT_KEY_PREFIX + event.eventId();
-            Boolean isAlreadyProcessed = redisTemplate.opsForValue()
-                .setIfAbsent(processedKey, "processed", Duration.ofSeconds(PROCESSED_EVENT_TTL_SECONDS));
+            // 분산락으로 중복 처리 방지
+            String lockKey = LOCK_KEY_PREFIX + event.businessKey();
+            Boolean acquired = redisTemplate.opsForValue()
+                .setIfAbsent(lockKey, "processing", Duration.ofSeconds(LOCK_TTL_SECONDS));
             
-            if (Boolean.FALSE.equals(isAlreadyProcessed)) {
-                log.debug("FCM 이벤트 중복 처리 방지 - EventId: {}", event.eventId());
+            if (Boolean.FALSE.equals(acquired)) {
+                log.debug("FCM 이벤트 처리 중복 방지 - BusinessKey: {}", event.businessKey());
                 return;
             }
             
-            log.info("FCM 이벤트 수신 - EventId: {}, Type: {}", event.eventId(), event.type());
+            log.info("FCM 이벤트 수신 - EventId: {}, Type: {}, BusinessKey: {}", 
+                    event.eventId(), event.type(), event.businessKey());
+            
+            log.info("FCM 처리 시작 - EventId: {}, BusinessKey: {}", 
+                    event.eventId(), event.businessKey());
             
             // 비동기로 FCM 알림 처리
-            processNotificationAsync(event);
+            processNotificationAsync(event).whenComplete((result, throwable) -> {
+                // 처리 완료 후 락 해제
+                try {
+                    redisTemplate.delete(lockKey);
+                    if (throwable == null) {
+                        log.debug("FCM 이벤트 처리 완료 - EventId: {}", event.eventId());
+                    } else {
+                        log.error("FCM 이벤트 처리 실패 - EventId: {}", event.eventId(), throwable);
+                    }
+                } catch (Exception e) {
+                    log.error("FCM 락 해제 실패 - BusinessKey: {}", event.businessKey(), e);
+                }
+            });
             
         } catch (Exception e) {
             log.error("FCM 이벤트 처리 실패 - Error: {}", e.getMessage(), e);
