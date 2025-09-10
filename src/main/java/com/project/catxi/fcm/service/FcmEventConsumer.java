@@ -2,8 +2,10 @@ package com.project.catxi.fcm.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.project.catxi.fcm.dto.FcmNotificationEvent;
+import com.project.catxi.fcm.util.FcmBusinessKeyGenerator;
 import com.project.catxi.member.domain.Member;
 import com.project.catxi.member.repository.MemberRepository;
+import com.project.catxi.common.service.RedisDistributedLockService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -13,7 +15,6 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
-import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
@@ -26,9 +27,9 @@ public class FcmEventConsumer implements MessageListener {
     private final MemberRepository memberRepository;
     private final FcmNotificationService fcmNotificationService;
     private final @Qualifier("chatPubSub") StringRedisTemplate redisTemplate;
+    private final RedisDistributedLockService distributedLockService;
+    private final FcmBusinessKeyGenerator businessKeyGenerator;
     
-    private static final String PROCESSED_EVENT_KEY_PREFIX = "fcm:processed:";
-    private static final int PROCESSED_EVENT_TTL_SECONDS = 300; // 5분
     
     @Override
     public void onMessage(Message message, byte[] pattern) {
@@ -36,20 +37,27 @@ public class FcmEventConsumer implements MessageListener {
             String eventJson = new String(message.getBody());
             FcmNotificationEvent event = objectMapper.readValue(eventJson, FcmNotificationEvent.class);
             
-            // 중복 처리 방지 체크
-            String processedKey = PROCESSED_EVENT_KEY_PREFIX + event.eventId();
-            Boolean isAlreadyProcessed = redisTemplate.opsForValue()
-                .setIfAbsent(processedKey, "processed", Duration.ofSeconds(PROCESSED_EVENT_TTL_SECONDS));
+            // 비즈니스 로직 기반 분산락 키 생성
+            String businessLockKey = businessKeyGenerator.generateBusinessKey(event);
             
-            if (Boolean.FALSE.equals(isAlreadyProcessed)) {
-                log.debug("FCM 이벤트 중복 처리 방지 - EventId: {}", event.eventId());
-                return;
+            log.info("FCM 이벤트 수신 - EventId: {}, Type: {}, BusinessKey: {}", 
+                    event.eventId(), event.type(), businessLockKey);
+            
+            // 분산락을 사용하여 중복 처리 방지 (30초 TTL)
+            boolean lockAcquired = distributedLockService.executeWithLock(
+                businessLockKey, 
+                30, // 30초 락 TTL
+                () -> {
+                    log.info("FCM 처리 시작 - EventId: {}, BusinessKey: {}", 
+                            event.eventId(), businessLockKey);
+                    processNotificationAsync(event);
+                }
+            );
+            
+            if (!lockAcquired) {
+                log.debug("FCM 이벤트 중복 처리 방지 (분산락) - EventId: {}, BusinessKey: {}", 
+                        event.eventId(), businessLockKey);
             }
-            
-            log.info("FCM 이벤트 수신 - EventId: {}, Type: {}", event.eventId(), event.type());
-            
-            // 비동기로 FCM 알림 처리
-            processNotificationAsync(event);
             
         } catch (Exception e) {
             log.error("FCM 이벤트 처리 실패 - Error: {}", e.getMessage(), e);
