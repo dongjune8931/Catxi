@@ -12,7 +12,8 @@ public enum FcmErrorCode implements ErrorCode {
     FCM_TOKEN_UPDATE_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "FCM401", "FCM 토큰 업데이트에 실패했습니다."),
     FCM_SERVICE_UNAVAILABLE(HttpStatus.SERVICE_UNAVAILABLE, "FCM402", "FCM 서비스를 사용할 수 없습니다."),
     FCM_NOTIFICATION_SEND_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "FCM403", "FCM 알림 발송에 실패했습니다."),
-    INVALID_FCM_TOKEN_FORMAT(HttpStatus.BAD_REQUEST, "FCM404", "올바르지 않은 FCM 토큰 형식입니다.");
+    INVALID_FCM_TOKEN_FORMAT(HttpStatus.BAD_REQUEST, "FCM404", "올바르지 않은 FCM 토큰 형식입니다."),
+    FCM_TOKEN_DELETION_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "FCM405", "FCM 토큰 삭제에 실패했습니다.");
 
     private final HttpStatus httpStatus;
     private final String code;

@@ -50,4 +50,17 @@ public class FcmController {
         return ResponseEntity.ok(ApiResponse.successWithNoData());
     }
 
+    @DeleteMapping("/token")
+    public ResponseEntity<ApiResponse<Void>> deleteFcmToken(
+            @AuthenticationPrincipal CustomUserDetails userDetails) {
+        
+        String email = userDetails.getUsername();
+        Member member = memberRepository.findByEmail(email)
+                .orElseThrow(() -> new CatxiException(MemberErrorCode.MEMBER_NOT_FOUND));
+        
+        fcmTokenService.deleteFcmToken(member);
+        
+        return ResponseEntity.ok(ApiResponse.successWithNoData());
+    }
+
 }

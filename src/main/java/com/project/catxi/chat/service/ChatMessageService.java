@@ -73,18 +73,19 @@ public class ChatMessageService {
 			// 방에 참여한 다른 사용자들 조회 (발송자 제외)
 			List<ChatParticipant> participants = chatParticipantRepository.findByChatRoom(room);
 			
-			participants.stream()
-				.filter(participant -> participant.getMember() != null)
-				.filter(participant -> !participant.getMember().getId().equals(sender.getId()))
-				.filter(participant -> !fcmActiveStatusService.isUserActiveInRoom(
-					participant.getMember().getId(), room.getRoomId()))
-				.forEach(participant -> {
-					fcmEventPublisher.publishChatNotification(
-						participant.getMember().getId(),
-						sender.getNickname() != null ? sender.getNickname() : sender.getMembername(),
-						message
-					);
-				});
+            participants.stream()
+                .filter(participant -> participant.getMember() != null)
+                .filter(participant -> !participant.getMember().getId().equals(sender.getId()))
+                .filter(participant -> !fcmActiveStatusService.isUserActiveInRoom(
+                    participant.getMember().getId(), room.getRoomId()))
+                .forEach(participant -> {
+                    fcmEventPublisher.publishChatNotification(
+                        participant.getMember().getId(),
+                        room.getRoomId(), // roomId 추가
+                        sender.getNickname() != null ? sender.getNickname() : sender.getMembername(),
+                        message
+                    );
+                });
 				
 		} catch (Exception e) {
 			// FCM 알림 실패가 채팅 저장을 방해하지 않도록 예외 처리
