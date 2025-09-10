@@ -59,6 +59,24 @@ public class FcmTokenService {
         }
     }
 
+    @Transactional
+    public void deleteFcmToken(Member member) {
+        try {
+            if (member.getFcmToken() == null) {
+                log.info("삭제할 FCM 토큰이 없음 - Member ID: {}", member.getId());
+                return; // 이미 토큰이 없는 경우, 바로 종료
+            }
+
+            member.updateFcmToken(null);
+            memberRepository.save(member);
+            log.info("FCM 토큰 삭제 완료 - Member ID: {}", member.getId());
+
+        } catch (Exception e) {
+            log.error("FCM 토큰 삭제 실패 - Member ID: {}, Error: {}", member.getId(), e.getMessage(), e);
+            throw new CatxiException(FcmErrorCode.FCM_TOKEN_DELETION_FAILED);
+        }
+    }
+
     public List<String> getActiveTokens(Member member) {
         try {
             return member.getFcmToken() != null 
