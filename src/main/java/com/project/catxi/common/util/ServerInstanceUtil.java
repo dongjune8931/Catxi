@@ -1,18 +1,28 @@
 package com.project.catxi.common.util;
 
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Component;
 
 import jakarta.annotation.PostConstruct;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.time.Duration;
 
 @Slf4j
 @Component
 public class ServerInstanceUtil {
     
     private String serverInstanceId;
-    private static final int SERVER_COUNT = 2; // 총 서버 수
+    private boolean isFcmMasterServer = false;
+    private final @Qualifier("chatPubSub") StringRedisTemplate redisTemplate;
+    private static final String FCM_MASTER_KEY = "fcm:master:server";
+    private static final Duration MASTER_TTL = Duration.ofMinutes(5);
+    
+    public ServerInstanceUtil(@Qualifier("chatPubSub") StringRedisTemplate redisTemplate) {
+        this.redisTemplate = redisTemplate;
+    }
     
     @PostConstruct
     public void init() {
@@ -26,37 +36,83 @@ public class ServerInstanceUtil {
             this.serverInstanceId = "server-" + (System.currentTimeMillis() % 1000);
             log.warn("호스트명을 얻을 수 없어 임시 ID 생성: {}", serverInstanceId);
         }
+        
+        // FCM 마스터 서버 등록 시도
+        tryRegisterAsFcmMaster();
     }
     
     /**
-     * 현재 서버가 특정 Room ID의 FCM 처리를 담당하는지 확인
+     * FCM 마스터 서버 등록 시도
      */
-    public boolean shouldProcessFcmForRoom(Long roomId) {
-        if (roomId == null) {
-            log.warn("FCM 처리 분기 - RoomId가 null입니다");
-            return false;
+    private void tryRegisterAsFcmMaster() {
+        try {
+            // Redis SET NX (존재하지 않을 때만 설정)
+            Boolean success = redisTemplate.opsForValue().setIfAbsent(
+                FCM_MASTER_KEY, 
+                serverInstanceId, 
+                MASTER_TTL
+            );
+            
+            if (Boolean.TRUE.equals(success)) {
+                this.isFcmMasterServer = true;
+                log.info("FCM 마스터 서버로 등록 성공: {}", serverInstanceId);
+                
+                // 주기적으로 TTL 갱신하는 스케줄러 시작
+                startMasterHeartbeat();
+            } else {
+                String currentMaster = redisTemplate.opsForValue().get(FCM_MASTER_KEY);
+                log.info("다른 서버가 FCM 마스터로 등록됨: {}, 현재 서버: {}", currentMaster, serverInstanceId);
+            }
+        } catch (Exception e) {
+            log.error("FCM 마스터 서버 등록 실패", e);
         }
-        
-        // Room ID를 해시해서 서버 수로 나눈 나머지로 분기
-        int serverIndex = Math.abs(roomId.hashCode()) % SERVER_COUNT;
-        int currentServerIndex = getServerIndex();
-        boolean shouldProcess = currentServerIndex == serverIndex;
-        
-        // INFO 레벨로 로그 출력하여 디버깅
-        log.info("FCM 처리 분기 - RoomId: {}, RoomHash: {}, ServerIndex: {}, CurrentServerIndex: {}, ServerInstanceId: {}, ShouldProcess: {}", 
-                roomId, roomId.hashCode(), serverIndex, currentServerIndex, serverInstanceId, shouldProcess);
-        
-        // 임시로 모든 서버에서 처리하도록 true 반환 (디버깅용)
-        log.warn("임시 모드: 모든 서버에서 FCM 처리 허용");
-        return true;
     }
     
     /**
-     * 현재 서버의 인덱스 (0 또는 1)
+     * 마스터 서버 하트비트 (TTL 갱신)
      */
-    private int getServerIndex() {
-        // 서버 인스턴스 ID의 해시값으로 0 또는 1 결정
-        return Math.abs(serverInstanceId.hashCode()) % SERVER_COUNT;
+    private void startMasterHeartbeat() {
+        Thread heartbeatThread = new Thread(() -> {
+            while (isFcmMasterServer) {
+                try {
+                    Thread.sleep(Duration.ofMinutes(2).toMillis()); // 2분마다 갱신
+                    
+                    // 현재 마스터가 자신인지 확인하고 TTL 갱신
+                    String currentMaster = redisTemplate.opsForValue().get(FCM_MASTER_KEY);
+                    if (serverInstanceId.equals(currentMaster)) {
+                        redisTemplate.expire(FCM_MASTER_KEY, MASTER_TTL);
+                        log.debug("FCM 마스터 TTL 갱신: {}", serverInstanceId);
+                    } else {
+                        // 다른 서버가 마스터가 됨
+                        isFcmMasterServer = false;
+                        log.info("FCM 마스터 권한 상실: {} -> {}", serverInstanceId, currentMaster);
+                    }
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    break;
+                } catch (Exception e) {
+                    log.error("FCM 마스터 하트비트 오류", e);
+                }
+            }
+        });
+        heartbeatThread.setDaemon(true);
+        heartbeatThread.setName("fcm-master-heartbeat");
+        heartbeatThread.start();
+    }
+    
+    /**
+     * 현재 서버가 FCM 처리를 담당하는지 확인
+     */
+    public boolean shouldProcessFcm() {
+        if (!isFcmMasterServer) {
+            // 마스터가 아니면 혹시 마스터가 사라졌는지 확인
+            String currentMaster = redisTemplate.opsForValue().get(FCM_MASTER_KEY);
+            if (currentMaster == null) {
+                log.info("FCM 마스터 서버가 없음, 재등록 시도");
+                tryRegisterAsFcmMaster();
+            }
+        }
+        return isFcmMasterServer;
     }
     
     /**
