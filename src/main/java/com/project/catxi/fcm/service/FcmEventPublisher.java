@@ -51,9 +51,9 @@ public class FcmEventPublisher {
     /**
      * 채팅 메시지 알림 이벤트 발행
      */
-    public void publishChatNotification(Long targetMemberId, Long roomId, String senderNickname, String message) {
+    public void publishChatNotification(Long targetMemberId, Long roomId, Long messageId, String senderNickname, String message) {
         FcmNotificationEvent event = FcmNotificationEvent.createChatMessage(
-                targetMemberId, roomId, senderNickname, message);
+                targetMemberId, roomId, messageId, senderNickname, message);
         publishFcmEvent(event);
     }
     

@@ -21,7 +21,7 @@ public record FcmNotificationEvent(
 ) {
     
     // 단일 사용자용 정적 팩토리 메서드
-    public static FcmNotificationEvent createChatMessage(Long targetMemberId, Long roomId, String senderNickname, String message) {
+    public static FcmNotificationEvent createChatMessage(Long targetMemberId, Long roomId, Long messageId, String senderNickname, String message) {
         String eventId = UUID.randomUUID().toString();
         
         return new FcmNotificationEvent(
@@ -31,7 +31,7 @@ public record FcmNotificationEvent(
                 List.of(targetMemberId),
                 "새로운 채팅 메시지",
                 String.format("%s: %s", senderNickname, message),
-                Map.of("type", "CHAT", "roomId", String.valueOf(roomId)),
+                Map.of("type", "CHAT", "roomId", String.valueOf(roomId), "messageId", String.valueOf(messageId)),
                 LocalDateTime.now(),
                 0
         );

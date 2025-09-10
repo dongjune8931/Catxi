@@ -38,19 +38,22 @@ public class FcmBusinessKeyGenerator {
     
     /**
      * 채팅 메시지 FCM 키 생성
-     * 형식: chat:{roomId}:{targetMemberId}:{timeWindow}:{messageHash}
+     * 형식: chat:{roomId}:{targetMemberId}:{messageId}
      */
     private String generateChatMessageKey(FcmNotificationEvent event) {
         String roomId = event.data().get("roomId");
+        String messageId = event.data().get("messageId");
         Long targetMemberId = event.targetMemberIds().get(0);
         
-        // 1분 단위 시간 윈도우 (같은 메시지가 1분 내 중복 발송 방지)
-        long timeWindow = System.currentTimeMillis() / 60000;
-        
-        // 메시지 내용 기반 해시 (같은 내용 중복 방지)
-        String messageHash = generateHash(event.body());
-        
-        return String.format("chat:%s:%d:%d:%s", roomId, targetMemberId, timeWindow, messageHash);
+        // 메시지 ID가 있으면 사용하고, 없으면 이전 방식 사용
+        if (messageId != null) {
+            return String.format("chat:%s:%d:%s", roomId, targetMemberId, messageId);
+        } else {
+            // 하위 호환성을 위한 이전 방식
+            long timeWindow = System.currentTimeMillis() / 60000;
+            String messageHash = generateHash(event.body());
+            return String.format("chat:%s:%d:%d:%s", roomId, targetMemberId, timeWindow, messageHash);
+        }
     }
     
     /**
