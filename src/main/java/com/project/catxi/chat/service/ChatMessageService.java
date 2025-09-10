@@ -64,11 +64,11 @@ public class ChatMessageService {
 
 		chatMessageRepository.save(chatMsg);
 		
-		// FCM 알림 이벤트 발행 (상대방에게)
-		sendChatNotificationToOthers(room, sender, req.message());
+		// FCM 알림 이벤트 발행 (상대방에게) - 저장된 메시지 ID 포함
+		sendChatNotificationToOthers(room, sender, chatMsg.getId(), req.message());
 	}
 	
-	private void sendChatNotificationToOthers(ChatRoom room, Member sender, String message) {
+	private void sendChatNotificationToOthers(ChatRoom room, Member sender, Long messageId, String message) {
 		try {
 			// 방에 참여한 다른 사용자들 조회 (발송자 제외)
 			List<ChatParticipant> participants = chatParticipantRepository.findByChatRoom(room);
@@ -81,7 +81,8 @@ public class ChatMessageService {
                 .forEach(participant -> {
                     fcmEventPublisher.publishChatNotification(
                         participant.getMember().getId(),
-                        room.getRoomId(), // roomId 추가
+                        room.getRoomId(),
+                        messageId, // 메시지 ID 포함
                         sender.getNickname() != null ? sender.getNickname() : sender.getMembername(),
                         message
                     );
@@ -89,8 +90,8 @@ public class ChatMessageService {
 				
 		} catch (Exception e) {
 			// FCM 알림 실패가 채팅 저장을 방해하지 않도록 예외 처리
-			log.error("채팅 FCM 알림 이벤트 발행 실패 - Room ID: {}, Sender: {}", 
-				room.getRoomId(), sender.getId(), e);
+			log.error("채팅 FCM 알림 이벤트 발행 실패 - Room ID: {}, Sender: {}, MessageId: {}", 
+				room.getRoomId(), sender.getId(), messageId, e);
 		}
 	}
 
