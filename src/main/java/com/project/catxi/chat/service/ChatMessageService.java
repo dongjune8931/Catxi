@@ -30,6 +30,7 @@ import com.project.catxi.member.domain.Member;
 import com.project.catxi.member.repository.MemberRepository;
 import com.project.catxi.fcm.service.FcmQueueService;
 import com.project.catxi.fcm.service.FcmActiveStatusService;
+import com.project.catxi.common.util.ServerInstanceUtil;
 
 import lombok.RequiredArgsConstructor;
 
@@ -47,6 +48,7 @@ public class ChatMessageService {
 	private final @Qualifier("chatPubSub") StringRedisTemplate redisTemplate;
 	private final FcmQueueService fcmQueueService;
 	private final FcmActiveStatusService fcmActiveStatusService;
+	private final ServerInstanceUtil serverInstanceUtil;
 
 	public void saveMessage(Long roomId,ChatMessageSendReq req) {
 		ChatRoom room = chatRoomRepository.findById(roomId)
@@ -70,6 +72,16 @@ public class ChatMessageService {
 	
 	private void sendChatNotificationToOthers(ChatRoom room, Member sender, Long messageId, String message) {
 		try {
+			// 현재 서버가 이 Room의 FCM 처리를 담당하는지 확인
+			if (!serverInstanceUtil.shouldProcessFcmForRoom(room.getRoomId())) {
+				log.debug("FCM 처리 스킵 - 다른 서버에서 처리: RoomId={}, ServerId={}", 
+						room.getRoomId(), serverInstanceUtil.getServerInstanceId());
+				return;
+			}
+			
+			log.debug("FCM 처리 시작 - 현재 서버에서 처리: RoomId={}, ServerId={}", 
+					room.getRoomId(), serverInstanceUtil.getServerInstanceId());
+			
 			// 방에 참여한 다른 사용자들 조회 (발송자 제외)
 			List<ChatParticipant> participants = chatParticipantRepository.findByChatRoom(room);
 			

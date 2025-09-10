@@ -3,6 +3,7 @@ package com.project.catxi.fcm.service;
 import com.project.catxi.fcm.dto.FcmNotificationEvent;
 import com.project.catxi.member.domain.Member;
 import com.project.catxi.member.repository.MemberRepository;
+import com.project.catxi.common.util.ServerInstanceUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
@@ -21,6 +22,7 @@ public class FcmQueueConsumer {
     private final FcmQueueService fcmQueueService;
     private final MemberRepository memberRepository;
     private final FcmNotificationService fcmNotificationService;
+    private final ServerInstanceUtil serverInstanceUtil;
     
     private final AtomicBoolean running = new AtomicBoolean(false);
     
@@ -79,6 +81,17 @@ public class FcmQueueConsumer {
             log.info("FCM 큐 메시지 처리 시작 - EventId: {}, BusinessKey: {}", 
                     event.eventId(), event.businessKey());
             
+            // Room ID 추출하여 현재 서버가 처리할지 확인
+            Long roomId = extractRoomIdFromEvent(event);
+            if (roomId != null && !serverInstanceUtil.shouldProcessFcmForRoom(roomId)) {
+                log.debug("FCM 처리 스킵 - 다른 서버에서 처리: RoomId={}, EventId={}, ServerId={}", 
+                        roomId, event.eventId(), serverInstanceUtil.getServerInstanceId());
+                return;
+            }
+            
+            log.debug("FCM 처리 시작 - 현재 서버에서 처리: RoomId={}, EventId={}, ServerId={}", 
+                    roomId, event.eventId(), serverInstanceUtil.getServerInstanceId());
+            
             // 대상 사용자 조회
             List<Member> targetMembers = memberRepository.findAllById(event.targetMemberIds());
             
@@ -116,6 +129,34 @@ public class FcmQueueConsumer {
             log.error("FCM 알림 처리 실패 - EventId: {}, Error: {}", 
                     event.eventId(), e.getMessage(), e);
             throw new RuntimeException(e);
+        }
+    }
+    
+    /**
+     * 이벤트에서 Room ID 추출
+     */
+    private Long extractRoomIdFromEvent(FcmNotificationEvent event) {
+        try {
+            // BusinessKey에서 추출: "chat:168:2:1821" -> 168
+            String businessKey = event.businessKey();
+            if (businessKey != null && businessKey.startsWith("chat:")) {
+                String[] parts = businessKey.split(":");
+                if (parts.length >= 2) {
+                    return Long.parseLong(parts[1]);
+                }
+            }
+            
+            // Data에서 추출
+            String roomIdStr = event.data().get("roomId");
+            if (roomIdStr != null) {
+                return Long.parseLong(roomIdStr);
+            }
+            
+            return null;
+        } catch (Exception e) {
+            log.warn("Room ID 추출 실패 - EventId: {}, BusinessKey: {}", 
+                    event.eventId(), event.businessKey(), e);
+            return null;
         }
     }
     
