@@ -1,6 +1,7 @@
 package com.project.catxi.fcm.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.project.catxi.common.service.RedisDistributedLockService;
 import com.project.catxi.fcm.dto.FcmNotificationEvent;
 import com.project.catxi.member.domain.Member;
 import com.project.catxi.member.repository.MemberRepository;
@@ -25,51 +26,73 @@ public class FcmEventConsumer implements MessageListener {
     private final ObjectMapper objectMapper;
     private final MemberRepository memberRepository;
     private final FcmNotificationService fcmNotificationService;
+    private final RedisDistributedLockService redisDistributedLockService;
     private final @Qualifier("chatPubSub") StringRedisTemplate redisTemplate;
-    
-    private static final String LOCK_KEY_PREFIX = "fcm:lock:";
-    private static final int LOCK_TTL_SECONDS = 60; // 1분
+
+    private static final String DEDUPE_KEY_PREFIX = "fcm:dedupe:";
+    private static final int LOCK_TTL_SECONDS = 10; // 경쟁 상태 방지용 짧은 락
     
     @Override
     public void onMessage(Message message, byte[] pattern) {
         try {
             String eventJson = new String(message.getBody());
             FcmNotificationEvent event = objectMapper.readValue(eventJson, FcmNotificationEvent.class);
-            
-            // 분산락으로 중복 처리 방지
-            String lockKey = LOCK_KEY_PREFIX + event.businessKey();
-            Boolean acquired = redisTemplate.opsForValue()
-                .setIfAbsent(lockKey, "processing", Duration.ofSeconds(LOCK_TTL_SECONDS));
-            
-            if (Boolean.FALSE.equals(acquired)) {
-                log.debug("FCM 이벤트 처리 중복 방지 - BusinessKey: {}", event.businessKey());
+
+            if (event.businessKey() == null) {
+                log.error("FCM 이벤트의 BusinessKey가 null입니다. - EventId: {}", event.eventId());
                 return;
             }
-            
-            log.info("FCM 이벤트 수신 - EventId: {}, Type: {}, BusinessKey: {}", 
-                    event.eventId(), event.type(), event.businessKey());
-            
-            log.info("FCM 처리 시작 - EventId: {}, BusinessKey: {}", 
-                    event.eventId(), event.businessKey());
-            
-            // 비동기로 FCM 알림 처리
-            processNotificationAsync(event).whenComplete((result, throwable) -> {
-                // 처리 완료 후 락 해제
-                try {
-                    redisTemplate.delete(lockKey);
-                    if (throwable == null) {
-                        log.debug("FCM 이벤트 처리 완료 - EventId: {}", event.eventId());
-                    } else {
-                        log.error("FCM 이벤트 처리 실패 - EventId: {}", event.eventId(), throwable);
-                    }
-                } catch (Exception e) {
-                    log.error("FCM 락 해제 실패 - BusinessKey: {}", event.businessKey(), e);
+
+            // 1. 디듀플리케이션 키로 처리 이력 확인 (시간 창 내 중복 방지)
+            if (isDuplicateEvent(event)) {
+                log.debug("FCM 이벤트 중복 방지 (Dedupe Key) - BusinessKey: {}", event.businessKey());
+                return;
+            }
+
+            // 2. 분산락으로 동시 처리 경쟁 방지
+            boolean executed = redisDistributedLockService.executeWithLock(
+                event.businessKey(),
+                LOCK_TTL_SECONDS,
+                () -> {
+                    log.info("FCM 이벤트 수신 및 락 획득 - EventId: {}, Type: {}, BusinessKey: {}", 
+                            event.eventId(), event.type(), event.businessKey());
+                    
+                    processNotificationAsync(event).whenComplete((result, throwable) -> {
+                        if (throwable == null) {
+                            log.debug("FCM 비동기 처리 완료 - EventId: {}", event.eventId());
+                        } else {
+                            log.error("FCM 비동기 처리 실패 - EventId: {}", event.eventId(), throwable);
+                        }
+                    });
                 }
-            });
+            );
+
+            if (!executed) {
+                log.debug("FCM 이벤트 처리 중복 방지 (Locking Race) - BusinessKey: {}", event.businessKey());
+            }
             
         } catch (Exception e) {
-            log.error("FCM 이벤트 처리 실패 - Error: {}", e.getMessage(), e);
+            log.error("FCM 이벤트 처리 중 심각한 오류 발생 - Error: {}", e.getMessage(), e);
         }
+    }
+
+    private boolean isDuplicateEvent(FcmNotificationEvent event) {
+        String dedupeKey = DEDUPE_KEY_PREFIX + event.businessKey();
+        long ttlSeconds = getDedupeTtl(event.type());
+        
+        // setIfAbsent는 키가 없을 때만 true를 반환
+        Boolean acquired = redisTemplate.opsForValue().setIfAbsent(dedupeKey, "1", Duration.ofSeconds(ttlSeconds));
+        
+        // acquired가 false이면 이미 키가 존재한다는 의미 -> 중복 이벤트
+        return Boolean.FALSE.equals(acquired);
+    }
+
+    private long getDedupeTtl(FcmNotificationEvent.NotificationType type) {
+        return switch (type) {
+            case CHAT_MESSAGE -> 60L; // 1분
+            case READY_REQUEST -> 30L; // 30초
+            case SYSTEM_NOTIFICATION -> 300L; // 5분
+        };
     }
     
     @Async("fcmTaskExecutor")
