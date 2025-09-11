@@ -6,6 +6,7 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Component;
 
 import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.time.Duration;
@@ -150,5 +151,27 @@ public class ServerInstanceUtil {
      */
     public String getServerInstanceId() {
         return serverInstanceId;
+    }
+    
+    /**
+     * 서버 종료 시 FCM 마스터 키 정리
+     */
+    @PreDestroy
+    public void cleanup() {
+        if (isFcmMasterServer) {
+            try {
+                // 현재 서버가 마스터인 경우에만 Redis에서 마스터 키 삭제
+                String currentMaster = redisTemplate.opsForValue().get(FCM_MASTER_KEY);
+                if (serverInstanceId.equals(currentMaster)) {
+                    redisTemplate.delete(FCM_MASTER_KEY);
+                    log.info("FCM 마스터 키 정리 완료: {}", serverInstanceId);
+                } else {
+                    log.debug("FCM 마스터 키 정리 스킵 - 현재 마스터가 아님: current={}, expected={}", 
+                        currentMaster, serverInstanceId);
+                }
+            } catch (Exception e) {
+                log.error("FCM 마스터 키 정리 실패: {}", serverInstanceId, e);
+            }
+        }
     }
 }
