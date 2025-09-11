@@ -19,18 +19,24 @@ import com.project.catxi.chat.dto.ParticipantsUpdateMessage;
 import com.project.catxi.chat.dto.ReadyMessageRes;
 import com.project.catxi.chat.dto.RoomEventMessage;
 import com.project.catxi.map.dto.CoordinateRes;
+import com.project.catxi.common.util.ServerInstanceUtil;
 
 @Service
 public class RedisPubSubService implements MessageListener {
 	private final SimpMessageSendingOperations messageTemplate;
 	public final StringRedisTemplate stringRedisTemplate;
 	private final ObjectMapper objectMapper;
+	private final ChatMessageService chatMessageService;
+	private final ServerInstanceUtil serverInstanceUtil;
 
 	public RedisPubSubService(@Qualifier("chatPubSub") StringRedisTemplate stringRedisTemplate,
-		SimpMessageSendingOperations messageTemplate,ObjectMapper objectMapper) {
+		SimpMessageSendingOperations messageTemplate, ObjectMapper objectMapper, 
+		@Lazy ChatMessageService chatMessageService, ServerInstanceUtil serverInstanceUtil) {
 		this.messageTemplate = messageTemplate;
 		this.stringRedisTemplate = stringRedisTemplate;
-		this.objectMapper=objectMapper;
+		this.objectMapper = objectMapper;
+		this.chatMessageService = chatMessageService;
+		this.serverInstanceUtil = serverInstanceUtil;
 	}
 
 
@@ -42,8 +48,13 @@ public class RedisPubSubService implements MessageListener {
 
 		try {
 			if ("chat".equals(channel)) {
-			ChatMessageSendReq chatMessageDto = objectMapper.readValue(payload, ChatMessageSendReq.class);
+				ChatMessageSendReq chatMessageDto = objectMapper.readValue(payload, ChatMessageSendReq.class);
 				messageTemplate.convertAndSend("/topic/" + chatMessageDto.roomId(), chatMessageDto);
+				
+				// FCM 알림 처리 (마스터 서버에서만)
+				if (serverInstanceUtil.shouldProcessFcm()) {
+					chatMessageService.processChatFcmNotification(chatMessageDto);
+				}
 			} else if (channel.equals("map")) {
 				CoordinateRes coordinateRes = objectMapper.readValue(payload, CoordinateRes.class);
 				messageTemplate.convertAndSend("/topic/map/" + coordinateRes.roomId(), coordinateRes);

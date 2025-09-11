@@ -13,6 +13,8 @@ import org.springframework.stereotype.Service;
 import jakarta.annotation.PreDestroy;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 @Slf4j
 @Service
@@ -25,16 +27,32 @@ public class FcmQueueConsumer {
     private final ServerInstanceUtil serverInstanceUtil;
     
     private final AtomicBoolean running = new AtomicBoolean(false);
+    private ExecutorService consumerExecutor;
     
     @EventListener(ApplicationReadyEvent.class)
     public void startConsumer() {
+        // FCM 마스터 서버에서만 Consumer 시작
+        if (!serverInstanceUtil.shouldProcessFcm()) {
+            log.info("FCM 큐 컨슈머 스킵 - 마스터 서버가 아님: ServerId={}", 
+                serverInstanceUtil.getServerInstanceId());
+            return;
+        }
+        
         log.info("FCM 큐 컨슈머 시작");
         running.set(true);
         
-        // 별도 스레드에서 실행
-        Thread consumerThread = new Thread(this::consumeEvents, "FCM-Queue-Consumer");
-        consumerThread.setDaemon(true);
-        consumerThread.start();
+        // 멀티스레드 처리로 성능 향상
+        int threadCount = 3;
+        consumerExecutor = Executors.newFixedThreadPool(threadCount, r -> {
+            Thread t = new Thread(r, "FCM-Queue-Consumer-" + System.currentTimeMillis());
+            t.setDaemon(false);
+            return t;
+        });
+        
+        // 여러 스레드로 병렬 처리
+        for (int i = 0; i < threadCount; i++) {
+            consumerExecutor.submit(this::consumeEvents);
+        }
     }
     
     public void consumeEvents() {
@@ -80,13 +98,6 @@ public class FcmQueueConsumer {
         try {
             log.info("FCM 큐 메시지 처리 시작 - EventId: {}, BusinessKey: {}", 
                     event.eventId(), event.businessKey());
-            
-            // FCM 마스터 서버에서만 처리
-            if (!serverInstanceUtil.shouldProcessFcm()) {
-                log.debug("FCM 큐 처리 스킵 - 마스터 서버가 아님: EventId={}, ServerId={}", 
-                        event.eventId(), serverInstanceUtil.getServerInstanceId());
-                return;
-            }
             
             log.info("FCM 큐 처리 시작: EventId={}, ServerId={}", 
                     event.eventId(), serverInstanceUtil.getServerInstanceId());
@@ -185,6 +196,9 @@ public class FcmQueueConsumer {
     @PreDestroy
     public void stopConsumer() {
         running.set(false);
+        if (consumerExecutor != null) {
+            consumerExecutor.shutdown();
+        }
         log.info("FCM 큐 컨슈머 종료 요청");
     }
 }

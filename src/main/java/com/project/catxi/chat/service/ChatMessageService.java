@@ -65,12 +65,9 @@ public class ChatMessageService {
 			.build();
 
 		chatMessageRepository.save(chatMsg);
-		
-		// FCM 알림 이벤트 발행 (상대방에게) - 저장된 메시지 ID 포함
-		sendChatNotificationToOthers(room, sender, chatMsg.getId(), req.message());
 	}
 	
-	private void sendChatNotificationToOthers(ChatRoom room, Member sender, Long messageId, String message) {
+	public void processChatFcmNotification(ChatMessageSendReq req) {
 		try {
 			// FCM 마스터 서버에서만 처리
 			if (!serverInstanceUtil.shouldProcessFcm()) {
@@ -80,7 +77,18 @@ public class ChatMessageService {
 			}
 			
 			log.info("Chat FCM 처리 시작: RoomId={}, ServerId={}", 
-					room.getRoomId(), serverInstanceUtil.getServerInstanceId());
+					req.roomId(), serverInstanceUtil.getServerInstanceId());
+			
+			ChatRoom room = chatRoomRepository.findById(req.roomId())
+				.orElseThrow(() -> new CatxiException(ChatRoomErrorCode.CHATROOM_NOT_FOUND));
+
+			Member sender = memberRepository.findByEmail(req.email())
+				.orElseThrow(() -> new CatxiException(MemberErrorCode.MEMBER_NOT_FOUND));
+			
+			// 가장 최근 메시지 ID 조회 (현재 메시지)
+			ChatMessage latestMessage = chatMessageRepository.findTopByChatRoomAndMemberOrderByCreatedTimeDesc(room, sender)
+				.orElse(null);
+			Long messageId = latestMessage != null ? latestMessage.getId() : null;
 			
 			// 방에 참여한 다른 사용자들 조회 (발송자 제외)
 			List<ChatParticipant> participants = chatParticipantRepository.findByChatRoom(room);
@@ -94,16 +102,16 @@ public class ChatMessageService {
                     fcmQueueService.publishChatNotification(
                         participant.getMember().getId(),
                         room.getRoomId(),
-                        messageId, // 메시지 ID 포함
+                        messageId,
                         sender.getNickname() != null ? sender.getNickname() : sender.getMembername(),
-                        message
+                        req.message()
                     );
                 });
 				
 		} catch (Exception e) {
 			// FCM 알림 실패가 채팅 저장을 방해하지 않도록 예외 처리
-			log.error("채팅 FCM 알림 이벤트 발행 실패 - Room ID: {}, Sender: {}, MessageId: {}", 
-				room.getRoomId(), sender.getId(), messageId, e);
+			log.error("채팅 FCM 알림 이벤트 발행 실패 - Room ID: {}, Sender: {}", 
+				req.roomId(), req.email(), e);
 		}
 	}
 

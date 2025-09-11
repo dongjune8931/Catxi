@@ -20,6 +20,11 @@ public class ServerInstanceUtil {
     private static final String FCM_MASTER_KEY = "fcm:master:server";
     private static final Duration MASTER_TTL = Duration.ofMinutes(5);
     
+    // 마스터 상태 캐싱
+    private volatile boolean cachedMasterStatus = false;
+    private volatile long lastMasterCheck = 0;
+    private static final long MASTER_CHECK_INTERVAL = 30000; // 30초
+    
     public ServerInstanceUtil(@Qualifier("chatPubSub") StringRedisTemplate redisTemplate) {
         this.redisTemplate = redisTemplate;
     }
@@ -39,6 +44,10 @@ public class ServerInstanceUtil {
         
         // FCM 마스터 서버 등록 시도
         tryRegisterAsFcmMaster();
+        
+        // 초기 캐시 설정
+        this.cachedMasterStatus = this.isFcmMasterServer;
+        this.lastMasterCheck = System.currentTimeMillis();
     }
     
     /**
@@ -55,6 +64,7 @@ public class ServerInstanceUtil {
             
             if (Boolean.TRUE.equals(success)) {
                 this.isFcmMasterServer = true;
+                this.cachedMasterStatus = true; // 캐시도 업데이트
                 log.info("FCM 마스터 서버로 등록 성공: {}", serverInstanceId);
                 
                 // 주기적으로 TTL 갱신하는 스케줄러 시작
@@ -85,6 +95,7 @@ public class ServerInstanceUtil {
                     } else {
                         // 다른 서버가 마스터가 됨
                         isFcmMasterServer = false;
+                        cachedMasterStatus = false; // 캐시도 업데이트
                         log.info("FCM 마스터 권한 상실: {} -> {}", serverInstanceId, currentMaster);
                     }
                 } catch (InterruptedException e) {
@@ -101,9 +112,24 @@ public class ServerInstanceUtil {
     }
     
     /**
-     * 현재 서버가 FCM 처리를 담당하는지 확인
+     * 현재 서버가 FCM 처리를 담당하는지 확인 (캐시 최적화)
      */
     public boolean shouldProcessFcm() {
+        long now = System.currentTimeMillis();
+        
+        // 30초마다만 Redis 확인
+        if (now - lastMasterCheck > MASTER_CHECK_INTERVAL) {
+            refreshMasterStatus();
+            lastMasterCheck = now;
+        }
+        
+        return cachedMasterStatus;
+    }
+    
+    /**
+     * 마스터 상태 새로고침
+     */
+    private void refreshMasterStatus() {
         if (!isFcmMasterServer) {
             // 마스터가 아니면 혹시 마스터가 사라졌는지 확인
             String currentMaster = redisTemplate.opsForValue().get(FCM_MASTER_KEY);
@@ -112,7 +138,11 @@ public class ServerInstanceUtil {
                 tryRegisterAsFcmMaster();
             }
         }
-        return isFcmMasterServer;
+        
+        // 캐시 업데이트
+        this.cachedMasterStatus = this.isFcmMasterServer;
+        log.debug("마스터 상태 캐시 갱신: ServerId={}, IsMaster={}", 
+            serverInstanceId, cachedMasterStatus);
     }
     
     /**
