@@ -390,12 +390,14 @@ public class ServerInstanceUtil {
      */
     @PreDestroy
     public void cleanup() {
+        log.info("FCM 서버 인스턴스 정리 시작: {}", serverInstanceId);
+        
         // 마스터 모니터링 스레드 종료
         masterMonitoringActive = false;
         if (masterMonitoringThread != null) {
             masterMonitoringThread.interrupt();
             try {
-                masterMonitoringThread.join(5000); // 5초 대기
+                masterMonitoringThread.join(5000);
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
             }
@@ -403,21 +405,34 @@ public class ServerInstanceUtil {
         
         if (isFcmMasterServer) {
             try {
-                // FCM 채널 구독 해제
+                // FCM 채널 구독 해제 (Redis 연결 사용)
                 unsubscribeFcmChannels();
                 
-                // 현재 서버가 마스터인 경우에만 Redis에서 마스터 키 삭제
-                String currentMaster = redisTemplate.opsForValue().get(FCM_MASTER_KEY);
-                if (serverInstanceId.equals(currentMaster)) {
-                    redisTemplate.delete(FCM_MASTER_KEY);
-                    log.info("FCM 마스터 키 정리 완료: {}", serverInstanceId);
-                } else {
-                    log.debug("FCM 마스터 키 정리 스킵 - 현재 마스터가 아님: current={}, expected={}", 
-                        currentMaster, serverInstanceId);
+                // Redis 연결 상태 확인 후 정리 작업 수행
+                try {
+                    String currentMaster = redisTemplate.opsForValue().get(FCM_MASTER_KEY);
+                    if (serverInstanceId.equals(currentMaster)) {
+                        redisTemplate.delete(FCM_MASTER_KEY);
+                        log.info("FCM 마스터 키 정리 완료: {}", serverInstanceId);
+                    } else {
+                        log.debug("FCM 마스터 키 정리 스킵 - 현재 마스터가 아님: current={}, expected={}", 
+                            currentMaster, serverInstanceId);
+                    }
+                } catch (Exception redisException) {
+                    // Redis 연결이 이미 종료된 경우 로그만 남기고 계속 진행
+                    if (redisException.getMessage() != null && 
+                        (redisException.getMessage().contains("LettuceConnectionFactory has been STOPPED") ||
+                         redisException.getMessage().contains("Connection factory shut down"))) {
+                        log.warn("FCM 마스터 키 정리 스킵 - Redis 연결 이미 종료됨: {}", serverInstanceId);
+                    } else {
+                        throw redisException; // 다른 예외는 재발생
+                    }
                 }
             } catch (Exception e) {
                 log.error("FCM 마스터 키 정리 실패: {}", serverInstanceId, e);
             }
         }
+        
+        log.info("FCM 서버 인스턴스 정리 완료: {}", serverInstanceId);
     }
 }

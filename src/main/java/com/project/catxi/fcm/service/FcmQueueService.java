@@ -114,6 +114,13 @@ public class FcmQueueService {
             return event;
             
         } catch (Exception e) {
+            // Redis 연결 종료 관련 예외는 별도 처리
+            if (e.getMessage() != null && 
+                (e.getMessage().contains("LettuceConnectionFactory has been STOPPED") ||
+                 e.getMessage().contains("Connection factory shut down"))) {
+                log.info("FCM 큐 서비스 종료 중 - Redis 연결 이미 종료됨");
+                return null; // 정상적인 종료 상황으로 처리
+            }
             log.error("FCM 큐에서 이벤트 가져오기 실패", e);
             return null;
         }

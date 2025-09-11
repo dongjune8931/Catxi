@@ -195,10 +195,23 @@ public class FcmQueueConsumer {
     
     @PreDestroy
     public void stopConsumer() {
+        log.info("FCM 큐 컨슈머 종료 요청");
         running.set(false);
+        
         if (consumerExecutor != null) {
             consumerExecutor.shutdown();
+            try {
+                if (!consumerExecutor.awaitTermination(10, java.util.concurrent.TimeUnit.SECONDS)) {
+                    consumerExecutor.shutdownNow();
+                    if (!consumerExecutor.awaitTermination(5, java.util.concurrent.TimeUnit.SECONDS)) {
+                        log.warn("FCM 큐 컨슈머가 정상 종료되지 않음");
+                    }
+                }
+            } catch (InterruptedException e) {
+                consumerExecutor.shutdownNow();
+                Thread.currentThread().interrupt();
+            }
         }
-        log.info("FCM 큐 컨슈머 종료 요청");
+        log.info("FCM 큐 컨슈머 종료 완료");
     }
 }
