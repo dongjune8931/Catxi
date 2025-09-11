@@ -31,14 +31,9 @@ public class FcmQueueConsumer {
     
     @EventListener(ApplicationReadyEvent.class)
     public void startConsumer() {
-        // FCM 마스터 서버에서만 Consumer 시작
-        if (!serverInstanceUtil.shouldProcessFcm()) {
-            log.info("FCM 큐 컨슈머 스킵 - 마스터 서버가 아님: ServerId={}", 
-                serverInstanceUtil.getServerInstanceId());
-            return;
-        }
-        
-        log.info("FCM 큐 컨슈머 시작");
+        // 모든 서버에서 시작하지만, 마스터 체크는 processNotification에서 수행
+        log.info("FCM 큐 컨슈머 시작 - ServerId={}, IsMaster={}", 
+                serverInstanceUtil.getServerInstanceId(), serverInstanceUtil.shouldProcessFcm());
         running.set(true);
         
         // 멀티스레드 처리로 성능 향상
@@ -96,11 +91,15 @@ public class FcmQueueConsumer {
     
     private void processNotification(FcmNotificationEvent event) {
         try {
+            // 마스터 서버에서만 처리
+            if (!serverInstanceUtil.shouldProcessFcm()) {
+                log.debug("FCM 큐 처리 스킵 - 마스터 서버가 아님: ServerId={}", 
+                        serverInstanceUtil.getServerInstanceId());
+                return;
+            }
+            
             log.info("FCM 큐 메시지 처리 시작 - EventId: {}, BusinessKey: {}", 
                     event.eventId(), event.businessKey());
-            
-            log.info("FCM 큐 처리 시작: EventId={}, ServerId={}", 
-                    event.eventId(), serverInstanceUtil.getServerInstanceId());
             
             // 대상 사용자 조회
             List<Member> targetMembers = memberRepository.findAllById(event.targetMemberIds());

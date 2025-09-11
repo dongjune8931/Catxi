@@ -69,13 +69,6 @@ public class ChatMessageService {
 	
 	public void processChatFcmNotification(ChatMessageSendReq req) {
 		try {
-			// FCM 마스터 서버에서만 처리
-			if (!serverInstanceUtil.shouldProcessFcm()) {
-				log.debug("Chat FCM 처리 스킵 - 마스터 서버가 아님: ServerId={}", 
-					serverInstanceUtil.getServerInstanceId());
-				return;
-			}
-			
 			log.info("Chat FCM 처리 시작: RoomId={}, ServerId={}", 
 					req.roomId(), serverInstanceUtil.getServerInstanceId());
 			

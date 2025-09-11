@@ -120,13 +120,6 @@ public class ReadyService {
 	
 	private void sendReadyRequestNotification(ChatRoom room, Member host) {
 		try {
-			// FCM 마스터 서버에서만 처리
-			if (!serverInstanceUtil.shouldProcessFcm()) {
-				log.debug("Ready FCM 처리 스킵 - 마스터 서버가 아님: ServerId={}", 
-					serverInstanceUtil.getServerInstanceId());
-				return;
-			}
-			
 			log.info("Ready FCM 처리 시작: RoomId={}, ServerId={}", 
 					room.getRoomId(), serverInstanceUtil.getServerInstanceId());
 			
