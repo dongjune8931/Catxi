@@ -75,17 +75,23 @@ public class ServerInstanceUtil {
     }
     
     /**
-     * 기존 마스터 키를 삭제하고 새로운 호스트명으로 등록
+     * 첫 번째 서버만 FCM 마스터로 등록
      */
     private void forceMasterRegistration() {
         try {
-            // 기존 마스터 키 삭제
-            redisTemplate.delete(FCM_MASTER_KEY);
+            Boolean success = redisTemplate.opsForValue().setIfAbsent(
+                FCM_MASTER_KEY, 
+                serverInstanceId, 
+                MASTER_TTL
+            );
             
-            // 새로운 호스트명으로 마스터 등록
-            redisTemplate.opsForValue().set(FCM_MASTER_KEY, serverInstanceId, MASTER_TTL);
-            becomeMaster();
-            log.info("FCM 마스터 등록 완료: {}", serverInstanceId);
+            if (Boolean.TRUE.equals(success)) {
+                becomeMaster();
+                log.info("FCM 마스터 등록 성공 (첫 번째 서버): {}", serverInstanceId);
+            } else {
+                String currentMaster = redisTemplate.opsForValue().get(FCM_MASTER_KEY);
+                log.info("FCM 마스터가 이미 존재함: {}", currentMaster);
+            }
             
         } catch (Exception e) {
             log.error("FCM 마스터 등록 실패", e);
