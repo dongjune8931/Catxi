@@ -198,6 +198,9 @@ public class FcmQueueConsumer {
         log.info("FCM 큐 컨슈머 종료 요청");
         running.set(false);
         
+        // 대기 중인 FCM 메시지 처리
+        processPendingMessages();
+        
         if (consumerExecutor != null) {
             consumerExecutor.shutdown();
             try {
@@ -213,5 +216,69 @@ public class FcmQueueConsumer {
             }
         }
         log.info("FCM 큐 컨슈머 종료 완료");
+    }
+    
+    /**
+     * 서버 종료 시 대기 중인 FCM 메시지들을 처리
+     */
+    private void processPendingMessages() {
+        if (!serverInstanceUtil.shouldProcessFcm()) {
+            log.debug("FCM 마스터 서버가 아니므로 대기 메시지 처리 스킵");
+            return;
+        }
+        
+        log.info("종료 전 대기 중인 FCM 메시지 처리 시작");
+        int processedCount = 0;
+        long startTime = System.currentTimeMillis();
+        final int MAX_SHUTDOWN_PROCESSING_TIME_MS = 15000; // 최대 15초
+        final int MAX_MESSAGES_TO_PROCESS = 50; // 최대 50개 메시지
+        
+        try {
+            while (processedCount < MAX_MESSAGES_TO_PROCESS && 
+                   (System.currentTimeMillis() - startTime) < MAX_SHUTDOWN_PROCESSING_TIME_MS) {
+                
+                // 논블로킹으로 메시지 가져오기 (타임아웃 1초)
+                FcmNotificationEvent event = fcmQueueService.dequeueFcmEventWithTimeout(1);
+                
+                if (event == null) {
+                    // 더 이상 처리할 메시지가 없음
+                    break;
+                }
+                
+                try {
+                    processNotification(event);
+                    fcmQueueService.markEventCompleted(event.businessKey());
+                    processedCount++;
+                    
+                    log.debug("종료 시 FCM 메시지 처리 완료 - EventId: {}", event.eventId());
+                } catch (Exception e) {
+                    log.error("종료 시 FCM 메시지 처리 실패 - EventId: {}", event.eventId(), e);
+                }
+            }
+            
+        } catch (Exception e) {
+            log.error("종료 시 FCM 메시지 처리 중 오류", e);
+        }
+        
+        long totalTime = System.currentTimeMillis() - startTime;
+        log.info("종료 전 FCM 메시지 처리 완료 - 처리량: {}, 소요시간: {}ms", processedCount, totalTime);
+        
+        // 처리되지 못한 메시지들에 대한 로그
+        logRemainingMessages();
+    }
+    
+    /**
+     * 처리되지 못한 남은 메시지들을 로깅
+     */
+    private void logRemainingMessages() {
+        try {
+            long remainingCount = fcmQueueService.getQueueSize();
+            if (remainingCount > 0) {
+                log.warn("서버 종료 시 처리되지 못한 FCM 메시지가 {} 개 남아있습니다. " +
+                        "다른 서버나 재시작 후 처리될 예정입니다.", remainingCount);
+            }
+        } catch (Exception e) {
+            log.debug("남은 메시지 카운트 확인 실패", e);
+        }
     }
 }

@@ -97,9 +97,16 @@ public class FcmQueueService {
      * 큐에서 FCM 이벤트 하나 가져오기
      */
     public FcmNotificationEvent dequeueFcmEvent() {
+        return dequeueFcmEventWithTimeout(5);
+    }
+    
+    /**
+     * 큐에서 FCM 이벤트 하나 가져오기 (타임아웃 지정)
+     */
+    public FcmNotificationEvent dequeueFcmEventWithTimeout(int timeoutSeconds) {
         try {
-            // 큐에서 왼쪽에서 팝 (블로킹, 5초 타임아웃)
-            String eventJson = redisTemplate.opsForList().leftPop(FCM_QUEUE_KEY, 5, TimeUnit.SECONDS);
+            // 큐에서 왼쪽에서 팝 (블로킹, 지정된 타임아웃)
+            String eventJson = redisTemplate.opsForList().leftPop(FCM_QUEUE_KEY, timeoutSeconds, TimeUnit.SECONDS);
             
             if (eventJson == null) {
                 return null; // 타임아웃 또는 빈 큐
@@ -156,5 +163,25 @@ public class FcmQueueService {
         FcmNotificationEvent event = FcmNotificationEvent.createReadyRequest(
                 targetMemberIds, roomId);
         enqueueFcmEvent(event);
+    }
+    
+    /**
+     * FCM 큐의 현재 크기 조회
+     */
+    public long getQueueSize() {
+        try {
+            Long size = redisTemplate.opsForList().size(FCM_QUEUE_KEY);
+            return size != null ? size : 0;
+        } catch (Exception e) {
+            // Redis 연결 종료 관련 예외는 별도 처리
+            if (e.getMessage() != null && 
+                (e.getMessage().contains("LettuceConnectionFactory has been STOPPED") ||
+                 e.getMessage().contains("Connection factory shut down"))) {
+                log.debug("FCM 큐 크기 조회 중 Redis 연결 이미 종료됨");
+                return 0;
+            }
+            log.error("FCM 큐 크기 조회 실패", e);
+            return 0;
+        }
     }
 }

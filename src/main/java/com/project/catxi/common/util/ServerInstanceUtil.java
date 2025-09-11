@@ -41,6 +41,10 @@ public class ServerInstanceUtil {
     private volatile boolean masterMonitoringActive = false;
     private Thread masterMonitoringThread;
     
+    // 마스터 하트비트 스레드 추적
+    private volatile boolean heartbeatActive = false;
+    private Thread heartbeatThread;
+    
     public ServerInstanceUtil(@Qualifier("chatPubSub") StringRedisTemplate redisTemplate, 
                              ApplicationContext applicationContext) {
         this.redisTemplate = redisTemplate;
@@ -83,6 +87,7 @@ public class ServerInstanceUtil {
             if (Boolean.TRUE.equals(success)) {
                 this.isFcmMasterServer = true;
                 this.cachedMasterStatus = true; // 캐시도 업데이트
+                log.info("FCM 마스터 서버로 등록 성공: {}", serverInstanceId);
 
                 // ApplicationReady 이후에만 FCM 채널 구독 시도
                 if (applicationReady) {
@@ -93,7 +98,23 @@ public class ServerInstanceUtil {
                 startMasterHeartbeat();
             } else {
                 String currentMaster = redisTemplate.opsForValue().get(FCM_MASTER_KEY);
-                log.info("다른 서버가 FCM 마스터로 등록됨: {}, 현재 서버: {}", currentMaster, serverInstanceId);
+                
+                // 현재 서버가 이미 마스터인 경우
+                if (serverInstanceId.equals(currentMaster)) {
+                    this.isFcmMasterServer = true;
+                    this.cachedMasterStatus = true;
+                    log.info("이미 FCM 마스터 서버로 등록됨: {}", serverInstanceId);
+                    
+                    // ApplicationReady 이후에만 FCM 채널 구독 시도
+                    if (applicationReady) {
+                        subscribeFcmChannels();
+                    }
+                    
+                    // 주기적으로 TTL 갱신하는 스케줄러 시작
+                    startMasterHeartbeat();
+                } else {
+                    log.info("다른 서버가 FCM 마스터로 등록됨: {}, 현재 서버: {}", currentMaster, serverInstanceId);
+                }
             }
         } catch (Exception e) {
             log.error("FCM 마스터 서버 등록 실패", e);
@@ -104,8 +125,15 @@ public class ServerInstanceUtil {
      * 마스터 서버 하트비트 (TTL 갱신)
      */
     private void startMasterHeartbeat() {
-        Thread heartbeatThread = new Thread(() -> {
-            while (isFcmMasterServer) {
+        // 이미 하트비트가 실행 중이면 중복 시작 방지
+        if (heartbeatActive) {
+            log.debug("FCM 마스터 하트비트가 이미 실행 중입니다.");
+            return;
+        }
+        
+        heartbeatActive = true;
+        heartbeatThread = new Thread(() -> {
+            while (isFcmMasterServer && heartbeatActive) {
                 try {
                     Thread.sleep(Duration.ofMinutes(2).toMillis()); // 2분마다 갱신
                     
@@ -118,6 +146,7 @@ public class ServerInstanceUtil {
                         // 다른 서버가 마스터가 됨
                         isFcmMasterServer = false;
                         cachedMasterStatus = false; // 캐시도 업데이트
+                        heartbeatActive = false; // 하트비트 중단
                         
                         // FCM 채널 구독 해제
                         unsubscribeFcmChannels();
@@ -131,6 +160,7 @@ public class ServerInstanceUtil {
                     log.error("FCM 마스터 하트비트 오류", e);
                 }
             }
+            heartbeatActive = false;
         });
         heartbeatThread.setDaemon(true);
         heartbeatThread.setName("fcm-master-heartbeat");
@@ -217,7 +247,26 @@ public class ServerInstanceUtil {
             // 하트비트 시작
             startMasterHeartbeat();
         } else {
-            log.debug("FCM 마스터 등록 실패 - 다른 서버가 먼저 등록함: {}", serverInstanceId);
+            // 현재 마스터가 누구인지 확인
+            String currentMaster = redisTemplate.opsForValue().get(FCM_MASTER_KEY);
+            
+            // 자신이 이미 마스터인 경우와 다른 서버가 마스터인 경우 구분
+            if (serverInstanceId.equals(currentMaster)) {
+                this.isFcmMasterServer = true;
+                this.cachedMasterStatus = true;
+                log.debug("이미 FCM 마스터로 등록되어 있음: {}", serverInstanceId);
+                
+                // ApplicationReady 이후에만 FCM 채널 구독 시도
+                if (applicationReady) {
+                    subscribeFcmChannels();
+                }
+                
+                // 하트비트 시작
+                startMasterHeartbeat();
+            } else {
+                log.debug("FCM 마스터 등록 실패 - 다른 서버가 먼저 등록함: {} (현재 마스터: {})", 
+                         serverInstanceId, currentMaster);
+            }
         }
     }
     
@@ -391,6 +440,17 @@ public class ServerInstanceUtil {
     @PreDestroy
     public void cleanup() {
         log.info("FCM 서버 인스턴스 정리 시작: {}", serverInstanceId);
+        
+        // 하트비트 스레드 종료
+        heartbeatActive = false;
+        if (heartbeatThread != null) {
+            heartbeatThread.interrupt();
+            try {
+                heartbeatThread.join(3000);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        }
         
         // 마스터 모니터링 스레드 종료
         masterMonitoringActive = false;

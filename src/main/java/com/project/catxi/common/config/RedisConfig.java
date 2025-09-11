@@ -21,8 +21,17 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import com.project.catxi.chat.service.RedisPubSubService;
 import com.project.catxi.common.util.ServerInstanceUtil;
 
+import jakarta.annotation.PreDestroy;
+import lombok.extern.slf4j.Slf4j;
+import java.util.List;
+import java.util.ArrayList;
+
+@Slf4j
 @Configuration
 public class RedisConfig {
+
+	// 리스너 컨테이너들을 추적하기 위한 리스트
+	private final List<RedisMessageListenerContainer> listenerContainers = new ArrayList<>();
 
 	@Value("${spring.data.redis.host}")
 	private String host;
@@ -95,6 +104,8 @@ public class RedisConfig {
 		container.addMessageListener(listener, new PatternTopic("roomdeleted:*"));
         container.addMessageListener(listener, new PatternTopic("readyresult:*"));
 
+		// 종료 시 정리를 위해 리스트에 추가
+		listenerContainers.add(container);
 		return container;
 	}
 	
@@ -112,7 +123,36 @@ public class RedisConfig {
 		// 초기에는 FCM 채널 구독하지 않음 - ServerInstanceUtil에서 동적으로 관리
 		// container.addMessageListener(listener, new PatternTopic("fcm:*"));
 
+		// 종료 시 정리를 위해 리스트에 추가
+		listenerContainers.add(container);
 		return container;
+	}
+
+	/**
+	 * Redis 리스너 컨테이너들의 정리 작업
+	 */
+	@PreDestroy
+	public void cleanup() {
+		log.info("Redis 리스너 컨테이너 정리 시작 - 총 {} 개", listenerContainers.size());
+		
+		for (RedisMessageListenerContainer container : listenerContainers) {
+			try {
+				if (container.isRunning()) {
+					container.stop();
+					log.debug("Redis 리스너 컨테이너 정지 완료");
+				}
+				
+				// 정리 작업
+				container.destroy();
+				log.debug("Redis 리스너 컨테이너 정리 완료");
+				
+			} catch (Exception e) {
+				log.warn("Redis 리스너 컨테이너 정리 중 오류 발생", e);
+			}
+		}
+		
+		listenerContainers.clear();
+		log.info("Redis 리스너 컨테이너 정리 완료");
 	}
 
 

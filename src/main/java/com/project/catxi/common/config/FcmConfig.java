@@ -5,6 +5,7 @@ import com.google.firebase.FirebaseApp;
 import com.google.firebase.FirebaseOptions;
 import com.google.firebase.messaging.FirebaseMessaging;
 import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
 import java.io.File;
 import java.io.InputStream;
 import java.nio.file.Files;
@@ -73,5 +74,17 @@ public class FcmConfig {
             return null;
         }
         return FirebaseMessaging.getInstance(firebaseApp);
+    }
+    
+    @PreDestroy
+    public void cleanup() {
+        try {
+            if (firebaseApp != null) {
+                firebaseApp.delete();
+                log.info("FirebaseApp 정리 완료");
+            }
+        } catch (Exception e) {
+            log.warn("FirebaseApp 정리 중 오류 발생: {}", e.getMessage());
+        }
     }
 }
