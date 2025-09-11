@@ -48,13 +48,15 @@ public class RedisPubSubService implements MessageListener {
 
 		try {
 			if ("chat".equals(channel)) {
+				// 채팅 메시지 처리 (WebSocket 브로드캐스트만)
 				ChatMessageSendReq chatMessageDto = objectMapper.readValue(payload, ChatMessageSendReq.class);
 				messageTemplate.convertAndSend("/topic/" + chatMessageDto.roomId(), chatMessageDto);
 				
-				// FCM 알림 처리 (마스터 서버에서만)
-				if (serverInstanceUtil.shouldProcessFcm()) {
-					chatMessageService.processChatFcmNotification(chatMessageDto);
-				}
+			} else if ("fcm:chat".equals(channel)) {
+				// FCM 전용 처리 (마스터 서버에서만 수신)
+				ChatMessageSendReq chatMessageDto = objectMapper.readValue(payload, ChatMessageSendReq.class);
+				chatMessageService.processChatFcmNotification(chatMessageDto);
+				
 			} else if (channel.equals("map")) {
 				CoordinateRes coordinateRes = objectMapper.readValue(payload, CoordinateRes.class);
 				messageTemplate.convertAndSend("/topic/map/" + coordinateRes.roomId(), coordinateRes);

@@ -3,7 +3,12 @@ package com.project.catxi.common.util;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.data.redis.listener.PatternTopic;
+import org.springframework.data.redis.listener.RedisMessageListenerContainer;
 import org.springframework.stereotype.Component;
+import org.springframework.context.ApplicationContext;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.context.event.EventListener;
 
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
@@ -18,6 +23,7 @@ public class ServerInstanceUtil {
     private String serverInstanceId;
     private boolean isFcmMasterServer = false;
     private final @Qualifier("chatPubSub") StringRedisTemplate redisTemplate;
+    private final ApplicationContext applicationContext;
     private static final String FCM_MASTER_KEY = "fcm:master:server";
     private static final Duration MASTER_TTL = Duration.ofMinutes(5);
     
@@ -26,8 +32,15 @@ public class ServerInstanceUtil {
     private volatile long lastMasterCheck = 0;
     private static final long MASTER_CHECK_INTERVAL = 30000; // 30초
     
-    public ServerInstanceUtil(@Qualifier("chatPubSub") StringRedisTemplate redisTemplate) {
+    // FCM 리스너 컨테이너 및 구독 상태 관리
+    private RedisMessageListenerContainer fcmListenerContainer;
+    private boolean isFcmChannelSubscribed = false;
+    private boolean applicationReady = false;
+    
+    public ServerInstanceUtil(@Qualifier("chatPubSub") StringRedisTemplate redisTemplate, 
+                             ApplicationContext applicationContext) {
         this.redisTemplate = redisTemplate;
+        this.applicationContext = applicationContext;
     }
     
     @PostConstruct
@@ -43,7 +56,7 @@ public class ServerInstanceUtil {
             log.warn("호스트명을 얻을 수 없어 임시 ID 생성: {}", serverInstanceId);
         }
         
-        // FCM 마스터 서버 등록 시도
+        // FCM 마스터 서버 등록 시도 (리스너 컨테이너 지연 로딩)
         tryRegisterAsFcmMaster();
         
         // 초기 캐시 설정
@@ -66,7 +79,11 @@ public class ServerInstanceUtil {
             if (Boolean.TRUE.equals(success)) {
                 this.isFcmMasterServer = true;
                 this.cachedMasterStatus = true; // 캐시도 업데이트
-                log.info("FCM 마스터 서버로 등록 성공: {}", serverInstanceId);
+
+                // ApplicationReady 이후에만 FCM 채널 구독 시도
+                if (applicationReady) {
+                    subscribeFcmChannels();
+                }
                 
                 // 주기적으로 TTL 갱신하는 스케줄러 시작
                 startMasterHeartbeat();
@@ -97,6 +114,10 @@ public class ServerInstanceUtil {
                         // 다른 서버가 마스터가 됨
                         isFcmMasterServer = false;
                         cachedMasterStatus = false; // 캐시도 업데이트
+                        
+                        // FCM 채널 구독 해제
+                        unsubscribeFcmChannels();
+                        
                         log.info("FCM 마스터 권한 상실: {} -> {}", serverInstanceId, currentMaster);
                     }
                 } catch (InterruptedException e) {
@@ -136,7 +157,27 @@ public class ServerInstanceUtil {
             String currentMaster = redisTemplate.opsForValue().get(FCM_MASTER_KEY);
             if (currentMaster == null) {
                 log.info("FCM 마스터 서버가 없음, 재등록 시도");
-                tryRegisterAsFcmMaster();
+                
+                // 마스터 재등록 시도
+                Boolean success = redisTemplate.opsForValue().setIfAbsent(
+                    FCM_MASTER_KEY, 
+                    serverInstanceId, 
+                    MASTER_TTL
+                );
+                
+                if (Boolean.TRUE.equals(success)) {
+                    this.isFcmMasterServer = true;
+                    this.cachedMasterStatus = true;
+                    log.info("FCM 마스터 서버로 재등록 성공: {}", serverInstanceId);
+                    
+                    // ApplicationReady 이후에만 FCM 채널 구독 시도
+                    if (applicationReady) {
+                        subscribeFcmChannels();
+                    }
+                    
+                    // 하트비트 시작
+                    startMasterHeartbeat();
+                }
             }
         }
         
@@ -147,10 +188,76 @@ public class ServerInstanceUtil {
     }
     
     /**
+     * 애플리케이션 준비 완료 시 FCM 채널 구독 처리
+     */
+    @EventListener
+    public void onApplicationReady(ApplicationReadyEvent event) {
+        this.applicationReady = true;
+        
+        // 마스터 서버인 경우 FCM 채널 구독 시작
+        if (isFcmMasterServer && !isFcmChannelSubscribed) {
+            subscribeFcmChannels();
+        }
+    }
+    
+    /**
      * 현재 서버 인스턴스 ID 반환
      */
     public String getServerInstanceId() {
         return serverInstanceId;
+    }
+    
+    /**
+     * FCM 채널 구독 시작
+     */
+    private void subscribeFcmChannels() {
+        if (!isFcmChannelSubscribed) {
+            try {
+                // FCM 리스너 컨테이너 지연 로딩
+                if (fcmListenerContainer == null) {
+                    fcmListenerContainer = applicationContext.getBean("fcmOnlyListenerContainer", RedisMessageListenerContainer.class);
+                }
+                
+                // RedisPubSubService 빈 획득
+                Object listener = applicationContext.getBean("redisPubSubService");
+                
+                // FCM 채널 구독 추가
+                fcmListenerContainer.addMessageListener((org.springframework.data.redis.connection.MessageListener) listener, 
+                                                       new PatternTopic("fcm:*"));
+                isFcmChannelSubscribed = true;
+                log.info("FCM 채널 구독 성공: {}", serverInstanceId);
+            } catch (Exception e) {
+                log.error("FCM 채널 구독 실패: {} - 원인: {}", serverInstanceId, e.getMessage());
+                // 구독 실패해도 마스터 상태는 유지 (shouldProcessFcm()로 처리)
+            }
+        }
+    }
+    
+    /**
+     * FCM 채널 구독 해제
+     */
+    private void unsubscribeFcmChannels() {
+        if (isFcmChannelSubscribed) {
+            try {
+                // FCM 리스너 컨테이너 지연 로딩
+                if (fcmListenerContainer == null) {
+                    fcmListenerContainer = applicationContext.getBean("fcmOnlyListenerContainer", RedisMessageListenerContainer.class);
+                }
+                
+                // RedisPubSubService 빈 획득
+                Object listener = applicationContext.getBean("redisPubSubService");
+                
+                // FCM 채널 구독 해제
+                fcmListenerContainer.removeMessageListener((org.springframework.data.redis.connection.MessageListener) listener, 
+                                                          new PatternTopic("fcm:*"));
+                isFcmChannelSubscribed = false;
+                log.info("FCM 채널 구독 해제 성공: {}", serverInstanceId);
+            } catch (Exception e) {
+                log.error("FCM 채널 구독 해제 실패: {} - 원인: {}", serverInstanceId, e.getMessage());
+                // 해제 실패해도 상태는 false로 변경하여 재시도 가능하게 함
+                isFcmChannelSubscribed = false;
+            }
+        }
     }
     
     /**
@@ -160,6 +267,9 @@ public class ServerInstanceUtil {
     public void cleanup() {
         if (isFcmMasterServer) {
             try {
+                // FCM 채널 구독 해제
+                unsubscribeFcmChannels();
+                
                 // 현재 서버가 마스터인 경우에만 Redis에서 마스터 키 삭제
                 String currentMaster = redisTemplate.opsForValue().get(FCM_MASTER_KEY);
                 if (serverInstanceId.equals(currentMaster)) {

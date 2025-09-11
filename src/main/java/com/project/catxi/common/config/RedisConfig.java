@@ -1,6 +1,7 @@
 package com.project.catxi.common.config;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -18,6 +19,7 @@ import org.springframework.data.redis.listener.RedisMessageListenerContainer;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 
 import com.project.catxi.chat.service.RedisPubSubService;
+import com.project.catxi.common.util.ServerInstanceUtil;
 
 @Configuration
 public class RedisConfig {
@@ -92,6 +94,23 @@ public class RedisConfig {
 		container.addMessageListener(listener, new PatternTopic("kick:*"));
 		container.addMessageListener(listener, new PatternTopic("roomdeleted:*"));
         container.addMessageListener(listener, new PatternTopic("readyresult:*"));
+
+		return container;
+	}
+	
+	// FCM 전용 리스너 - 마스터 서버에서만 동적으로 구독 관리
+	@Bean
+    public RedisMessageListenerContainer fcmOnlyListenerContainer(
+            @Qualifier("chatRedisConnectionFactory") RedisConnectionFactory cf,
+            RedisPubSubService listener,
+            @Qualifier("commonTaskScheduler")ThreadPoolTaskScheduler redisPubSubScheduler
+    ) {
+		RedisMessageListenerContainer container = new RedisMessageListenerContainer();
+		container.setConnectionFactory(cf);
+		container.setTaskExecutor(redisPubSubScheduler);
+
+		// 초기에는 FCM 채널 구독하지 않음 - ServerInstanceUtil에서 동적으로 관리
+		// container.addMessageListener(listener, new PatternTopic("fcm:*"));
 
 		return container;
 	}
