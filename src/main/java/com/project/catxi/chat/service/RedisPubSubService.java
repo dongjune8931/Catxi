@@ -3,7 +3,6 @@ package com.project.catxi.chat.service;
 import java.nio.charset.StandardCharsets;
 
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.context.annotation.Lazy;
 import org.springframework.data.redis.connection.Message;
 import org.springframework.data.redis.connection.MessageListener;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -12,32 +11,25 @@ import org.springframework.stereotype.Service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.project.catxi.chat.dto.ChatMessageSendReq;
 import com.project.catxi.chat.dto.ParticipantsUpdateMessage;
 import com.project.catxi.chat.dto.ReadyMessageRes;
 import com.project.catxi.chat.dto.RoomEventMessage;
 import com.project.catxi.map.dto.CoordinateRes;
-import com.project.catxi.common.util.ServerInstanceUtil;
 
 @Service
 public class RedisPubSubService implements MessageListener {
 	private final SimpMessageSendingOperations messageTemplate;
 	public final StringRedisTemplate stringRedisTemplate;
 	private final ObjectMapper objectMapper;
-	private final ChatMessageService chatMessageService;
-	private final ServerInstanceUtil serverInstanceUtil;
 
-	public RedisPubSubService(@Qualifier("chatPubSub") StringRedisTemplate stringRedisTemplate,
-		SimpMessageSendingOperations messageTemplate, ObjectMapper objectMapper, 
-		@Lazy ChatMessageService chatMessageService, ServerInstanceUtil serverInstanceUtil) {
+    public RedisPubSubService(@Qualifier("chatPubSub") StringRedisTemplate stringRedisTemplate,
+		SimpMessageSendingOperations messageTemplate, ObjectMapper objectMapper
+		) {
 		this.messageTemplate = messageTemplate;
 		this.stringRedisTemplate = stringRedisTemplate;
 		this.objectMapper = objectMapper;
-		this.chatMessageService = chatMessageService;
-		this.serverInstanceUtil = serverInstanceUtil;
-	}
+    }
 
 
 	@Override
