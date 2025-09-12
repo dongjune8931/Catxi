@@ -72,8 +72,6 @@ public class FcmQueueConsumer {
                         continue;
                     }
 
-                    long startTime = System.currentTimeMillis();
-                    
                     boolean success = processNotification(event);
                     
                     if (success) {
@@ -85,14 +83,8 @@ public class FcmQueueConsumer {
                         log.error("FCM 이벤트 처리 실패, 재시도 안함 - EventId: {}", event.eventId());
                         // processing 키는 TTL로 자동 만료되어 나중에 재시도 가능
                     }
-                    
-                    long processingTime = System.currentTimeMillis() - startTime;
-                    if (processingTime > 1000) { // 1초 이상 걸린 경우 로그
-                        log.warn("FCM 처리 시간 초과 - EventId: {}, Duration: {}ms", 
-                                event.eventId(), processingTime);
-                    }
                 }
-                
+
             } catch (Exception e) {
                 if (running.get()) {
                     log.error("FCM 큐 메시지 처리 중 오류", e);
