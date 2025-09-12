@@ -27,12 +27,11 @@ public class FcmQueueService {
     private static final String ENQUEUE_SCRIPT = 
         "local processing_result = redis.call('SET', KEYS[2], '1', 'NX', 'EX', ARGV[2]) " +
         "if processing_result then " +
-        "    -- 디듀프 키도 별도로 설정 (긴 TTL) " +
-        "    redis.call('SET', KEYS[3], '1', 'NX', 'EX', ARGV[3]) " +
-        "    redis.call('rpush', KEYS[1], ARGV[1]) " +
-        "    return 1 " +
+        "redis.call('SET', KEYS[3], '1', 'NX', 'EX', ARGV[3]) " +
+        "redis.call('rpush', KEYS[1], ARGV[1]) " +
+        "return 1 " +
         "else " +
-        "    return 0 " +
+        "return 0 " +
         "end";
     
     private final @Qualifier("chatPubSub") StringRedisTemplate redisTemplate;
