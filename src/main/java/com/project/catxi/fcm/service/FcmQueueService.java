@@ -19,12 +19,16 @@ public class FcmQueueService {
     
     private static final String FCM_QUEUE_KEY = "fcm:queue";
     private static final String FCM_PROCESSING_KEY_PREFIX = "fcm:processing:";
+    private static final String FCM_DEDUP_KEY_PREFIX = "fcm:dedup:";
     private static final int PROCESSING_TTL_SECONDS = 60;
+    private static final int DEDUP_TTL_SECONDS = 300; // 5분 디듀프
     
-    // Lua 스크립트로 원자적 연산 최적화
+    // Lua 스크립트: processing 키와 별도로 dedup 키도 설정 (이중 방어)
     private static final String ENQUEUE_SCRIPT = 
-        "if redis.call('setnx', KEYS[2], '1') == 1 then " +
-        "    redis.call('expire', KEYS[2], ARGV[2]) " +
+        "local processing_result = redis.call('SET', KEYS[2], '1', 'NX', 'EX', ARGV[2]) " +
+        "if processing_result then " +
+        "    -- 디듀프 키도 별도로 설정 (긴 TTL) " +
+        "    redis.call('SET', KEYS[3], '1', 'NX', 'EX', ARGV[3]) " +
         "    redis.call('rpush', KEYS[1], ARGV[1]) " +
         "    return 1 " +
         "else " +
@@ -67,11 +71,12 @@ public class FcmQueueService {
             // JSON 직렬화
             String eventJson = objectMapper.writeValueAsString(eventWithKey);
             String processingKey = FCM_PROCESSING_KEY_PREFIX + businessKey;
+            String dedupKey = FCM_DEDUP_KEY_PREFIX + businessKey;
             
-            // Lua 스크립트로 원자적 처리 (중복 체크 + 큐 추가)
+            // Lua 스크립트로 원자적 처리 (processing + dedup 키 함께 설정)
             Long result = redisTemplate.execute(enqueueScript, 
-                List.of(FCM_QUEUE_KEY, processingKey), 
-                eventJson, String.valueOf(PROCESSING_TTL_SECONDS));
+                List.of(FCM_QUEUE_KEY, processingKey, dedupKey), 
+                eventJson, String.valueOf(PROCESSING_TTL_SECONDS), String.valueOf(DEDUP_TTL_SECONDS));
             
             if (result != null && result.equals(1L)) {
                 log.info("FCM 큐 이벤트 추가 완료 - EventId: {}, BusinessKey: {}", 
@@ -130,6 +135,28 @@ public class FcmQueueService {
             }
             log.error("FCM 큐에서 이벤트 가져오기 실패", e);
             return null;
+        }
+    }
+    
+    /**
+     * 컨슈머에서 이벤트 처리 전 디듀프 검사 (2차 방어선)
+     */
+    public boolean checkAndMarkConsumerDedup(String businessKey) {
+        try {
+            String dedupKey = FCM_DEDUP_KEY_PREFIX + businessKey;
+            Boolean success = redisTemplate.opsForValue().setIfAbsent(
+                dedupKey, "1", DEDUP_TTL_SECONDS, TimeUnit.SECONDS);
+            
+            if (Boolean.TRUE.equals(success)) {
+                log.debug("컨슈머 디듀프 통과 - BusinessKey: {}", businessKey);
+                return true;
+            } else {
+                log.debug("컨슈머 디듀프 중복 차단 - BusinessKey: {}", businessKey);
+                return false;
+            }
+        } catch (Exception e) {
+            log.warn("컨슈머 디듀프 검사 실패, 처리 진행 - BusinessKey: {}", businessKey, e);
+            return true; // 실패 시 안전을 위해 처리 진행
         }
     }
     

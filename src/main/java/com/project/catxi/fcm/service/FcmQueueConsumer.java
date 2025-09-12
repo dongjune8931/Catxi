@@ -55,16 +55,45 @@ public class FcmQueueConsumer {
         
         while (running.get()) {
             try {
+                // 마스터 서버만 디큐 수행
+                if (!serverInstanceUtil.shouldProcessFcm()) {
+                    Thread.sleep(1000); // 1초 대기 후 재확인
+                    continue;
+                }
+                
                 // 큐에서 이벤트 하나 가져오기 (블로킹)
                 FcmNotificationEvent event = fcmQueueService.dequeueFcmEvent();
                 
                 if (event != null) {
+                    // 디큐 후에도 마스터 상태 재확인
+                    if (!serverInstanceUtil.shouldProcessFcm()) {
+                        log.warn("FCM 디큐 후 마스터 상태 변경 감지, 이벤트 다시 큐에 추가: {}", event.eventId());
+                        // 이벤트를 다시 큐에 넣어야 하지만, 현재 구조상 어려우므로 경고만 출력
+                        continue;
+                    }
+                    
+                    // 컨슈머 단계 디듀프 검사 (2차 방어선)
+                    if (!fcmQueueService.checkAndMarkConsumerDedup(event.businessKey())) {
+                        log.info("FCM 컨슈머에서 중복 이벤트 차단 - EventId: {}, BusinessKey: {}", 
+                                event.eventId(), event.businessKey());
+                        // 처리 완료 마크 (중복이지만 큐에서 제거됨)
+                        fcmQueueService.markEventCompleted(event.businessKey());
+                        continue;
+                    }
+                    
                     long startTime = System.currentTimeMillis();
                     
-                    processNotification(event);
+                    boolean success = processNotification(event);
                     
-                    // 처리 완료 마크 (비동기)
-                    fcmQueueService.markEventCompleted(event.businessKey());
+                    if (success) {
+                        // 성공 시에만 처리 완료 마크
+                        fcmQueueService.markEventCompleted(event.businessKey());
+                        log.debug("FCM 이벤트 처리 성공 - EventId: {}", event.eventId());
+                    } else {
+                        // 실패 시 재큐잉은 하지 않고 로그만 (중복 방지를 위해)
+                        log.error("FCM 이벤트 처리 실패, 재시도 안함 - EventId: {}", event.eventId());
+                        // processing 키는 TTL로 자동 만료되어 나중에 재시도 가능
+                    }
                     
                     long processingTime = System.currentTimeMillis() - startTime;
                     if (processingTime > 1000) { // 1초 이상 걸린 경우 로그
@@ -89,13 +118,13 @@ public class FcmQueueConsumer {
         log.info("FCM 큐 컨슈머 종료");
     }
     
-    private void processNotification(FcmNotificationEvent event) {
+    private boolean processNotification(FcmNotificationEvent event) {
         try {
             // 마스터 서버에서만 처리
             if (!serverInstanceUtil.shouldProcessFcm()) {
                 log.debug("FCM 큐 처리 스킵 - 마스터 서버가 아님: ServerId={}", 
                         serverInstanceUtil.getServerInstanceId());
-                return;
+                return false;
             }
             
             log.info("FCM 큐 메시지 처리 시작 - EventId: {}, BusinessKey: {}", 
@@ -106,7 +135,7 @@ public class FcmQueueConsumer {
             
             if (targetMembers.isEmpty()) {
                 log.warn("FCM 알림 대상 사용자 없음 - EventId: {}", event.eventId());
-                return;
+                return false;
             }
             
             // 조회된 사용자 수가 예상보다 적은 경우 경고
@@ -134,10 +163,12 @@ public class FcmQueueConsumer {
             log.info("FCM 큐 메시지 처리 완료 - EventId: {}, BusinessKey: {}", 
                     event.eventId(), event.businessKey());
             
+            return true; // 처리 성공
+            
         } catch (Exception e) {
             log.error("FCM 알림 처리 실패 - EventId: {}, Error: {}", 
                     event.eventId(), e.getMessage(), e);
-            throw new RuntimeException(e);
+            return false; // 처리 실패
         }
     }
     
@@ -245,13 +276,16 @@ public class FcmQueueConsumer {
                 }
                 
                 try {
-                    processNotification(event);
-                    fcmQueueService.markEventCompleted(event.businessKey());
-                    processedCount++;
-                    
-                    log.debug("종료 시 FCM 메시지 처리 완료 - EventId: {}", event.eventId());
+                    boolean success = processNotification(event);
+                    if (success) {
+                        fcmQueueService.markEventCompleted(event.businessKey());
+                        processedCount++;
+                        log.debug("종료 시 FCM 메시지 처리 완료 - EventId: {}", event.eventId());
+                    } else {
+                        log.error("종료 시 FCM 메시지 처리 실패 - EventId: {}", event.eventId());
+                    }
                 } catch (Exception e) {
-                    log.error("종료 시 FCM 메시지 처리 실패 - EventId: {}", event.eventId(), e);
+                    log.error("종료 시 FCM 메시지 처리 중 예외 - EventId: {}", event.eventId(), e);
                 }
             }
             

@@ -50,9 +50,6 @@ public class StompController {
 		
 		// 채팅용 (모든 서버에서 수신하여 WebSocket 브로드캐스트)
 		redisTemplate.convertAndSend("chat", message);
-		
-		// FCM 전용 (마스터 서버에서만 처리)
-		redisTemplate.convertAndSend("fcm:chat", message);
 	}
 
 	@MessageMapping("/map/{roomId}")

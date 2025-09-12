@@ -154,6 +154,6 @@ public class FcmNotificationService {
      * FCM 토큰 유효성 검사
      */
     private boolean isValidFcmToken(String token) {
-        return token != null && !token.trim().isEmpty() && token.length() > 100;
+        return token != null && !token.trim().isEmpty() && token.length() > 10;
     }
 }
