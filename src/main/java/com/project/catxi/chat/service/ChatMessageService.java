@@ -74,6 +74,13 @@ public class ChatMessageService {
 	 */
 	private void processChatFcmNotificationWithMessage(ChatRoom room, Member sender, ChatMessage savedMessage, String message) {
 		try {
+			// 마스터 서버만 FCM 큐 등록 처리
+			if (!serverInstanceUtil.shouldProcessFcm()) {
+				log.debug("FCM 큐 등록 스킵 (마스터 서버 아님): RoomId={}, MessageId={}, ServerId={}", 
+						room.getRoomId(), savedMessage.getId(), serverInstanceUtil.getServerInstanceId());
+				return;
+			}
+			
 			log.info("FCM 알림 큐 등록 시작: RoomId={}, MessageId={}, ServerId={}", 
 					room.getRoomId(), savedMessage.getId(), serverInstanceUtil.getServerInstanceId());
 			
