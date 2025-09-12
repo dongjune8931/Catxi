@@ -32,7 +32,6 @@ public class FcmTokenService {
 
             // 기존 토큰이 있고 같은 토큰인 경우
             if (request.token().equals(member.getFcmToken())) {
-                log.info("동일한 FCM 토큰 - Member ID: {}", member.getId());
                 return new FcmTokenUpdateRes(
                         member.getId(),
                         member.getFcmTokenUpdatedAt(),
@@ -43,7 +42,6 @@ public class FcmTokenService {
             // 새 토큰 업데이트
             member.updateFcmToken(request.token());
             memberRepository.save(member);
-            log.info("FCM 토큰 업데이트 - Member ID: {}", member.getId());
 
             return new FcmTokenUpdateRes(
                     member.getId(),
@@ -63,13 +61,11 @@ public class FcmTokenService {
     public void deleteFcmToken(Member member) {
         try {
             if (member.getFcmToken() == null) {
-                log.info("삭제할 FCM 토큰이 없음 - Member ID: {}", member.getId());
                 return; // 이미 토큰이 없는 경우, 바로 종료
             }
 
             member.updateFcmToken(null);
             memberRepository.save(member);
-            log.info("FCM 토큰 삭제 완료 - Member ID: {}", member.getId());
 
         } catch (Exception e) {
             log.error("FCM 토큰 삭제 실패 - Member ID: {}, Error: {}", member.getId(), e.getMessage(), e);
@@ -95,7 +91,6 @@ public class FcmTokenService {
             if (member != null) {
                 member.updateFcmToken(null);
                 memberRepository.save(member);
-                log.info("유효하지 않은 FCM 토큰 제거 완료 - Member ID: {}", member.getId());
             }
         } catch (Exception e) {
             log.error("FCM 토큰 제거 실패 - Token: {}, Error: {}", 

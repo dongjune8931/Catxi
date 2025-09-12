@@ -122,14 +122,9 @@ public class ReadyService {
 		try {
 			// 마스터 서버만 FCM 큐 등록 처리
 			if (!serverInstanceUtil.shouldProcessFcm()) {
-				log.debug("Ready FCM 큐 등록 스킵 (마스터 서버 아님): RoomId={}, ServerId={}", 
-						room.getRoomId(), serverInstanceUtil.getServerInstanceId());
 				return;
 			}
-			
-			log.info("Ready FCM 처리 시작: RoomId={}, ServerId={}", 
-					room.getRoomId(), serverInstanceUtil.getServerInstanceId());
-			
+
 			// 방에 참여한 다른 사용자들 조회 (방장 제외)
 			List<ChatParticipant> participants = chatParticipantRepository.findByChatRoom(room);
 			
@@ -141,8 +136,6 @@ public class ReadyService {
 				
 			if (!targetMemberIds.isEmpty()) {
 				fcmQueueService.publishReadyRequestNotification(targetMemberIds, room.getRoomId());
-				log.info("FCM 준비요청 알림 이벤트 발행 완료 - Room ID: {}, Targets: {}", 
-					room.getRoomId(), targetMemberIds.size());
 			}
 				
 		} catch (Exception e) {

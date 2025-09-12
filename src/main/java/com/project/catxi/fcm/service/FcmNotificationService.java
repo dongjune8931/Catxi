@@ -39,7 +39,6 @@ public class FcmNotificationService {
                 String title = "새로운 채팅 메시지";
                 String body = String.format("%s: %s", senderNickname, message);
                 sendMulticastNotification(tokens, title, body, "CHAT");
-                log.debug("채팅 알림 발송 완료 - Member ID: {}", targetMember.getId());
             }
 
         } catch (Exception e) {
@@ -69,7 +68,6 @@ public class FcmNotificationService {
                 }
             }
 
-            log.debug("준비요청 알림 발송 완료 - Room ID: {}, Targets: {}", roomId, targetMembers.size());
 
         } catch (Exception e) {
             log.error("준비요청 알림 발송 실패 - Room ID: {}", roomId, e);
@@ -120,7 +118,6 @@ public class FcmNotificationService {
                 try {
                     String response = firebaseMessaging.send(message);
                     successCount.incrementAndGet();
-                    log.debug("FCM 메시지 전송 성공 - Response: {}", response);
                 } catch (FirebaseMessagingException e) {
                     failureCount.incrementAndGet();
                     log.warn("FCM 토큰 발송 실패 - Token: {}, Error: {}",
@@ -130,16 +127,12 @@ public class FcmNotificationService {
                     // 토큰 만료나 잘못된 토큰의 경우 정리
                     if (e.getMessagingErrorCode() == MessagingErrorCode.UNREGISTERED ||
                             e.getMessagingErrorCode() == MessagingErrorCode.INVALID_ARGUMENT) {
-                        log.info("유효하지 않은 FCM 토큰 발견: {}",
-                                token.substring(0, Math.min(20, token.length())) + "...");
                         // 유효하지 않은 토큰을 DB에서 제거
                         fcmTokenService.removeInvalidFcmToken(token);
                     }
                 }
             }
 
-            log.info("FCM 알림 발송 완료 - 성공: {}, 실패: {}, 타입: {}",
-                    successCount.get(), failureCount.get(), type);
 
         } catch (Exception e) {
             log.error("FCM 알림 발송 중 예외 발생: {}", e.getMessage(), e);

@@ -83,10 +83,8 @@ public class StompEventListener {
 				if (email != null) {
 					sessionRoomMap.put(sessionId, roomId);
 					fcmActiveStatusService.updateUserActiveStatus(email, roomId, true);
-					log.debug("채팅방 구독 시 FCM 활성 상태 활성화 - Email: {}, RoomId: {}", email, roomId);
 				}
 			} catch (NumberFormatException e) {
-				log.warn("채팅방 ID 파싱 실패 - Destination: {}", destination);
 			}
 		}
 	}
@@ -103,7 +101,6 @@ public class StompEventListener {
 		if (email != null && roomId != null) {
 			fcmActiveStatusService.updateUserActiveStatus(email, roomId, false);
 			sessionRoomMap.remove(sessionId);
-			log.debug("구독 해제 시 FCM 활성 상태 비활성화 - Email: {}, RoomId: {}", email, roomId);
 		}
 	}
 }
