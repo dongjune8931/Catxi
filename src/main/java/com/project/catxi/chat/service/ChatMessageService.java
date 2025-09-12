@@ -74,7 +74,7 @@ public class ChatMessageService {
 	 */
 	private void processChatFcmNotificationWithMessage(ChatRoom room, Member sender, ChatMessage savedMessage, String message) {
 		try {
-			log.info("Chat FCM 처리 시작 (Direct): RoomId={}, MessageId={}, ServerId={}", 
+			log.info("FCM 알림 큐 등록 시작: RoomId={}, MessageId={}, ServerId={}", 
 					room.getRoomId(), savedMessage.getId(), serverInstanceUtil.getServerInstanceId());
 			
 			// 방에 참여한 다른 사용자들 조회 (발송자 제외)

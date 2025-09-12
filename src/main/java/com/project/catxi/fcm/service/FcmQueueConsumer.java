@@ -71,16 +71,7 @@ public class FcmQueueConsumer {
                         // 이벤트를 다시 큐에 넣어야 하지만, 현재 구조상 어려우므로 경고만 출력
                         continue;
                     }
-                    
-                    // 컨슈머 단계 디듀프 검사 (2차 방어선)
-                    if (!fcmQueueService.checkAndMarkConsumerDedup(event.businessKey())) {
-                        log.info("FCM 컨슈머에서 중복 이벤트 차단 - EventId: {}, BusinessKey: {}", 
-                                event.eventId(), event.businessKey());
-                        // 처리 완료 마크 (중복이지만 큐에서 제거됨)
-                        fcmQueueService.markEventCompleted(event.businessKey());
-                        continue;
-                    }
-                    
+
                     long startTime = System.currentTimeMillis();
                     
                     boolean success = processNotification(event);
