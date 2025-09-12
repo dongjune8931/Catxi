@@ -16,7 +16,7 @@ public class FcmNotificationService {
 
     private final FirebaseMessaging firebaseMessaging;
     private final FcmTokenService fcmTokenService;
-    
+
     private boolean isFirebaseInitialized() {
         return firebaseMessaging != null;
     }
@@ -33,7 +33,7 @@ public class FcmNotificationService {
                 log.warn("Firebase가 초기화되지 않아 채팅 알림을 발송할 수 없습니다.");
                 return;
             }
-            
+
             List<String> tokens = fcmTokenService.getActiveTokens(targetMember);
             if (!tokens.isEmpty()) {
                 String title = "새로운 채팅 메시지";
@@ -41,7 +41,7 @@ public class FcmNotificationService {
                 sendMulticastNotification(tokens, title, body, "CHAT");
                 log.debug("채팅 알림 발송 완료 - Member ID: {}", targetMember.getId());
             }
-            
+
         } catch (Exception e) {
             log.error("채팅 알림 발송 실패 - Member ID: {}", targetMember.getId(), e);
         }
@@ -58,7 +58,7 @@ public class FcmNotificationService {
                 log.warn("Firebase가 초기화되지 않아 준비요청 알림을 발송할 수 없습니다.");
                 return;
             }
-            
+
             String title = "준비 요청";
             String body = "방장이 준비요청을 보냈습니다";
 
@@ -68,9 +68,9 @@ public class FcmNotificationService {
                     sendMulticastNotification(tokens, title, body, "READY_REQUEST", roomId);
                 }
             }
-            
+
             log.debug("준비요청 알림 발송 완료 - Room ID: {}, Targets: {}", roomId, targetMembers.size());
-            
+
         } catch (Exception e) {
             log.error("준비요청 알림 발송 실패 - Room ID: {}", roomId, e);
         }
@@ -100,12 +100,6 @@ public class FcmNotificationService {
                 return;
             }
 
-            // notification 페이로드 생성 (백그라운드 알림용)
-            Notification notification = Notification.builder()
-                    .setTitle(title)
-                    .setBody(body)
-                    .build();
-
             AtomicInteger successCount = new AtomicInteger(0);
             AtomicInteger failureCount = new AtomicInteger(0);
 
@@ -113,11 +107,9 @@ public class FcmNotificationService {
             for (String token : validTokens) {
                 Message.Builder messageBuilder = Message.builder()
                         .setToken(token)
-                        .setNotification(notification)  // 백그라운드 알림용
                         .putData("type", type)
                         .putData("title", title)
-                        .putData("body", body)
-                        .putData("preventDuplicate", "true");  // 중복 방지 플래그
+                        .putData("body", body);
 
                 if (roomId != null) {
                     messageBuilder.putData("roomId", roomId.toString());
@@ -131,22 +123,22 @@ public class FcmNotificationService {
                     log.debug("FCM 메시지 전송 성공 - Response: {}", response);
                 } catch (FirebaseMessagingException e) {
                     failureCount.incrementAndGet();
-                    log.warn("FCM 토큰 발송 실패 - Token: {}, Error: {}", 
+                    log.warn("FCM 토큰 발송 실패 - Token: {}, Error: {}",
                             token.substring(0, Math.min(20, token.length())) + "...",
                             e.getMessage());
-                    
+
                     // 토큰 만료나 잘못된 토큰의 경우 정리
                     if (e.getMessagingErrorCode() == MessagingErrorCode.UNREGISTERED ||
-                        e.getMessagingErrorCode() == MessagingErrorCode.INVALID_ARGUMENT) {
-                        log.info("유효하지 않은 FCM 토큰 발견: {}", 
+                            e.getMessagingErrorCode() == MessagingErrorCode.INVALID_ARGUMENT) {
+                        log.info("유효하지 않은 FCM 토큰 발견: {}",
                                 token.substring(0, Math.min(20, token.length())) + "...");
                         // 유효하지 않은 토큰을 DB에서 제거
                         fcmTokenService.removeInvalidFcmToken(token);
                     }
                 }
             }
-            
-            log.info("FCM 알림 발송 완료 - 성공: {}, 실패: {}, 타입: {}", 
+
+            log.info("FCM 알림 발송 완료 - 성공: {}, 실패: {}, 타입: {}",
                     successCount.get(), failureCount.get(), type);
 
         } catch (Exception e) {
