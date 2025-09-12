@@ -100,11 +100,6 @@ public class FcmNotificationService {
                 return;
             }
 
-            Notification notification = Notification.builder()
-                    .setTitle(title)
-                    .setBody(body)
-                    .build();
-
             AtomicInteger successCount = new AtomicInteger(0);
             AtomicInteger failureCount = new AtomicInteger(0);
 
@@ -112,8 +107,9 @@ public class FcmNotificationService {
             for (String token : validTokens) {
                 Message.Builder messageBuilder = Message.builder()
                         .setToken(token)
-                        .setNotification(notification)
-                        .putData("type", type);
+                        .putData("type", type)
+                        .putData("title", title)
+                        .putData("body", body);
 
                 if (roomId != null) {
                     messageBuilder.putData("roomId", roomId.toString());
