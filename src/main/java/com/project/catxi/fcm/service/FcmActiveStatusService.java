@@ -42,11 +42,9 @@ public class FcmActiveStatusService {
             if (isActive) {
                 // 활성 상태로 설정 (TTL 5분) - 락 없이 직접 설정
                 redisTemplate.opsForValue().set(key, "1", ACTIVE_STATUS_TTL_MINUTES, TimeUnit.MINUTES);
-                log.debug("사용자 활성 상태 설정 - MemberId: {}, RoomId: {}", memberId, roomId);
             } else {
                 // 비활성 상태로 설정 (비동기 삭제)
                 redisTemplate.unlink(key);
-                log.debug("사용자 비활성 상태 설정 - MemberId: {}, RoomId: {}", memberId, roomId);
             }
 
         } catch (Exception e) {
@@ -89,7 +87,6 @@ public class FcmActiveStatusService {
             // 1. 캐시에서 먼저 조회
             String cachedMemberId = redisTemplate.opsForValue().get(cacheKey);
             if (cachedMemberId != null) {
-                log.debug("캐시에서 멤버 ID 조회 성공 - Email: {}, MemberId: {}", email, cachedMemberId);
                 return Long.parseLong(cachedMemberId);
             }
             
@@ -101,7 +98,6 @@ public class FcmActiveStatusService {
             redisTemplate.opsForValue().set(cacheKey, member.getId().toString(), 
                     MEMBER_CACHE_TTL_MINUTES, TimeUnit.MINUTES);
             
-            log.debug("DB에서 멤버 조회 및 캐시 저장 - Email: {}, MemberId: {}", email, member.getId());
             return member.getId();
             
         } catch (NumberFormatException e) {

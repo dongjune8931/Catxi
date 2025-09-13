@@ -64,8 +64,6 @@ public class FcmQueueService {
             String businessKey = fcmBusinessKeyGenerator.generateBusinessKey(event);
             FcmNotificationEvent eventWithKey = event.withBusinessKey(businessKey);
 
-            log.info("FCM 큐 이벤트 추가 시도 - EventId: {}, BusinessKey: {}, Targets: {}", 
-                    eventWithKey.eventId(), eventWithKey.businessKey(), eventWithKey.targetMemberIds().size());
             
             // JSON 직렬화
             String eventJson = objectMapper.writeValueAsString(eventWithKey);
@@ -78,11 +76,8 @@ public class FcmQueueService {
                 eventJson, String.valueOf(PROCESSING_TTL_SECONDS), String.valueOf(DEDUP_TTL_SECONDS));
             
             if (result != null && result.equals(1L)) {
-                log.info("FCM 큐 이벤트 추가 완료 - EventId: {}, BusinessKey: {}", 
-                        eventWithKey.eventId(), eventWithKey.businessKey());
                 return true;
             } else {
-                log.debug("FCM 이벤트 중복 방지 - BusinessKey: {}", businessKey);
                 return false;
             }
                     
@@ -119,8 +114,6 @@ public class FcmQueueService {
             // JSON을 객체로 역직렬화
             FcmNotificationEvent event = objectMapper.readValue(eventJson, FcmNotificationEvent.class);
             
-            log.debug("FCM 큐에서 이벤트 가져옴 - EventId: {}, BusinessKey: {}", 
-                    event.eventId(), event.businessKey());
             
             return event;
             
@@ -147,10 +140,8 @@ public class FcmQueueService {
                 dedupKey, "1", DEDUP_TTL_SECONDS, TimeUnit.SECONDS);
             
             if (Boolean.TRUE.equals(success)) {
-                log.debug("컨슈머 디듀프 통과 - BusinessKey: {}", businessKey);
                 return true;
             } else {
-                log.debug("컨슈머 디듀프 중복 차단 - BusinessKey: {}", businessKey);
                 return false;
             }
         } catch (Exception e) {
@@ -167,7 +158,6 @@ public class FcmQueueService {
             String processingKey = FCM_PROCESSING_KEY_PREFIX + businessKey;
             // 비동기적으로 키 삭제
             redisTemplate.unlink(processingKey);
-            log.debug("FCM 이벤트 처리 완료 마크 - BusinessKey: {}", businessKey);
         } catch (Exception e) {
             log.error("FCM 이벤트 완료 마크 실패 - BusinessKey: {}", businessKey, e);
         }
@@ -203,7 +193,6 @@ public class FcmQueueService {
             if (e.getMessage() != null && 
                 (e.getMessage().contains("LettuceConnectionFactory has been STOPPED") ||
                  e.getMessage().contains("Connection factory shut down"))) {
-                log.debug("FCM 큐 크기 조회 중 Redis 연결 이미 종료됨");
                 return 0;
             }
             log.error("FCM 큐 크기 조회 실패", e);
