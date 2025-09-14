@@ -29,7 +29,9 @@ import com.project.catxi.member.dto.CustomUserDetails;
 import com.project.catxi.member.service.MatchHistoryService;
 
 import io.swagger.v3.oas.annotations.Operation;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 @RestController
 @RequestMapping("/chat")
 public class ChatController {
@@ -122,8 +124,16 @@ public class ChatController {
 		@AuthenticationPrincipal CustomUserDetails userDetails
 	) {
 		String requesterEmail = userDetails.getUsername();
-		chatRoomService.kickUser(roomId, requesterEmail, request.targetEmail());
-		return ResponseEntity.ok(ApiResponse.successWithNoData());
+		log.info("[강퇴 API 요청] roomId: {}, requester: {}, target: {}", roomId, requesterEmail, request.targetEmail());
+
+		try {
+			chatRoomService.kickUser(roomId, requesterEmail, request.targetEmail());
+			log.info("[강퇴 API 성공] roomId: {}, target: {}", roomId, request.targetEmail());
+			return ResponseEntity.ok(ApiResponse.successWithNoData());
+		} catch (Exception e) {
+			log.error("[강퇴 API 실패] roomId: {}, target: {}, error: {}", roomId, request.targetEmail(), e.getMessage(), e);
+			throw e;
+		}
 	}
 
 

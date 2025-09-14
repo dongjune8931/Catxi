@@ -37,7 +37,7 @@ public class StompEventListener {
 		if (accessor.getUser() != null) {
 			String email = accessor.getUser().getName();
 			sessionUserMap.put(sessionId, email);
-			log.debug("WebSocket 연결 - SessionId: {}, Email: {}", sessionId, email);
+			log.info("[WebSocket 연결] SessionId: {}, Email: {}", sessionId, email);
 		}
 		
 		System.out.println("connect session Id" + sessionId);
@@ -55,7 +55,7 @@ public class StompEventListener {
 		
 		if (email != null && roomId != null) {
 			fcmActiveStatusService.updateUserActiveStatus(email, roomId, false);
-			log.debug("WebSocket 해제 시 FCM 활성 상태 비활성화 - Email: {}, RoomId: {}", email, roomId);
+			log.info("[WebSocket 해제] FCM 활성 상태 비활성화 - Email: {}, RoomId: {}", email, roomId);
 		}
 		
 		// 세션 정보 정리
@@ -72,19 +72,28 @@ public class StompEventListener {
 		StompHeaderAccessor accessor = StompHeaderAccessor.wrap(event.getMessage());
 		String sessionId = accessor.getSessionId();
 		String destination = accessor.getDestination();
-		
+		String email = sessionUserMap.get(sessionId);
+
+		log.info("[채널 구독] sessionId: {}, destination: {}, email: {}", sessionId, destination, email);
+
+		// 강퇴 알림 채널 구독 모니터링
+		if (destination != null && destination.equals("/user/queue/kick")) {
+			log.info("[강퇴 알림 채널 구독] sessionId: {}, email: {}, destination: {}", sessionId, email, destination);
+		}
+
 		// 채팅방 구독 시 활성 상태 설정
 		if (destination != null && destination.startsWith("/topic/chat/")) {
 			try {
 				String roomIdStr = destination.substring("/topic/chat/".length());
 				Long roomId = Long.parseLong(roomIdStr);
-				String email = sessionUserMap.get(sessionId);
-				
+
 				if (email != null) {
 					sessionRoomMap.put(sessionId, roomId);
 					fcmActiveStatusService.updateUserActiveStatus(email, roomId, true);
+					log.info("[채팅방 구독 완료] email: {}, roomId: {}", email, roomId);
 				}
 			} catch (NumberFormatException e) {
+				log.info("채팅방 ID 파싱 실패: {}", destination, e);
 			}
 		}
 	}
@@ -93,14 +102,17 @@ public class StompEventListener {
 	public void unsubscribeHandle(SessionUnsubscribeEvent event) {
 		StompHeaderAccessor accessor = StompHeaderAccessor.wrap(event.getMessage());
 		String sessionId = accessor.getSessionId();
-		
+
 		// 구독 해제 시 활성 상태 비활성화
 		String email = sessionUserMap.get(sessionId);
 		Long roomId = sessionRoomMap.get(sessionId);
-		
+
+		log.info("[채널 구독 해제] sessionId: {}, email: {}, roomId: {}", sessionId, email, roomId);
+
 		if (email != null && roomId != null) {
 			fcmActiveStatusService.updateUserActiveStatus(email, roomId, false);
 			sessionRoomMap.remove(sessionId);
+			log.info("[채팅방 구독 해제 완료] email: {}, roomId: {}", email, roomId);
 		}
 	}
 }

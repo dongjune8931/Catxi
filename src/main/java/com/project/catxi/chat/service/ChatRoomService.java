@@ -9,6 +9,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
@@ -48,6 +49,7 @@ import com.project.catxi.member.repository.MemberRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional
@@ -191,6 +193,7 @@ public class ChatRoomService {
 	}
 
 	public void kickUser(Long roomId, String requesterEmail, String targetEmail) {
+		log.info("[강퇴 요청] roomId: {}, 요청자: {}, 대상자: {}", roomId, requesterEmail, targetEmail);
 		ChatRoom room = chatRoomRepository.findById(roomId)
 			.orElseThrow(() -> new CatxiException(ChatRoomErrorCode.CHATROOM_NOT_FOUND));
 
@@ -207,21 +210,29 @@ public class ChatRoomService {
 		ChatParticipant participant = chatParticipantRepository.findByChatRoomAndMember(room, target)
 			.orElseThrow(() -> new CatxiException(ChatParticipantErrorCode.PARTICIPANT_NOT_FOUND));
 
+		log.info("[강퇴 시작] roomId: {}, 강퇴자: {}, 대상자: {}", roomId, requester.getEmail(), target.getEmail());
+
 		chatParticipantRepository.delete(participant);
+		log.info("[강퇴 참여자 삭제 완료] roomId: {}, 대상자: {}", roomId, target.getEmail());
 
 		KickedParticipant kicked = KickedParticipant.builder()
 			.chatRoom(room)
 			.member(target)
 			.build();
 		kickedParticipantRepository.save(kicked);
+		log.info("[강퇴 기록 저장 완료] roomId: {}, 대상자: {}", roomId, target.getEmail());
 
 		sendParticipantUpdateMessage(room);
+		log.info("[참여자 업데이트 메시지 전송 완료] roomId: {}", roomId);
 
 		String msg = target.getNickname() + " 님이 강퇴되었습니다.";
 		chatMessageService.sendSystemMessage(roomId, msg);
+		log.info("[시스템 메시지 전송 완료] roomId: {}, message: {}", roomId, msg);
 
 		String channel = "kick:" + target.getEmail();
+		log.info("[강퇴 알림 채널 발행 시도] channel: {}, message: KICKED", channel);
 		stringRedisTemplate.convertAndSend(channel, "KICKED");
+		log.info("[강퇴 알림 채널 발행 완료] channel: {}, 대상자: {}", channel, target.getEmail());
 
 
 	}
