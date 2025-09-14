@@ -61,6 +61,14 @@
         group: "{{ ansible_user }}"
         mode: '0644'
 
+    - name: Copy Prometheus alert rules
+      copy:
+        src: ../monitoring/prometheus/alerts/
+        dest: "{{ monitoring_dir }}/prometheus/alerts/"
+        owner: "{{ ansible_user }}"
+        group: "{{ ansible_user }}"
+        mode: '0644'
+
     - name: Copy Grafana datasources provisioning
       copy:
         src: ../monitoring/grafana/provisioning/datasources/
