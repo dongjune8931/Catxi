@@ -2,51 +2,109 @@ global:
   resolve_timeout: 5m
 
 route:
-  group_by: ['alertname', 'cluster', 'service']
+  group_by: ['alertname', 'team', 'service', 'severity']
   group_wait: 10s
-  group_interval: 10s
-  repeat_interval: 12h
-  receiver: 'catxi-alerts'
+  group_interval: 30s
+  repeat_interval: 4h
+  receiver: 'catxi-default'
   routes:
+  # Critical alerts - immediate notification
   - match:
       severity: critical
-    receiver: 'critical-alerts'
-    repeat_interval: 5m
+    receiver: 'catxi-critical'
+    repeat_interval: 2m
+    group_wait: 5s
+  # Warning alerts - less frequent
   - match:
       severity: warning
-    receiver: 'warning-alerts'
-    repeat_interval: 1h
+    receiver: 'catxi-warning'
+    repeat_interval: 30m
+  # Info alerts - low frequency
+  - match:
+      severity: info
+    receiver: 'catxi-info'
+    repeat_interval: 2h
 
 receivers:
-- name: 'catxi-alerts'
+- name: 'catxi-default'
 {% if lookup('env', 'DISCORD_WEBHOOK_URL') %}
-  webhook_configs:
-  - url: '{{ lookup("env", "DISCORD_WEBHOOK_URL") }}'
+  discord_configs:
+  - webhook_url: '{{ lookup("env", "DISCORD_WEBHOOK_URL") }}'
     send_resolved: true
-    http_config:
-      follow_redirects: true
+    content: |
+      {% raw %}**🔔 Catxi 알림 - {{ .GroupLabels.severity }}**
+
+      **📊 {{ .GroupLabels.team }} 팀 - {{ .GroupLabels.service }}**
+      **심각도:** {{ .GroupLabels.severity }}
+      **시간:** {{ .StartsAt.Format "15:04:05" }}
+
+      {{ range .Alerts }}**{{ .Annotations.summary }}**
+      {{ .Annotations.description }}
+      ---{{ end }}{% endraw %}
 {% else %}
   webhook_configs: []
 {% endif %}
 
-- name: 'critical-alerts'
+- name: 'catxi-critical'
 {% if lookup('env', 'DISCORD_WEBHOOK_URL') %}
-  webhook_configs:
-  - url: '{{ lookup("env", "DISCORD_WEBHOOK_URL") }}'
+  discord_configs:
+  - webhook_url: '{{ lookup("env", "DISCORD_WEBHOOK_URL") }}'
     send_resolved: true
-    http_config:
-      follow_redirects: true
+    content: |
+      {% raw %}@everyone **🚨 긴급 장애 알림 🚨**
+
+      **🎯 서비스:** {{ .GroupLabels.service }}
+      **👥 담당팀:** {{ .GroupLabels.team }}
+      **⏰ 발생시간:** {{ .StartsAt.Format "15:04:05" }}
+      **🔥 우선순위:** {{ .GroupLabels.priority | default "P0" }}
+      **👤 영향범위:** {{ .GroupLabels.impact }}
+
+      {{ range .Alerts }}**⚡ {{ .Annotations.summary }}**
+
+      {{ .Annotations.description }}
+
+      {{ if .Annotations.runbook_url }}**📖 대응가이드:** {{ .Annotations.runbook_url }}{{ end }}
+      ════════════════════════════════{{ end }}{% endraw %}
 {% else %}
   webhook_configs: []
 {% endif %}
 
-- name: 'warning-alerts'
+- name: 'catxi-warning'
 {% if lookup('env', 'DISCORD_WEBHOOK_URL') %}
-  webhook_configs:
-  - url: '{{ lookup("env", "DISCORD_WEBHOOK_URL") }}'
+  discord_configs:
+  - webhook_url: '{{ lookup("env", "DISCORD_WEBHOOK_URL") }}'
     send_resolved: true
-    http_config:
-      follow_redirects: true
+    content: |
+      {% raw %}**⚠️ {{ .GroupLabels.team }} 팀 경고**
+
+      **🏷️ 서비스:** {{ .GroupLabels.service }}
+      **📊 우선순위:** {{ .GroupLabels.priority | default "P2" }}
+      **👤 영향범위:** {{ .GroupLabels.impact }}
+      **⏰ 발생시간:** {{ .StartsAt.Format "15:04:05" }}
+
+      {{ range .Alerts }}**⚠️ {{ .Annotations.summary }}**
+      {{ .Annotations.description }}
+      {{ if .Annotations.runbook_url }}
+      **📖 대응가이드:** {{ .Annotations.runbook_url }}{{ end }}
+      ────────────────────────────────────{{ end }}{% endraw %}
+{% else %}
+  webhook_configs: []
+{% endif %}
+
+- name: 'catxi-info'
+{% if lookup('env', 'DISCORD_WEBHOOK_URL') %}
+  discord_configs:
+  - webhook_url: '{{ lookup("env", "DISCORD_WEBHOOK_URL") }}'
+    send_resolved: true
+    content: |
+      {% raw %}**ℹ️ 모니터링 정보**
+
+      **서비스:** {{ .GroupLabels.service }}
+      **담당팀:** {{ .GroupLabels.team }}
+      **시간:** {{ .StartsAt.Format "15:04:05" }}
+
+      {{ range .Alerts }}{{ .Annotations.summary }}
+      {{ .Annotations.description }}{{ end }}{% endraw %}
 {% else %}
   webhook_configs: []
 {% endif %}
