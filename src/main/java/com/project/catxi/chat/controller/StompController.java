@@ -16,8 +16,10 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.project.catxi.chat.dto.ChatMessageSendReq;
 import com.project.catxi.chat.service.ChatMessageService;
+import com.project.catxi.chat.service.ChatRoomService;
 import com.project.catxi.chat.service.RedisPubSubService;
 
+import com.project.catxi.common.api.error.ChatParticipantErrorCode;
 import com.project.catxi.common.api.exception.CatxiException;
 import com.project.catxi.map.dto.CoordinateReq;
 import com.project.catxi.map.dto.CoordinateRes;
@@ -34,6 +36,7 @@ public class StompController {
 	private final @Qualifier("chatPubSub") StringRedisTemplate redisTemplate;
 	private final ObjectMapper objectMapper;
 	private final MapService mapService;
+	private final ChatRoomService chatRoomService;
 
 
 	@MessageMapping("/{roomId}")
@@ -54,6 +57,10 @@ public class StompController {
 
 	@MessageMapping("/map/{roomId}")
 	public void sendCoordinate(@DestinationVariable Long roomId, CoordinateReq coordinateReq) throws JsonProcessingException {
+		// 강퇴된 사용자 검증
+		if (!chatRoomService.isRoomParticipant(coordinateReq.email(), roomId)) {
+			throw new CatxiException(ChatParticipantErrorCode.PARTICIPANT_NOT_FOUND);
+		}
 		Double distance = mapService.handleSaveCoordinateAndDistance(coordinateReq);
 
 		CoordinateRes enriched = new CoordinateRes(

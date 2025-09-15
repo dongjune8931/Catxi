@@ -49,6 +49,7 @@ public class ChatMessageService {
 	private final FcmQueueService fcmQueueService;
 	private final FcmActiveStatusService fcmActiveStatusService;
 	private final ServerInstanceUtil serverInstanceUtil;
+	private final ChatRoomService chatRoomService;
 
 	public void saveMessage(Long roomId,ChatMessageSendReq req) {
 		ChatRoom room = chatRoomRepository.findById(roomId)
@@ -56,6 +57,12 @@ public class ChatMessageService {
 
 		Member sender = memberRepository.findByEmail(req.email())
 			.orElseThrow(() -> new CatxiException(MemberErrorCode.MEMBER_NOT_FOUND));
+
+		// 강퇴된 사용자 검증
+		if (!chatRoomService.isRoomParticipant(req.email(), roomId)) {
+			log.warn("[메시지 전송 차단] 강퇴된 사용자: email={}, roomId={}", req.email(), roomId);
+			throw new CatxiException(ChatParticipantErrorCode.PARTICIPANT_NOT_FOUND);
+		}
 
 		ChatMessage chatMsg = ChatMessage.builder()
 			.chatRoom(room)
