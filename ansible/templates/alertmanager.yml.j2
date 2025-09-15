@@ -36,7 +36,7 @@ receivers:
       {% raw %}**{{ .GroupLabels.severity }} 알림 - {{ .GroupLabels.team }} 팀**
 
       **📊 서비스:** {{ .GroupLabels.service }}
-      **⏰ 시간:** {{ .StartsAt.Format "15:04:05" }}
+      {{ range .Alerts }}**⏰ 시간:** {{ .StartsAt.Format "15:04:05" }}{{ break }}{{ end }}
 
       {{ range .Alerts }}**{{ .Annotations.summary }}**
       {{ .Annotations.description }}
@@ -56,8 +56,8 @@ receivers:
 
       **🎯 서비스:** {{ .GroupLabels.service }}
       **👥 담당팀:** {{ .GroupLabels.team }}
-      **⏰ 발생시간:** {{ .StartsAt.Format "15:04:05" }}
-      **🔥 우선순위:** {{ .GroupLabels.priority | default "P0" }}
+      {{ range .Alerts }}**⏰ 발생시간:** {{ .StartsAt.Format "15:04:05" }}{{ break }}{{ end }}
+      **🔥 우선순위:** {{ with .GroupLabels.priority }}{{ . }}{{ else }}P0{{ end }}
 
       {{ range .Alerts }}**⚡ {{ .Annotations.summary }}**
       {{ .Annotations.description }}
@@ -78,8 +78,8 @@ receivers:
       {% raw %}**{{ .GroupLabels.team }} 팀 경고**
 
       **🏷️ 서비스:** {{ .GroupLabels.service }}
-      **📊 우선순위:** {{ .GroupLabels.priority | default "P2" }}
-      **⏰ 발생시간:** {{ .StartsAt.Format "15:04:05" }}
+      **📊 우선순위:** {{ with .GroupLabels.priority }}{{ . }}{{ else }}P2{{ end }}
+      {{ range .Alerts }}**⏰ 발생시간:** {{ .StartsAt.Format "15:04:05" }}{{ break }}{{ end }}
 
       {{ range .Alerts }}**⚠️ {{ .Annotations.summary }}**
       {{ .Annotations.description }}
@@ -100,9 +100,9 @@ receivers:
       {% raw %}**{{ .GroupLabels.team }} 팀 정보**
 
       **서비스:** {{ .GroupLabels.service }}
-      **시간:** {{ .StartsAt.Format "15:04:05" }}
 
-      {{ range .Alerts }}{{ .Annotations.summary }}
+      {{ range .Alerts }}**⏰ 시간:** {{ .StartsAt.Format "15:04:05" }}
+      {{ .Annotations.summary }}
       {{ .Annotations.description }}{{ end }}{% endraw %}
 {% else %}
   webhook_configs: []
