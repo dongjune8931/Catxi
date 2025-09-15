@@ -74,6 +74,12 @@ public class StompEventListener {
 		String destination = accessor.getDestination();
 		String email = sessionUserMap.get(sessionId);
 
+		// sessionUserMap에서 이메일을 찾지 못한 경우 accessor에서 직접 가져오기
+		if (email == null && accessor.getUser() != null) {
+			email = accessor.getUser().getName();
+			sessionUserMap.put(sessionId, email); // 캐시에 저장
+		}
+
 		log.info("[채널 구독] sessionId: {}, destination: {}, email: {}", sessionId, destination, email);
 
 		// 강퇴 알림 채널 구독 모니터링
