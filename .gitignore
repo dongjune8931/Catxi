@@ -50,3 +50,6 @@ src/main/resources/application.yml
 
 ### Firebase service account key ###
 /src/main/resources/firebase-service-account-key.json
+
+### Claude Code ###
+CLAUDE.md
