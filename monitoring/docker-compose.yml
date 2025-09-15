@@ -99,8 +99,8 @@ services:
       - '--path.sysfs=/host/sys'
       - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
       - '--no-collector.ipvs'
-      - '--web.max-requests=20'
-      - '--log.level=error'
+      - '--web.max-requests=100'
+      - '--log.level=info'
     deploy:
       resources:
         limits:
