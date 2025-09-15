@@ -31,7 +31,7 @@ receivers:
   discord_configs:
   - webhook_url: '{{ lookup("env", "DISCORD_WEBHOOK_URL") }}'
     send_resolved: true
-    content: |
+    body: |
       {% raw %}**🔔 Catxi 알림 - {{ .GroupLabels.severity }}**
 
       **📊 {{ .GroupLabels.team }} 팀 - {{ .GroupLabels.service }}**
@@ -50,7 +50,7 @@ receivers:
   discord_configs:
   - webhook_url: '{{ lookup("env", "DISCORD_WEBHOOK_URL") }}'
     send_resolved: true
-    content: |
+    body: |
       {% raw %}@everyone **🚨 긴급 장애 알림 🚨**
 
       **🎯 서비스:** {{ .GroupLabels.service }}
@@ -74,7 +74,7 @@ receivers:
   discord_configs:
   - webhook_url: '{{ lookup("env", "DISCORD_WEBHOOK_URL") }}'
     send_resolved: true
-    content: |
+    body: |
       {% raw %}**⚠️ {{ .GroupLabels.team }} 팀 경고**
 
       **🏷️ 서비스:** {{ .GroupLabels.service }}
@@ -96,7 +96,7 @@ receivers:
   discord_configs:
   - webhook_url: '{{ lookup("env", "DISCORD_WEBHOOK_URL") }}'
     send_resolved: true
-    content: |
+    body: |
       {% raw %}**ℹ️ 모니터링 정보**
 
       **서비스:** {{ .GroupLabels.service }}
