@@ -96,7 +96,7 @@ public class FcmNotificationService {
                     .toList();
 
             if (validTokens.isEmpty()) {
-                log.warn("유효한 FCM 토큰이 없습니다.");
+                log.debug("유효한 FCM 토큰이 없습니다.");
                 return;
             }
 
@@ -218,7 +218,7 @@ public class FcmNotificationService {
             return false;
         }
 
-        // FCM 토큰은 Base64 URL-safe 문자만 포함
-        return token.matches("^[A-Za-z0-9_-]+$");
+        // FCM 토큰은 Base64 URL-safe 문자와 콜론(:) 포함
+        return token.matches("^[A-Za-z0-9_:-]+$");
     }
 }
