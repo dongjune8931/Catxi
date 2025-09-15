@@ -2,6 +2,7 @@ package com.project.catxi.fcm.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.project.catxi.fcm.dto.FcmNotificationEvent;
 import com.project.catxi.fcm.util.FcmBusinessKeyGenerator;
 import lombok.extern.slf4j.Slf4j;
@@ -46,10 +47,13 @@ public class FcmQueueService {
             ObjectMapper objectMapper,
             FcmBusinessKeyGenerator fcmBusinessKeyGenerator) {
         this.redisTemplate = redisTemplate;
-        this.objectMapper = objectMapper;
         this.fcmBusinessKeyGenerator = fcmBusinessKeyGenerator;
-        
-        // Lua 스크립트 초기화
+
+        // ObjectMapper 성능 최적화 (FCM 전용)
+        this.objectMapper = objectMapper.copy()
+                .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+
+        // Lua 스크립트 초기화 및 최적화
         this.enqueueScript = new DefaultRedisScript<>();
         this.enqueueScript.setScriptText(ENQUEUE_SCRIPT);
         this.enqueueScript.setResultType(Long.class);
@@ -98,10 +102,10 @@ public class FcmQueueService {
     }
     
     /**
-     * 큐에서 FCM 이벤트 하나 가져오기
+     * 큐에서 FCM 이벤트 하나 가져오기 (최적화된 타임아웃)
      */
     public FcmNotificationEvent dequeueFcmEvent() {
-        return dequeueFcmEventWithTimeout(5);
+        return dequeueFcmEventWithTimeout(3); // 타임아웃을 3초로 줄여서 응답성 향상
     }
     
     /**

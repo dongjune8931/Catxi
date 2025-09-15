@@ -30,7 +30,6 @@ import com.project.catxi.member.domain.Member;
 import com.project.catxi.member.repository.MemberRepository;
 import com.project.catxi.fcm.service.FcmQueueService;
 import com.project.catxi.fcm.service.FcmActiveStatusService;
-import com.project.catxi.common.util.ServerInstanceUtil;
 
 import lombok.RequiredArgsConstructor;
 
@@ -48,7 +47,6 @@ public class ChatMessageService {
 	private final @Qualifier("chatPubSub") StringRedisTemplate redisTemplate;
 	private final FcmQueueService fcmQueueService;
 	private final FcmActiveStatusService fcmActiveStatusService;
-	private final ServerInstanceUtil serverInstanceUtil;
 
 	public void saveMessage(Long roomId,ChatMessageSendReq req) {
 		ChatRoom room = chatRoomRepository.findById(roomId)
@@ -76,28 +74,19 @@ public class ChatMessageService {
 	}
 	
 	/**
-	 * FCM 알림 처리
+	 * FCM 알림 처리 - 모든 서버에서 메시지 큐로 전송
 	 */
 	private void processChatFcmNotificationWithMessage(ChatRoom room, Member sender, ChatMessage savedMessage, String message) {
 		try {
-			// 마스터 서버만 FCM 큐 등록 처리
-			if (!serverInstanceUtil.shouldProcessFcm()) {
-				log.debug("FCM 큐 등록 스킵 (마스터 서버 아님): RoomId={}, MessageId={}, ServerId={}", 
-						room.getRoomId(), savedMessage.getId(), serverInstanceUtil.getServerInstanceId());
-				return;
-			}
-			
-			log.info("FCM 알림 큐 등록 시작: RoomId={}, MessageId={}, ServerId={}", 
-					room.getRoomId(), savedMessage.getId(), serverInstanceUtil.getServerInstanceId());
-			
+			log.info("FCM 알림 큐 등록 시작: RoomId={}, MessageId={}",
+					room.getRoomId(), savedMessage.getId());
+
 			// 방에 참여한 다른 사용자들 조회 (발송자 제외)
 			List<ChatParticipant> participants = chatParticipantRepository.findByChatRoom(room);
-			
+
             participants.stream()
                 .filter(participant -> participant.getMember() != null)
                 .filter(participant -> !participant.getMember().getId().equals(sender.getId()))
-                .filter(participant -> !fcmActiveStatusService.isUserActiveInRoom(
-                    participant.getMember().getId(), room.getRoomId()))
                 .forEach(participant -> {
                     fcmQueueService.publishChatNotification(
                         participant.getMember().getId(),
@@ -107,12 +96,12 @@ public class ChatMessageService {
                         message
                     );
                 });
-            
-            log.info("Chat FCM 큐 등록 완료: RoomId={}, MessageId={}", 
+
+            log.info("Chat FCM 큐 등록 완료: RoomId={}, MessageId={}",
                     room.getRoomId(), savedMessage.getId());
-                    
+
 		} catch (Exception e) {
-			log.error("Chat FCM 처리 실패: RoomId={}, Error={}", 
+			log.error("Chat FCM 처리 실패: RoomId={}, Error={}",
 					room.getRoomId(), e.getMessage(), e);
 		}
 	}

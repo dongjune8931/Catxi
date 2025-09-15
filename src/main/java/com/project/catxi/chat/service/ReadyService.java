@@ -24,7 +24,6 @@ import com.project.catxi.common.domain.RoomStatus;
 import com.project.catxi.member.domain.Member;
 import com.project.catxi.member.repository.MemberRepository;
 import com.project.catxi.fcm.service.FcmQueueService;
-import com.project.catxi.common.util.ServerInstanceUtil;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -41,7 +40,6 @@ public class ReadyService {
 	private final ChatRoomRepository chatRoomRepository;
 	private final TimerService timerService;
 	private final FcmQueueService fcmQueueService;
-	private final ServerInstanceUtil serverInstanceUtil;
 
 	@Transactional
 	public void requestReady(Long roomId, String email){
@@ -120,15 +118,7 @@ public class ReadyService {
 	
 	private void sendReadyRequestNotification(ChatRoom room, Member host) {
 		try {
-			// 마스터 서버만 FCM 큐 등록 처리
-			if (!serverInstanceUtil.shouldProcessFcm()) {
-				log.debug("Ready FCM 큐 등록 스킵 (마스터 서버 아님): RoomId={}, ServerId={}", 
-						room.getRoomId(), serverInstanceUtil.getServerInstanceId());
-				return;
-			}
-			
-			log.info("Ready FCM 처리 시작: RoomId={}, ServerId={}", 
-					room.getRoomId(), serverInstanceUtil.getServerInstanceId());
+			log.info("Ready FCM 처리 시작: RoomId={}", room.getRoomId());
 			
 			// 방에 참여한 다른 사용자들 조회 (방장 제외)
 			List<ChatParticipant> participants = chatParticipantRepository.findByChatRoom(room);

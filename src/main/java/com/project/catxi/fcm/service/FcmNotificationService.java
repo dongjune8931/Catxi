@@ -100,46 +100,20 @@ public class FcmNotificationService {
                 return;
             }
 
-            AtomicInteger successCount = new AtomicInteger(0);
-            AtomicInteger failureCount = new AtomicInteger(0);
+            // 배치 전송을 위한 토큰 분할 (최대 500개씩)
+            final int BATCH_SIZE = 500;
+            AtomicInteger totalSuccessCount = new AtomicInteger(0);
+            AtomicInteger totalFailureCount = new AtomicInteger(0);
 
-            // 개별 토큰으로 전송
-            for (String token : validTokens) {
-                Message.Builder messageBuilder = Message.builder()
-                        .setToken(token)
-                        .putData("type", type)
-                        .putData("title", title)
-                        .putData("body", body);
+            for (int i = 0; i < validTokens.size(); i += BATCH_SIZE) {
+                int end = Math.min(i + BATCH_SIZE, validTokens.size());
+                List<String> batchTokens = validTokens.subList(i, end);
 
-                if (roomId != null) {
-                    messageBuilder.putData("roomId", roomId.toString());
-                }
-
-                Message message = messageBuilder.build();
-
-                try {
-                    String response = firebaseMessaging.send(message);
-                    successCount.incrementAndGet();
-                    log.debug("FCM 메시지 전송 성공 - Response: {}", response);
-                } catch (FirebaseMessagingException e) {
-                    failureCount.incrementAndGet();
-                    log.warn("FCM 토큰 발송 실패 - Token: {}, Error: {}",
-                            token.substring(0, Math.min(20, token.length())) + "...",
-                            e.getMessage());
-
-                    // 토큰 만료나 잘못된 토큰의 경우 정리
-                    if (e.getMessagingErrorCode() == MessagingErrorCode.UNREGISTERED ||
-                            e.getMessagingErrorCode() == MessagingErrorCode.INVALID_ARGUMENT) {
-                        log.info("유효하지 않은 FCM 토큰 발견: {}",
-                                token.substring(0, Math.min(20, token.length())) + "...");
-                        // 유효하지 않은 토큰을 DB에서 제거
-                        fcmTokenService.removeInvalidFcmToken(token);
-                    }
-                }
+                sendMulticastBatch(batchTokens, title, body, type, roomId, totalSuccessCount, totalFailureCount);
             }
 
             log.info("FCM 알림 발송 완료 - 성공: {}, 실패: {}, 타입: {}",
-                    successCount.get(), failureCount.get(), type);
+                    totalSuccessCount.get(), totalFailureCount.get(), type);
 
         } catch (Exception e) {
             log.error("FCM 알림 발송 중 예외 발생: {}", e.getMessage(), e);
@@ -147,9 +121,104 @@ public class FcmNotificationService {
     }
 
     /**
-     * FCM 토큰 유효성 검사
+     * 멀티캐스트 배치 전송 (성능 최적화)
+     */
+    private void sendMulticastBatch(List<String> tokens, String title, String body, String type, Long roomId,
+                                    AtomicInteger totalSuccessCount, AtomicInteger totalFailureCount) {
+        try {
+            // 멀티캐스트 메시지 생성
+            MulticastMessage.Builder messageBuilder = MulticastMessage.builder()
+                    .addAllTokens(tokens)
+                    .putData("type", type)
+                    .putData("title", title)
+                    .putData("body", body);
+
+            if (roomId != null) {
+                messageBuilder.putData("roomId", roomId.toString());
+            }
+
+            MulticastMessage message = messageBuilder.build();
+
+            // 배치 전송 (한 번의 API 호출로 최대 500개 토큰 처리)
+            BatchResponse response = firebaseMessaging.sendEachForMulticast(message);
+
+            int successCount = response.getSuccessCount();
+            int failureCount = response.getFailureCount();
+
+            totalSuccessCount.addAndGet(successCount);
+            totalFailureCount.addAndGet(failureCount);
+
+            log.debug("FCM 배치 전송 완료 - 성공: {}, 실패: {}, 배치크기: {}",
+                    successCount, failureCount, tokens.size());
+
+            // 실패한 토큰들 처리
+            if (failureCount > 0) {
+                List<SendResponse> responses = response.getResponses();
+                for (int i = 0; i < responses.size(); i++) {
+                    SendResponse sendResponse = responses.get(i);
+                    if (!sendResponse.isSuccessful()) {
+                        String token = tokens.get(i);
+                        FirebaseMessagingException exception = sendResponse.getException();
+
+                        if (exception != null &&
+                                (exception.getMessagingErrorCode() == MessagingErrorCode.UNREGISTERED ||
+                                        exception.getMessagingErrorCode() == MessagingErrorCode.INVALID_ARGUMENT)) {
+                            log.info("유효하지 않은 FCM 토큰 제거: {}",
+                                    token.substring(0, Math.min(20, token.length())) + "...");
+                            fcmTokenService.removeInvalidFcmToken(token);
+                        } else {
+                            log.warn("FCM 토큰 전송 실패 - Token: {}, Error: {}",
+                                    token.substring(0, Math.min(20, token.length())) + "...",
+                                    exception != null ? exception.getMessage() : "Unknown error");
+                        }
+                    }
+                }
+            }
+
+        } catch (FirebaseMessagingException e) {
+            totalFailureCount.addAndGet(tokens.size());
+
+            // 재시도 가능한 오류인지 확인
+            if (isRetryableError(e)) {
+                log.warn("FCM 배치 전송 재시도 가능한 오류 - 배치크기: {}, Error: {}",
+                        tokens.size(), e.getMessage());
+                // TODO: 재시도 로직 구현 가능 (현재는 로그만)
+            } else {
+                log.error("FCM 배치 전송 실패 - 배치크기: {}, Error: {}", tokens.size(), e.getMessage());
+            }
+        } catch (Exception e) {
+            totalFailureCount.addAndGet(tokens.size());
+            log.error("FCM 배치 전송 예상치 못한 오류 - 배치크기: {}, Error: {}",
+                    tokens.size(), e.getMessage(), e);
+        }
+    }
+
+    /**
+     * 재시도 가능한 Firebase 오류인지 확인
+     */
+    private boolean isRetryableError(FirebaseMessagingException e) {
+        MessagingErrorCode errorCode = e.getMessagingErrorCode();
+        return errorCode == MessagingErrorCode.INTERNAL ||
+               errorCode == MessagingErrorCode.UNAVAILABLE ||
+               (e.getHttpResponse() != null &&
+                (e.getHttpResponse().getStatusCode() == 500 ||
+                 e.getHttpResponse().getStatusCode() == 503));
+    }
+
+    /**
+     * FCM 토큰 유효성 검사 (강화된 검증)
      */
     private boolean isValidFcmToken(String token) {
-        return token != null && !token.trim().isEmpty() && token.length() > 10;
+        if (token == null || token.trim().isEmpty()) {
+            return false;
+        }
+
+        // FCM 토큰 최소 길이 검증 (일반적으로 152자 이상)
+        if (token.length() < 140) {
+            return false;
+        }
+
+        // FCM 토큰은 Base64 URL-safe 문자만 포함
+        return token.matches("^[A-Za-z0-9_-]+$");
     }
 }

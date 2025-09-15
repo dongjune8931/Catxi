@@ -3,7 +3,6 @@ package com.project.catxi.fcm.service;
 import com.project.catxi.fcm.dto.FcmNotificationEvent;
 import com.project.catxi.member.domain.Member;
 import com.project.catxi.member.repository.MemberRepository;
-import com.project.catxi.common.util.ServerInstanceUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
@@ -15,6 +14,9 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
 
 @Slf4j
 @Service
@@ -24,56 +26,55 @@ public class FcmQueueConsumer {
     private final FcmQueueService fcmQueueService;
     private final MemberRepository memberRepository;
     private final FcmNotificationService fcmNotificationService;
-    private final ServerInstanceUtil serverInstanceUtil;
     
     private final AtomicBoolean running = new AtomicBoolean(false);
     private ExecutorService consumerExecutor;
     
     @EventListener(ApplicationReadyEvent.class)
     public void startConsumer() {
-        // 모든 서버에서 시작하지만, 마스터 체크는 processNotification에서 수행
-        log.info("FCM 큐 컨슈머 시작 - ServerId={}, IsMaster={}", 
-                serverInstanceUtil.getServerInstanceId(), serverInstanceUtil.shouldProcessFcm());
+        log.info("FCM 큐 컨슈머 시작 - 모든 서버에서 큐 처리");
         running.set(true);
-        
-        // 멀티스레드 처리로 성능 향상
-        int threadCount = 3;
-        consumerExecutor = Executors.newFixedThreadPool(threadCount, r -> {
-            Thread t = new Thread(r, "FCM-Queue-Consumer-" + System.currentTimeMillis());
-            t.setDaemon(false);
-            return t;
-        });
-        
-        // 여러 스레드로 병렬 처리
-        for (int i = 0; i < threadCount; i++) {
+
+        // 최적화된 스레드 풀 설정
+        int corePoolSize = 2;  // 최소 스레드 수
+        int maximumPoolSize = 8; // 최대 스레드 수 (CPU 집약적 작업 고려)
+        long keepAliveTime = 60L; // 유휴 스레드 유지 시간
+
+        consumerExecutor = new ThreadPoolExecutor(
+            corePoolSize,
+            maximumPoolSize,
+            keepAliveTime,
+            TimeUnit.SECONDS,
+            new LinkedBlockingQueue<>(100), // 큐 크기 제한으로 백프레셔 방지
+            r -> {
+                Thread t = new Thread(r, "FCM-Consumer-" + System.currentTimeMillis());
+                t.setDaemon(false);
+                t.setPriority(Thread.NORM_PRIORITY);
+                return t;
+            },
+            new ThreadPoolExecutor.CallerRunsPolicy() // 큐 포화 시 호출 스레드에서 실행
+        );
+
+        // 초기 코어 스레드 시작
+        for (int i = 0; i < corePoolSize; i++) {
             consumerExecutor.submit(this::consumeEvents);
         }
+
+        log.info("FCM 큐 컨슈머 최적화 완료 - Core: {}, Max: {}, Queue: 100",
+                corePoolSize, maximumPoolSize);
     }
     
     public void consumeEvents() {
         log.info("FCM 큐 컨슈머 이벤트 처리 시작");
-        
+
         while (running.get()) {
             try {
-                // 마스터 서버만 디큐 수행
-                if (!serverInstanceUtil.shouldProcessFcm()) {
-                    Thread.sleep(1000); // 1초 대기 후 재확인
-                    continue;
-                }
-                
                 // 큐에서 이벤트 하나 가져오기 (블로킹)
                 FcmNotificationEvent event = fcmQueueService.dequeueFcmEvent();
-                
-                if (event != null) {
-                    // 디큐 후에도 마스터 상태 재확인
-                    if (!serverInstanceUtil.shouldProcessFcm()) {
-                        log.warn("FCM 디큐 후 마스터 상태 변경 감지, 이벤트 다시 큐에 추가: {}", event.eventId());
-                        // 이벤트를 다시 큐에 넣어야 하지만, 현재 구조상 어려우므로 경고만 출력
-                        continue;
-                    }
 
+                if (event != null) {
                     boolean success = processNotification(event);
-                    
+
                     if (success) {
                         // 성공 시에만 처리 완료 마크
                         fcmQueueService.markEventCompleted(event.businessKey());
@@ -97,20 +98,13 @@ public class FcmQueueConsumer {
                 }
             }
         }
-        
+
         log.info("FCM 큐 컨슈머 종료");
     }
     
     private boolean processNotification(FcmNotificationEvent event) {
         try {
-            // 마스터 서버에서만 처리
-            if (!serverInstanceUtil.shouldProcessFcm()) {
-                log.debug("FCM 큐 처리 스킵 - 마스터 서버가 아님: ServerId={}", 
-                        serverInstanceUtil.getServerInstanceId());
-                return false;
-            }
-            
-            log.info("FCM 큐 메시지 처리 시작 - EventId: {}, BusinessKey: {}", 
+            log.info("FCM 큐 메시지 처리 시작 - EventId: {}, BusinessKey: {}",
                     event.eventId(), event.businessKey());
             
             // 대상 사용자 조회
@@ -235,29 +229,24 @@ public class FcmQueueConsumer {
      * 서버 종료 시 대기 중인 FCM 메시지들을 처리
      */
     private void processPendingMessages() {
-        if (!serverInstanceUtil.shouldProcessFcm()) {
-            log.debug("FCM 마스터 서버가 아니므로 대기 메시지 처리 스킵");
-            return;
-        }
-        
         log.info("종료 전 대기 중인 FCM 메시지 처리 시작");
         int processedCount = 0;
         long startTime = System.currentTimeMillis();
         final int MAX_SHUTDOWN_PROCESSING_TIME_MS = 15000; // 최대 15초
         final int MAX_MESSAGES_TO_PROCESS = 50; // 최대 50개 메시지
-        
+
         try {
-            while (processedCount < MAX_MESSAGES_TO_PROCESS && 
+            while (processedCount < MAX_MESSAGES_TO_PROCESS &&
                    (System.currentTimeMillis() - startTime) < MAX_SHUTDOWN_PROCESSING_TIME_MS) {
-                
+
                 // 논블로킹으로 메시지 가져오기 (타임아웃 1초)
                 FcmNotificationEvent event = fcmQueueService.dequeueFcmEventWithTimeout(1);
-                
+
                 if (event == null) {
                     // 더 이상 처리할 메시지가 없음
                     break;
                 }
-                
+
                 try {
                     boolean success = processNotification(event);
                     if (success) {
@@ -271,14 +260,14 @@ public class FcmQueueConsumer {
                     log.error("종료 시 FCM 메시지 처리 중 예외 - EventId: {}", event.eventId(), e);
                 }
             }
-            
+
         } catch (Exception e) {
             log.error("종료 시 FCM 메시지 처리 중 오류", e);
         }
-        
+
         long totalTime = System.currentTimeMillis() - startTime;
         log.info("종료 전 FCM 메시지 처리 완료 - 처리량: {}, 소요시간: {}ms", processedCount, totalTime);
-        
+
         // 처리되지 못한 메시지들에 대한 로그
         logRemainingMessages();
     }
