@@ -16,11 +16,17 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.project.catxi.chat.dto.ChatMessageSendReq;
 import com.project.catxi.chat.service.ChatMessageService;
-import com.project.catxi.chat.service.ChatRoomService;
 import com.project.catxi.chat.service.RedisPubSubService;
+import com.project.catxi.chat.repository.ChatRoomRepository;
+import com.project.catxi.chat.repository.ChatParticipantRepository;
+import com.project.catxi.member.repository.MemberRepository;
 
 import com.project.catxi.common.api.error.ChatParticipantErrorCode;
+import com.project.catxi.common.api.error.ChatRoomErrorCode;
+import com.project.catxi.common.api.error.MemberErrorCode;
 import com.project.catxi.common.api.exception.CatxiException;
+import com.project.catxi.chat.domain.ChatRoom;
+import com.project.catxi.member.domain.Member;
 import com.project.catxi.map.dto.CoordinateReq;
 import com.project.catxi.map.dto.CoordinateRes;
 import com.project.catxi.map.service.MapService;
@@ -36,7 +42,9 @@ public class StompController {
 	private final @Qualifier("chatPubSub") StringRedisTemplate redisTemplate;
 	private final ObjectMapper objectMapper;
 	private final MapService mapService;
-	private final ChatRoomService chatRoomService;
+	private final ChatRoomRepository chatRoomRepository;
+	private final ChatParticipantRepository chatParticipantRepository;
+	private final MemberRepository memberRepository;
 
 
 	@MessageMapping("/{roomId}")
@@ -57,8 +65,13 @@ public class StompController {
 
 	@MessageMapping("/map/{roomId}")
 	public void sendCoordinate(@DestinationVariable Long roomId, CoordinateReq coordinateReq) throws JsonProcessingException {
-		// 강퇴된 사용자 검증
-		if (!chatRoomService.isRoomParticipant(coordinateReq.email(), roomId)) {
+		// 강퇴된 사용자 검증 - ChatParticipant 테이블에서 직접 확인
+		ChatRoom room = chatRoomRepository.findById(roomId)
+			.orElseThrow(() -> new CatxiException(ChatRoomErrorCode.CHATROOM_NOT_FOUND));
+		Member member = memberRepository.findByEmail(coordinateReq.email())
+			.orElseThrow(() -> new CatxiException(MemberErrorCode.MEMBER_NOT_FOUND));
+
+		if (!chatParticipantRepository.existsByChatRoomAndMember(room, member)) {
 			throw new CatxiException(ChatParticipantErrorCode.PARTICIPANT_NOT_FOUND);
 		}
 		Double distance = mapService.handleSaveCoordinateAndDistance(coordinateReq);
