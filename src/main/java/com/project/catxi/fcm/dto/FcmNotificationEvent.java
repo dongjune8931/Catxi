@@ -71,5 +71,6 @@ public record FcmNotificationEvent(
     public enum NotificationType {
         CHAT_MESSAGE,
         READY_REQUEST,
+        SYSTEM_NOTIFICATION
     }
 }
