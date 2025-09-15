@@ -31,12 +31,12 @@ receivers:
   discord_configs:
   - webhook_url: '{{ lookup("env", "DISCORD_WEBHOOK_URL") }}'
     send_resolved: true
-    body: |
-      {% raw %}**🔔 Catxi 알림 - {{ .GroupLabels.severity }}**
+    title: "🔔 Catxi 알림"
+    content: |
+      {% raw %}**{{ .GroupLabels.severity }} 알림 - {{ .GroupLabels.team }} 팀**
 
-      **📊 {{ .GroupLabels.team }} 팀 - {{ .GroupLabels.service }}**
-      **심각도:** {{ .GroupLabels.severity }}
-      **시간:** {{ .StartsAt.Format "15:04:05" }}
+      **📊 서비스:** {{ .GroupLabels.service }}
+      **⏰ 시간:** {{ .StartsAt.Format "15:04:05" }}
 
       {{ range .Alerts }}**{{ .Annotations.summary }}**
       {{ .Annotations.description }}
@@ -50,20 +50,19 @@ receivers:
   discord_configs:
   - webhook_url: '{{ lookup("env", "DISCORD_WEBHOOK_URL") }}'
     send_resolved: true
-    body: |
-      {% raw %}@everyone **🚨 긴급 장애 알림 🚨**
+    title: "🚨 긴급 장애 알림"
+    content: |
+      {% raw %}@everyone **CRITICAL ALERT**
 
       **🎯 서비스:** {{ .GroupLabels.service }}
       **👥 담당팀:** {{ .GroupLabels.team }}
       **⏰ 발생시간:** {{ .StartsAt.Format "15:04:05" }}
       **🔥 우선순위:** {{ .GroupLabels.priority | default "P0" }}
-      **👤 영향범위:** {{ .GroupLabels.impact }}
 
       {{ range .Alerts }}**⚡ {{ .Annotations.summary }}**
-
       {{ .Annotations.description }}
-
-      {{ if .Annotations.runbook_url }}**📖 대응가이드:** {{ .Annotations.runbook_url }}{{ end }}
+      {{ if .Annotations.runbook_url }}
+      **📖 대응가이드:** {{ .Annotations.runbook_url }}{{ end }}
       ════════════════════════════════{{ end }}{% endraw %}
 {% else %}
   webhook_configs: []
@@ -74,12 +73,12 @@ receivers:
   discord_configs:
   - webhook_url: '{{ lookup("env", "DISCORD_WEBHOOK_URL") }}'
     send_resolved: true
-    body: |
-      {% raw %}**⚠️ {{ .GroupLabels.team }} 팀 경고**
+    title: "⚠️ 경고 알림"
+    content: |
+      {% raw %}**{{ .GroupLabels.team }} 팀 경고**
 
       **🏷️ 서비스:** {{ .GroupLabels.service }}
       **📊 우선순위:** {{ .GroupLabels.priority | default "P2" }}
-      **👤 영향범위:** {{ .GroupLabels.impact }}
       **⏰ 발생시간:** {{ .StartsAt.Format "15:04:05" }}
 
       {{ range .Alerts }}**⚠️ {{ .Annotations.summary }}**
@@ -96,11 +95,11 @@ receivers:
   discord_configs:
   - webhook_url: '{{ lookup("env", "DISCORD_WEBHOOK_URL") }}'
     send_resolved: true
-    body: |
-      {% raw %}**ℹ️ 모니터링 정보**
+    title: "ℹ️ 모니터링 정보"
+    content: |
+      {% raw %}**{{ .GroupLabels.team }} 팀 정보**
 
       **서비스:** {{ .GroupLabels.service }}
-      **담당팀:** {{ .GroupLabels.team }}
       **시간:** {{ .StartsAt.Format "15:04:05" }}
 
       {{ range .Alerts }}{{ .Annotations.summary }}
