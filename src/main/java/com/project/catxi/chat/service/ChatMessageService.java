@@ -82,9 +82,14 @@ public class ChatMessageService {
 		try {
 			// 마스터 서버만 FCM 큐 등록 처리
 			if (!serverInstanceUtil.shouldProcessFcm()) {
+				log.debug("FCM 큐 등록 스킵 (마스터 서버 아님): RoomId={}, MessageId={}, ServerId={}", 
+						room.getRoomId(), savedMessage.getId(), serverInstanceUtil.getServerInstanceId());
 				return;
 			}
-
+			
+			log.info("FCM 알림 큐 등록 시작: RoomId={}, MessageId={}, ServerId={}", 
+					room.getRoomId(), savedMessage.getId(), serverInstanceUtil.getServerInstanceId());
+			
 			// 방에 참여한 다른 사용자들 조회 (발송자 제외)
 			List<ChatParticipant> participants = chatParticipantRepository.findByChatRoom(room);
 			
@@ -103,6 +108,8 @@ public class ChatMessageService {
                     );
                 });
             
+            log.info("Chat FCM 큐 등록 완료: RoomId={}, MessageId={}", 
+                    room.getRoomId(), savedMessage.getId());
                     
 		} catch (Exception e) {
 			log.error("Chat FCM 처리 실패: RoomId={}, Error={}", 

@@ -18,6 +18,8 @@ public class FcmBusinessKeyGenerator {
                     return generateChatMessageKey(event);
                 case READY_REQUEST:
                     return generateReadyRequestKey(event);
+                case SYSTEM_NOTIFICATION:
+                    return generateSystemNotificationKey(event);
                 default:
                     log.warn("알 수 없는 FCM 이벤트 타입 - Type: {}, EventId: {}", 
                             event.type(), event.eventId());
@@ -59,5 +61,15 @@ public class FcmBusinessKeyGenerator {
         return String.format("ready:%s:%s", roomId, event.eventId());
     }
     
+    /**
+     * 시스템 알림 FCM 키 생성
+     * 형식: system:{targetMemberId}:{eventId}
+     */
+    private String generateSystemNotificationKey(FcmNotificationEvent event) {
+        Long targetMemberId = event.targetMemberIds().get(0);
+        
+        // EventId 기반으로 단순화
+        return String.format("system:%d:%s", targetMemberId, event.eventId());
+    }
     
 }
