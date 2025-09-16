@@ -24,7 +24,7 @@ public class FcmActiveStatusService {
     
     private static final String ACTIVE_STATUS_KEY_PREFIX = "chat:active:room:%d:user:%d";
     private static final String MEMBER_CACHE_KEY_PREFIX = "member:email:%s";
-    private static final int ACTIVE_STATUS_TTL_MINUTES = 5; // 5분 TTL
+    private static final int ACTIVE_STATUS_TTL_MINUTES = 2; // 2분 TTL
     private static final int MEMBER_CACHE_TTL_MINUTES = 30; // 멤버 캐시 30분 TTL
 
     /**
@@ -38,10 +38,11 @@ public class FcmActiveStatusService {
         try {
             Long memberId = getMemberIdFromCacheOrDb(email);
             String key = String.format(ACTIVE_STATUS_KEY_PREFIX, roomId, memberId);
-            
+
             if (isActive) {
-                // 활성 상태로 설정 (TTL 5분) - 락 없이 직접 설정
-                redisTemplate.opsForValue().set(key, "1", ACTIVE_STATUS_TTL_MINUTES, TimeUnit.MINUTES);
+                // 활성 상태로 설정 (TTL 2분) - 타임스탬프 저장
+                String value = String.valueOf(System.currentTimeMillis());
+                redisTemplate.opsForValue().set(key, value, ACTIVE_STATUS_TTL_MINUTES, TimeUnit.MINUTES);
                 log.debug("사용자 활성 상태 설정 - MemberId: {}, RoomId: {}", memberId, roomId);
             } else {
                 // 비활성 상태로 설정 (비동기 삭제)
@@ -49,8 +50,12 @@ public class FcmActiveStatusService {
                 log.debug("사용자 비활성 상태 설정 - MemberId: {}, RoomId: {}", memberId, roomId);
             }
 
+        } catch (CatxiException e) {
+            log.error("사용자 정보 조회 실패 - Email: {}, RoomId: {}, Active: {}, Error: {}",
+                    email, roomId, isActive, e.getMessage());
+            // 사용자 정보 조회 실패 시 활성 상태 업데이트를 건너뛰기
         } catch (Exception e) {
-            log.error("사용자 활성 상태 업데이트 실패 - Email: {}, RoomId: {}, Active: {}, Error: {}", 
+            log.error("사용자 활성 상태 업데이트 실패 - Email: {}, RoomId: {}, Active: {}, Error: {}",
                     email, roomId, isActive, e.getMessage(), e);
             // 활성 상태 업데이트 실패가 다른 기능에 영향을 주지 않도록 예외를 던지지 않음
         }
@@ -66,11 +71,24 @@ public class FcmActiveStatusService {
     public boolean isUserActiveInRoom(Long memberId, Long roomId) {
         try {
             String key = String.format(ACTIVE_STATUS_KEY_PREFIX, roomId, memberId);
-            return Boolean.TRUE.equals(redisTemplate.hasKey(key));
+            String value = redisTemplate.opsForValue().get(key);
+
+            if (value != null) {
+                // timestamp 기반으로 더 정확한 활성 상태 판단
+                try {
+                    long timestamp = Long.parseLong(value);
+                    long elapsedMinutes = (System.currentTimeMillis() - timestamp) / (1000 * 60);
+                    return elapsedMinutes < ACTIVE_STATUS_TTL_MINUTES;
+                } catch (NumberFormatException e) {
+                    // 기존 "1" 값과의 호환성을 위해 존재하면 활성으로 처리
+                    return true;
+                }
+            }
+            return false;
         } catch (Exception e) {
-            log.error("사용자 활성 상태 확인 실패 - MemberId: {}, RoomId: {}, Error: {}", 
+            log.error("사용자 활성 상태 확인 실패 - MemberId: {}, RoomId: {}, Error: {}",
                     memberId, roomId, e.getMessage(), e);
-            // 확인 실패 시 기본적으로 비활성으로 처리
+            // 확인 실패 시 기본적으로 비활성으로 처리 (알림 발송)
             return false;
         }
     }

@@ -26,6 +26,7 @@ public class FcmQueueConsumer {
     private final FcmQueueService fcmQueueService;
     private final MemberRepository memberRepository;
     private final FcmNotificationService fcmNotificationService;
+    private final FcmActiveStatusService fcmActiveStatusService;
     
     private final AtomicBoolean running = new AtomicBoolean(false);
     private ExecutorService consumerExecutor;
@@ -178,20 +179,61 @@ public class FcmQueueConsumer {
     }
     
     private void processChatNotification(FcmNotificationEvent event, Member targetMember) {
+        // 채팅방 ID 추출
+        Long roomId = extractRoomIdFromEvent(event);
+        if (roomId == null) {
+            log.warn("채팅 알림에서 룸 ID를 찾을 수 없음 - EventId: {}", event.eventId());
+            return;
+        }
+
+        // 활성 상태 확인 - 활성 상태면 알림 발송하지 않음
+        boolean isActive = fcmActiveStatusService.isUserActiveInRoom(targetMember.getId(), roomId);
+        if (isActive) {
+            log.debug("사용자가 채팅방에 활성 상태 - 알림 발송 안함, MemberId: {}, RoomId: {}",
+                    targetMember.getId(), roomId);
+            return;
+        }
+
         // 채팅 메시지에서 발송자 닉네임 추출 (body에서 파싱)
         String body = event.body(); // "닉네임: 메시지" 형태
         String[] parts = body.split(": ", 2);
         String senderNickname = parts.length > 0 ? parts[0] : "Unknown";
         String message = parts.length > 1 ? parts[1] : body;
-        
+
+        log.debug("비활성 사용자에게 채팅 알림 발송 - MemberId: {}, RoomId: {}",
+                targetMember.getId(), roomId);
         fcmNotificationService.sendChatNotificationSync(targetMember, senderNickname, message);
     }
     
     private void processReadyRequestNotification(FcmNotificationEvent event, List<Member> targetMembers) {
         String roomIdStr = event.data().get("roomId");
         Long roomId = roomIdStr != null ? Long.parseLong(roomIdStr) : null;
-        
-        fcmNotificationService.sendReadyRequestNotificationSync(targetMembers, roomId);
+
+        if (roomId == null) {
+            log.warn("준비요청 알림에서 룸 ID를 찾을 수 없음 - EventId: {}", event.eventId());
+            return;
+        }
+
+        // 활성 상태가 아닌 사용자만 필터링
+        List<Member> inactiveMembers = targetMembers.stream()
+                .filter(member -> {
+                    boolean isActive = fcmActiveStatusService.isUserActiveInRoom(member.getId(), roomId);
+                    if (isActive) {
+                        log.debug("사용자가 채팅방에 활성 상태 - 준비요청 알림 발송 안함, MemberId: {}, RoomId: {}",
+                                member.getId(), roomId);
+                        return false;
+                    }
+                    return true;
+                })
+                .toList();
+
+        if (!inactiveMembers.isEmpty()) {
+            log.debug("비활성 사용자들에게 준비요청 알림 발송 - 전체: {}, 비활성: {}, RoomId: {}",
+                    targetMembers.size(), inactiveMembers.size(), roomId);
+            fcmNotificationService.sendReadyRequestNotificationSync(inactiveMembers, roomId);
+        } else {
+            log.debug("모든 사용자가 활성 상태 - 준비요청 알림 발송 안함, RoomId: {}", roomId);
+        }
     }
     
     private void processSystemNotification(FcmNotificationEvent event, List<Member> targetMembers) {
