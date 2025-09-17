@@ -52,12 +52,13 @@ spring:
       host: ${REDIS_HOST}
       port: ${REDIS_PORT}
       password: ${REDIS_PW}
-      timeout: 2000ms
+      timeout: 3000ms
       lettuce:
         pool:
-          max-active: 8
-          max-idle: 8
-          min-idle: 0
+          max-active: 20    # 기존 8 → 20 (FCM 배치 처리 최적화)
+          max-idle: 20      # 기존 8 → 20 (유휴 연결 확보)
+          min-idle: 5       # 기존 0 → 5 (최소 연결 유지)
+          max-wait: 3000ms  # 연결 대기 시간 설정
 
   jackson:
     time-zone: Asia/Seoul
