@@ -6,5 +6,6 @@ public record CoordinateReq(
 	String name,
 	String nickname,
 	Double latitude,
-	Double longitude
+	Double longitude,
+	Double distance
 ) { }
