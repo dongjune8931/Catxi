@@ -99,8 +99,14 @@ services:
       - '--path.sysfs=/host/sys'
       - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
       - '--no-collector.ipvs'
-      - '--web.max-requests=100'
-      - '--log.level=info'
+      - '--no-collector.netstat'
+      - '--no-collector.sockstat'
+      - '--no-collector.softnet'
+      - '--no-collector.netdev'
+      - '--no-collector.netclass'
+      - '--web.max-requests=50'
+      - '--web.max-connections=20'
+      - '--log.level=warn'
     deploy:
       resources:
         limits:
