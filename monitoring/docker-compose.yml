@@ -105,7 +105,6 @@ services:
       - '--no-collector.netdev'
       - '--no-collector.netclass'
       - '--web.max-requests=50'
-      - '--web.max-connections=20'
       - '--log.level=warn'
     deploy:
       resources:
