@@ -21,7 +21,7 @@ scrape_configs:
     static_configs:
       - targets: ['node-exporter:9100']
     scrape_interval: 30s
-    scrape_timeout: 25s
+    scrape_timeout: 28s
     metrics_path: /metrics
 
   - job_name: 'pushgateway'

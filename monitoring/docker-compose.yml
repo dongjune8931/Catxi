@@ -88,8 +88,8 @@ services:
       - /sys:/host/sys:ro
       - /:/rootfs:ro
     healthcheck:
-      test: [ "CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:9100/metrics" ]
-      interval: 30s
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--timeout=5", "--spider", "http://localhost:9100/"]
+      interval: 35s
       timeout: 15s
       retries: 3
       start_period: 30s
