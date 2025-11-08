@@ -1,7 +1,7 @@
 ---
 plugin: google.cloud.gcp_compute
 projects:
-  - ornate-producer-468811-h2
+  - monitoring-477616
 auth_kind: serviceaccount
 
 hostnames:
