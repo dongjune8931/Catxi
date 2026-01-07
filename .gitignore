@@ -50,6 +50,33 @@ src/main/resources/application.yml
 
 ### Firebase service account key ###
 /src/main/resources/firebase-service-account-key.json
+firebase-service-account.json
 
 ### Claude Code ###
 CLAUDE.md
+
+### Deployment - Environment Variables ###
+.env
+.env.local
+.env.production
+.env.*.local
+
+### Deployment - Terraform ###
+terraform/.terraform/
+terraform/*.tfstate
+terraform/*.tfstate.*
+terraform/.terraform.lock.hcl
+terraform/terraform.tfvars
+terraform/environments/*/terraform.tfvars
+terraform/terraform-outputs.json
+
+### Deployment - SSH Keys ###
+*.pem
+*.key
+*.ppk
+
+### Deployment - Scripts ###
+*.sh.log
+
+### Deployment - Docker ###
+docker-compose.override.yml
