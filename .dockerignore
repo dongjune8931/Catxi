@@ -1,0 +1,68 @@
+# Git files
+.git
+.gitignore
+.gitattributes
+
+# Gradle build artifacts
+build/
+.gradle/
+gradle-wrapper.jar
+
+# IDE files
+.idea/
+.vscode/
+*.iml
+*.ipr
+*.iws
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+logs/
+*.log
+
+# Environment files (should not be in Docker image)
+.env
+.env.local
+.env.production
+.env.*.local
+
+# Sensitive files
+*.pem
+*.key
+firebase-service-account.json
+
+# Terraform
+terraform/
+*.tfstate
+*.tfstate.backup
+.terraform/
+
+# CI/CD
+Jenkinsfile
+.github/
+
+# Documentation
+README.md
+docs/
+*.md
+
+# Scripts (not needed in runtime)
+scripts/
+
+# Docker files themselves
+Dockerfile
+.dockerignore
+docker-compose*.yml
+
+# Test files
+src/test/
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.swp
+*~
