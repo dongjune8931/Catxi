@@ -129,7 +129,8 @@ pipeline {
                                 credentialsId: 'aws-credentials',
                                 accessKeyVariable: 'AWS_ACCESS_KEY_ID',
                                 secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
-                            ]
+                            ],
+                            string(credentialsId: 'db-password', variable: 'DB_PASSWORD')
                         ]) {
                             // Initialize Terraform with S3 backend
                             sh 'terraform init -reconfigure'
@@ -138,7 +139,7 @@ pipeline {
                             sh 'terraform validate'
 
                             // Plan infrastructure changes
-                            sh 'terraform plan -out=tfplan'
+                            sh "terraform plan -var='rds_password=${DB_PASSWORD}' -out=tfplan"
 
                             // Apply only if plan succeeds
                             sh 'terraform apply -auto-approve tfplan'
