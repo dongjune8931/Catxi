@@ -84,6 +84,19 @@ echo "AWS CLI installed successfully!"
 aws --version
 
 # ==========================================
+# Install SSM Agent (for Session Manager)
+# ==========================================
+echo "=========================================="
+echo "Installing SSM Agent..."
+echo "=========================================="
+
+sudo snap install amazon-ssm-agent --classic
+sudo systemctl enable snap.amazon-ssm-agent.amazon-ssm-agent.service
+sudo systemctl start snap.amazon-ssm-agent.amazon-ssm-agent.service
+
+echo "SSM Agent installed successfully!"
+
+# ==========================================
 # Install Additional Tools
 # ==========================================
 echo "=========================================="
