@@ -354,6 +354,23 @@ TZ=Asia/Seoul
                             break
                         } catch (Exception e) {
                             if (i == maxRetries) {
+                                // Show container logs before failing
+                                echo "Health check failed. Fetching container logs..."
+                                sshagent(['ec2-ssh-key']) {
+                                    sh """
+                                        ssh -o StrictHostKeyChecking=no ubuntu@${ec2Ip} '
+                                            cd /home/ubuntu/catxi
+                                            echo "=== Container Status ==="
+                                            /usr/local/bin/docker-compose -f docker-compose.prod.yml ps
+                                            echo ""
+                                            echo "=== App Container Logs (last 100 lines) ==="
+                                            /usr/local/bin/docker-compose -f docker-compose.prod.yml logs app --tail=100
+                                            echo ""
+                                            echo "=== .env file check ==="
+                                            cat .env | grep -E "^[A-Z]" | cut -d= -f1
+                                        '
+                                    """
+                                }
                                 error("Health check failed after ${maxRetries} attempts")
                             }
                             echo "Health check failed, retrying..."
