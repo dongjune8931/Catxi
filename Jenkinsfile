@@ -254,30 +254,33 @@ TZ=Asia/Seoul
                                 ssh -o StrictHostKeyChecking=no ubuntu@${ec2Ip} '
                                     cd /home/ubuntu/catxi
 
+                                    # Set PATH for non-interactive shell
+                                    export PATH=/usr/local/bin:/usr/bin:\$PATH
+
                                     # Configure AWS CLI
                                     export AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
                                     export AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
                                     export AWS_DEFAULT_REGION=${AWS_REGION}
 
                                     # Login to ECR
-                                    aws ecr get-login-password --region ${AWS_REGION} | \
-                                    docker login --username AWS --password-stdin ${ECR_REGISTRY}
+                                    /usr/local/bin/aws ecr get-login-password --region ${AWS_REGION} | \
+                                    /usr/bin/docker login --username AWS --password-stdin ${ECR_REGISTRY}
 
                                     # Pull latest images
-                                    docker-compose -f docker-compose.prod.yml pull
+                                    /usr/local/bin/docker-compose -f docker-compose.prod.yml pull
 
                                     # Graceful shutdown and restart
-                                    docker-compose -f docker-compose.prod.yml down
-                                    docker-compose -f docker-compose.prod.yml up -d
+                                    /usr/local/bin/docker-compose -f docker-compose.prod.yml down
+                                    /usr/local/bin/docker-compose -f docker-compose.prod.yml up -d
 
                                     # Wait for containers to start
                                     sleep 10
 
                                     # Show container status
-                                    docker-compose -f docker-compose.prod.yml ps
+                                    /usr/local/bin/docker-compose -f docker-compose.prod.yml ps
 
                                     # Clean up old images to save disk space
-                                    docker image prune -af --filter "until=24h"
+                                    /usr/bin/docker image prune -af --filter "until=24h"
                                 '
                             """
                         }
