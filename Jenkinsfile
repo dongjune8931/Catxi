@@ -43,7 +43,6 @@ pipeline {
                     sh 'chmod +x gradlew'
 
                     // Clean and build (skip tests for faster builds)
-                    // Use --no-daemon to avoid Gradle daemon memory issues on t2.micro
                     sh './gradlew clean build -x test --no-daemon'
 
                     // Archive the JAR artifact
@@ -54,10 +53,49 @@ pipeline {
             }
         }
 
+        stage('Terraform') {
+            steps {
+                echo '============================================'
+                echo 'Stage 3: Provision Infrastructure with Terraform'
+                echo '============================================'
+
+                script {
+                    dir('terraform') {
+                        withCredentials([
+                            [
+                                $class: 'AmazonWebServicesCredentialsBinding',
+                                credentialsId: 'aws-credentials',
+                                accessKeyVariable: 'AWS_ACCESS_KEY_ID',
+                                secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
+                            ],
+                            string(credentialsId: 'db-password', variable: 'DB_PASSWORD')
+                        ]) {
+                            // Initialize Terraform with S3 backend
+                            sh 'terraform init -reconfigure'
+
+                            // Validate configuration
+                            sh 'terraform validate'
+
+                            // Plan infrastructure changes
+                            sh "terraform plan -var='rds_password=${DB_PASSWORD}' -out=tfplan"
+
+                            // Apply only if plan succeeds
+                            sh 'terraform apply -auto-approve tfplan'
+
+                            // Extract outputs for deployment
+                            sh 'terraform output -json > terraform-outputs.json'
+
+                            echo "Terraform infrastructure provisioned successfully!"
+                        }
+                    }
+                }
+            }
+        }
+
         stage('Docker Build') {
             steps {
                 echo '============================================'
-                echo 'Stage 3: Build Docker Image'
+                echo 'Stage 4: Build Docker Image'
                 echo '============================================'
 
                 script {
@@ -75,7 +113,7 @@ pipeline {
         stage('Push to ECR') {
             steps {
                 echo '============================================'
-                echo 'Stage 4: Push Docker Image to AWS ECR'
+                echo 'Stage 5: Push Docker Image to AWS ECR'
                 echo '============================================'
 
                 script {
@@ -110,45 +148,6 @@ pipeline {
                         """
 
                         echo "Docker image pushed to ECR: ${ECR_REGISTRY}/${ECR_REPOSITORY}:${IMAGE_TAG}"
-                    }
-                }
-            }
-        }
-
-        stage('Terraform') {
-            steps {
-                echo '============================================'
-                echo 'Stage 5: Provision Infrastructure with Terraform'
-                echo '============================================'
-
-                script {
-                    dir('terraform') {
-                        withCredentials([
-                            [
-                                $class: 'AmazonWebServicesCredentialsBinding',
-                                credentialsId: 'aws-credentials',
-                                accessKeyVariable: 'AWS_ACCESS_KEY_ID',
-                                secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
-                            ],
-                            string(credentialsId: 'db-password', variable: 'DB_PASSWORD')
-                        ]) {
-                            // Initialize Terraform with S3 backend
-                            sh 'terraform init -reconfigure'
-
-                            // Validate configuration
-                            sh 'terraform validate'
-
-                            // Plan infrastructure changes
-                            sh "terraform plan -var='rds_password=${DB_PASSWORD}' -out=tfplan"
-
-                            // Apply only if plan succeeds
-                            sh 'terraform apply -auto-approve tfplan'
-
-                            // Extract outputs for deployment
-                            sh 'terraform output -json > terraform-outputs.json'
-
-                            echo "Terraform infrastructure provisioned successfully!"
-                        }
                     }
                 }
             }
@@ -203,7 +202,13 @@ pipeline {
                             string(credentialsId: 'jwt-secret-key', variable: 'JWT_SECRET_KEY'),
                             string(credentialsId: 'kakao-client-id', variable: 'KAKAO_CLIENT_ID'),
                             string(credentialsId: 'kakao-client-secret', variable: 'KAKAO_CLIENT_SECRET'),
-                            string(credentialsId: 'discord-webhook-url', variable: 'DISCORD_WEBHOOK_URL')
+                            string(credentialsId: 'discord-webhook-url', variable: 'DISCORD_WEBHOOK_URL'),
+                            [
+                                $class: 'AmazonWebServicesCredentialsBinding',
+                                credentialsId: 'aws-credentials',
+                                accessKeyVariable: 'AWS_ACCESS_KEY_ID',
+                                secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
+                            ]
                         ]) {
                             // Get RDS endpoint from Terraform
                             def rdsEndpoint = sh(
@@ -211,16 +216,19 @@ pipeline {
                                 returnStdout: true
                             ).trim()
 
+                            // Remove port from endpoint if present
+                            def rdsHost = rdsEndpoint.split(':')[0]
+
                             // Create .env file on remote server
                             sh """
-                                ssh -o StrictHostKeyChecking=no ubuntu@${ec2Ip} 'cat > /home/ubuntu/catxi/.env' << EOF
+                                ssh -o StrictHostKeyChecking=no ubuntu@${ec2Ip} 'cat > /home/ubuntu/catxi/.env' << 'ENVEOF'
 SPRING_PROFILES_ACTIVE=prod
 BUILD_NUMBER=${BUILD_NUMBER}
 AWS_ACCOUNT_ID=${AWS_ACCOUNT_ID}
 AWS_REGION=${AWS_REGION}
 
 # Database (RDS)
-DB_HOST=${rdsEndpoint}
+DB_HOST=${rdsHost}
 DB_PORT=3306
 DB_USER=catxi_admin
 DB_PW=${DB_PASSWORD}
@@ -245,7 +253,7 @@ DISCORD_WEBHOOK_URL=${DISCORD_WEBHOOK_URL}
 
 # Timezone
 TZ=Asia/Seoul
-EOF
+ENVEOF
                             """
 
                             // Set secure permissions on .env
@@ -254,32 +262,15 @@ EOF
                                     chmod 600 /home/ubuntu/catxi/.env
                                 '
                             """
-                        }
 
-                        // Copy Firebase service account JSON
-                        sh """
-                            scp -o StrictHostKeyChecking=no \
-                            /var/jenkins_home/secrets/firebase-service-account.json \
-                            ubuntu@${ec2Ip}:/home/ubuntu/catxi/firebase-service-account.json
-                        """
-
-                        // Login to ECR, pull latest image, and restart services
-                        withCredentials([
-                            [
-                                $class: 'AmazonWebServicesCredentialsBinding',
-                                credentialsId: 'aws-credentials',
-                                accessKeyVariable: 'AWS_ACCESS_KEY_ID',
-                                secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
-                            ],
-                            string(credentialsId: 'aws-account-id', variable: 'AWS_ACCOUNT_ID')
-                        ]) {
                             def ECR_REGISTRY = "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com"
 
+                            // Deploy on EC2
                             sh """
                                 ssh -o StrictHostKeyChecking=no ubuntu@${ec2Ip} '
                                     cd /home/ubuntu/catxi
 
-                                    # Configure AWS CLI (if not already configured)
+                                    # Configure AWS CLI
                                     export AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
                                     export AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
                                     export AWS_DEFAULT_REGION=${AWS_REGION}
@@ -349,11 +340,11 @@ EOF
                             """
 
                             healthCheckPassed = true
-                            echo "✅ Health check passed!"
+                            echo "Health check passed!"
                             break
                         } catch (Exception e) {
                             if (i == maxRetries) {
-                                error("❌ Health check failed after ${maxRetries} attempts")
+                                error("Health check failed after ${maxRetries} attempts")
                             }
                             echo "Health check failed, retrying..."
                         }
@@ -365,7 +356,7 @@ EOF
                             curl -X POST '${DISCORD_WEBHOOK_URL}' \
                             -H 'Content-Type: application/json' \
                             -d '{
-                                "content": "✅ **Catxi Backend 배포 성공!**\\n**Build:** #${BUILD_NUMBER}\\n**URL:** http://${ec2Ip}:8080\\n**Status:** Healthy"
+                                "content": "Catxi Backend deployed successfully! Build: #${BUILD_NUMBER}, URL: http://${ec2Ip}:8080"
                             }'
                         """
                     }
@@ -382,7 +373,7 @@ EOF
 
     post {
         success {
-            echo '🎉 Pipeline succeeded!'
+            echo 'Pipeline succeeded!'
             script {
                 // Clean up Docker images on Jenkins server
                 sh 'docker image prune -af --filter "until=24h"'
@@ -390,7 +381,7 @@ EOF
         }
 
         failure {
-            echo '❌ Pipeline failed!'
+            echo 'Pipeline failed!'
             script {
                 // Send failure notification to Discord
                 withCredentials([string(credentialsId: 'discord-webhook-url', variable: 'DISCORD_WEBHOOK_URL')]) {
@@ -398,7 +389,7 @@ EOF
                         curl -X POST '${DISCORD_WEBHOOK_URL}' \
                         -H 'Content-Type: application/json' \
                         -d '{
-                            "content": "❌ **Catxi Backend 배포 실패!**\\n**Build:** #${BUILD_NUMBER}\\n**Jenkins:** ${BUILD_URL}"
+                            "content": "Catxi Backend deployment FAILED! Build: #${BUILD_NUMBER}, Jenkins: ${BUILD_URL}"
                         }'
                     """
                 }
