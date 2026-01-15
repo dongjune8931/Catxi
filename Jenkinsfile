@@ -221,21 +221,21 @@ pipeline {
 
                             // Create .env file locally and copy to remote
                             writeFile file: '.env.prod', text: """SPRING_PROFILES_ACTIVE=prod
-BUILD_NUMBER=${BUILD_NUMBER}
-AWS_ACCOUNT_ID=${AWS_ACCOUNT_ID}
-AWS_REGION=${AWS_REGION}
+BUILD_NUMBER=${env.BUILD_NUMBER}
+AWS_ACCOUNT_ID=${env.AWS_ACCOUNT_ID}
+AWS_REGION=${env.AWS_REGION}
 DB_HOST=${rdsHost}
 DB_PORT=3306
 DB_USER=catxi_admin
-DB_PW=${DB_PASSWORD}
+DB_PW=${env.DB_PASSWORD}
 REDIS_HOST=redis
 REDIS_PORT=6379
-REDIS_PASSWORD=${REDIS_PASSWORD}
-SECRET_KEY=${JWT_SECRET_KEY}
-KAKAO_CLIENT_ID=${KAKAO_CLIENT_ID}
-KAKAO_CLIENT_SECRET=${KAKAO_CLIENT_SECRET}
+REDIS_PASSWORD=${env.REDIS_PASSWORD}
+SECRET_KEY=${env.JWT_SECRET_KEY}
+KAKAO_CLIENT_ID=${env.KAKAO_CLIENT_ID}
+KAKAO_CLIENT_SECRET=${env.KAKAO_CLIENT_SECRET}
 FCM_SERVICE_ACCOUNT_FILE=/app/config/firebase-service-account.json
-DISCORD_WEBHOOK_URL=${DISCORD_WEBHOOK_URL}
+DISCORD_WEBHOOK_URL=${env.DISCORD_WEBHOOK_URL}
 TZ=Asia/Seoul
 """
                             sh "scp -o StrictHostKeyChecking=no .env.prod ubuntu@${ec2Ip}:/home/ubuntu/catxi/.env"
