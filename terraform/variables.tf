@@ -91,7 +91,7 @@ variable "rds_allocated_storage" {
 variable "rds_engine_version" {
   description = "MySQL engine version"
   type        = string
-  default     = "8.0.39"  # 최신 버전
+  default     = "8.0"  # AWS가 자동으로 최신 8.0.x 선택
 }
 
 variable "rds_database_name" {
