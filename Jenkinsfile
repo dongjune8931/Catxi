@@ -162,10 +162,20 @@ pipeline {
 
                 script {
                     // Extract EC2 public IP from Terraform outputs
-                    def ec2Ip = sh(
-                        script: "cd terraform && terraform output -raw ec2_public_ip",
-                        returnStdout: true
-                    ).trim()
+                    def ec2Ip
+                    withCredentials([
+                        [
+                            $class: 'AmazonWebServicesCredentialsBinding',
+                            credentialsId: 'aws-credentials',
+                            accessKeyVariable: 'AWS_ACCESS_KEY_ID',
+                            secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
+                        ]
+                    ]) {
+                        ec2Ip = sh(
+                            script: "cd terraform && terraform output -raw ec2_public_ip",
+                            returnStdout: true
+                        ).trim()
+                    }
 
                     echo "Deploying to EC2: ${ec2Ip}"
 
@@ -310,10 +320,20 @@ EOF
                 echo '============================================'
 
                 script {
-                    def ec2Ip = sh(
-                        script: "cd terraform && terraform output -raw ec2_public_ip",
-                        returnStdout: true
-                    ).trim()
+                    def ec2Ip
+                    withCredentials([
+                        [
+                            $class: 'AmazonWebServicesCredentialsBinding',
+                            credentialsId: 'aws-credentials',
+                            accessKeyVariable: 'AWS_ACCESS_KEY_ID',
+                            secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
+                        ]
+                    ]) {
+                        ec2Ip = sh(
+                            script: "cd terraform && terraform output -raw ec2_public_ip",
+                            returnStdout: true
+                        ).trim()
+                    }
 
                     // Retry health check up to 10 times with 10 second intervals
                     def healthCheckPassed = false
