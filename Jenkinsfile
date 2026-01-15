@@ -219,42 +219,26 @@ pipeline {
                             // Remove port from endpoint if present
                             def rdsHost = rdsEndpoint.split(':')[0]
 
-                            // Create .env file on remote server
-                            sh """
-                                ssh -o StrictHostKeyChecking=no ubuntu@\${ec2Ip} 'cat > /home/ubuntu/catxi/.env << EOF
-SPRING_PROFILES_ACTIVE=prod
+                            // Create .env file locally and copy to remote
+                            writeFile file: '.env.prod', text: """SPRING_PROFILES_ACTIVE=prod
 BUILD_NUMBER=${BUILD_NUMBER}
 AWS_ACCOUNT_ID=${AWS_ACCOUNT_ID}
 AWS_REGION=${AWS_REGION}
-
-# Database (RDS)
 DB_HOST=${rdsHost}
 DB_PORT=3306
 DB_USER=catxi_admin
 DB_PW=${DB_PASSWORD}
-
-# Redis
 REDIS_HOST=redis
 REDIS_PORT=6379
 REDIS_PASSWORD=${REDIS_PASSWORD}
-
-# JWT
 SECRET_KEY=${JWT_SECRET_KEY}
-
-# Kakao OAuth
 KAKAO_CLIENT_ID=${KAKAO_CLIENT_ID}
 KAKAO_CLIENT_SECRET=${KAKAO_CLIENT_SECRET}
-
-# Firebase
 FCM_SERVICE_ACCOUNT_FILE=/app/config/firebase-service-account.json
-
-# Discord
 DISCORD_WEBHOOK_URL=${DISCORD_WEBHOOK_URL}
-
-# Timezone
 TZ=Asia/Seoul
-EOF'
-                            """
+"""
+                            sh "scp -o StrictHostKeyChecking=no .env.prod ubuntu@${ec2Ip}:/home/ubuntu/catxi/.env"
 
                             // Set secure permissions on .env
                             sh """
