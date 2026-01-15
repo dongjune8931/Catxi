@@ -85,9 +85,22 @@ resource "aws_instance" "app" {
 }
 
 # ==========================================
-# Elastic IP - 수동 관리 (AWS 콘솔에서 할당)
-# 현재 할당된 EIP: 54.180.169.207
+# Elastic IP (Terraform 관리)
 # ==========================================
+
+resource "aws_eip" "app" {
+  instance = aws_instance.app.id
+  domain   = "vpc"
+
+  tags = merge(
+    var.common_tags,
+    {
+      Name = "${var.project_name}-app-eip"
+    }
+  )
+
+  depends_on = [aws_instance.app]
+}
 
 # ==========================================
 # CloudWatch Alarms (Optional)

@@ -92,7 +92,6 @@ module "ec2" {
   subnet_id            = module.vpc.public_subnet_ids[0] # Deploy in first public subnet
   security_group_id    = module.security_groups.app_security_group_id
   iam_instance_profile = module.iam.ec2_instance_profile_name
-  elastic_ip           = var.ec2_elastic_ip
   common_tags          = var.common_tags
 
   depends_on = [module.vpc, module.security_groups, module.iam]

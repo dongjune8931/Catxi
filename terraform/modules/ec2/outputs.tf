@@ -6,8 +6,8 @@ output "instance_id" {
 }
 
 output "public_ip" {
-  description = "Elastic IP (public) - 수동 할당"
-  value       = var.elastic_ip
+  description = "Elastic IP (public)"
+  value       = aws_eip.app.public_ip
 }
 
 output "private_ip" {

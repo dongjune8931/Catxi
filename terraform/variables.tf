@@ -72,12 +72,6 @@ variable "jenkins_ip" {
   default     = "52.79.93.195/32" # Jenkins server Elastic IP
 }
 
-variable "ec2_elastic_ip" {
-  description = "Manually assigned Elastic IP for EC2"
-  type        = string
-  default     = "54.180.169.207" # App server Elastic IP
-}
-
 # ==========================================
 # RDS Configuration
 # ==========================================
@@ -122,7 +116,7 @@ variable "rds_password" {
 variable "rds_backup_retention_period" {
   description = "Backup retention period in days"
   type        = number
-  default     = 7
+  default     = 1  # 프리티어는 0~1일만 가능
 }
 
 variable "rds_multi_az" {

@@ -34,8 +34,3 @@ variable "common_tags" {
   description = "Common tags for all resources"
   type        = map(string)
 }
-
-variable "elastic_ip" {
-  description = "Manually assigned Elastic IP address"
-  type        = string
-}
