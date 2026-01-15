@@ -32,8 +32,8 @@ WORKDIR /app
 # Create non-root user for security
 RUN addgroup -S spring && adduser -S spring -G spring
 
-# Copy JAR from builder stage
-COPY --from=builder /app/build/libs/*.jar app.jar
+# Copy JAR from builder stage (exclude plain jar)
+COPY --from=builder /app/build/libs/*-SNAPSHOT.jar app.jar
 
 # Create directories for logs and config
 RUN mkdir -p /app/logs /app/config && \
