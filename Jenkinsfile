@@ -187,6 +187,28 @@ pipeline {
                             '
                         """
 
+                        // Wait for user-data script to complete (Docker installation)
+                        echo "Waiting for Docker installation to complete..."
+                        def dockerReady = false
+                        for (int i = 1; i <= 30; i++) {
+                            try {
+                                sh """
+                                    ssh -o StrictHostKeyChecking=no ubuntu@${ec2Ip} '
+                                        which docker && which docker-compose && which aws
+                                    '
+                                """
+                                dockerReady = true
+                                echo "Docker is ready!"
+                                break
+                            } catch (Exception e) {
+                                echo "Waiting for Docker... attempt ${i}/30"
+                                sleep(time: 10, unit: 'SECONDS')
+                            }
+                        }
+                        if (!dockerReady) {
+                            error("Docker installation timed out after 5 minutes")
+                        }
+
                         // Copy docker-compose file
                         sh """
                             scp -o StrictHostKeyChecking=no \
