@@ -2,8 +2,8 @@ package com.project.catxi.fcm.service;
 
 import com.google.firebase.messaging.*;
 import com.project.catxi.member.domain.Member;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -11,12 +11,24 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 @Slf4j
 @Service
-@RequiredArgsConstructor
 public class FcmNotificationService {
 
     private final FirebaseMessaging firebaseMessaging;
     private final FcmTokenService fcmTokenService;
     private final FcmBatchOptimizer batchOptimizer;
+
+    public FcmNotificationService(
+            @Autowired(required = false) FirebaseMessaging firebaseMessaging,
+            FcmTokenService fcmTokenService,
+            FcmBatchOptimizer batchOptimizer) {
+        this.firebaseMessaging = firebaseMessaging;
+        this.fcmTokenService = fcmTokenService;
+        this.batchOptimizer = batchOptimizer;
+
+        if (firebaseMessaging == null) {
+            log.warn("FirebaseMessaging이 주입되지 않았습니다. FCM 알림 기능이 비활성화됩니다.");
+        }
+    }
 
     private boolean isFirebaseInitialized() {
         return firebaseMessaging != null;
