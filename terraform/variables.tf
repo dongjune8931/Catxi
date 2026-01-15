@@ -57,7 +57,7 @@ variable "private_subnet_cidrs" {
 variable "ec2_instance_type" {
   description = "EC2 instance type for application server"
   type        = string
-  default     = "t2.micro" # Free tier eligible
+  default     = "t3.micro" # Free tier eligible (new accounts)
 }
 
 variable "ec2_key_name" {
@@ -91,7 +91,7 @@ variable "rds_allocated_storage" {
 variable "rds_engine_version" {
   description = "MySQL engine version"
   type        = string
-  default     = "8.0.35"
+  default     = "8.0.39"  # 최신 버전
 }
 
 variable "rds_database_name" {
