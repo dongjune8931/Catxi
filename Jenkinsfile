@@ -4,7 +4,6 @@ pipeline {
     environment {
         // AWS Configuration
         AWS_REGION = 'ap-northeast-2'
-        ECR_REGISTRY = "${AWS_ACCOUNT_ID}.dkr.ecr.ap-northeast-2.amazonaws.com"
         ECR_REPOSITORY = 'catxi-backend'
         IMAGE_TAG = "${BUILD_NUMBER}"
 
@@ -90,6 +89,8 @@ pipeline {
                         ],
                         string(credentialsId: 'aws-account-id', variable: 'AWS_ACCOUNT_ID')
                     ]) {
+                        def ECR_REGISTRY = "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com"
+
                         // Login to ECR
                         sh """
                             aws ecr get-login-password --region ${AWS_REGION} | \
@@ -261,6 +262,8 @@ EOF
                             ],
                             string(credentialsId: 'aws-account-id', variable: 'AWS_ACCOUNT_ID')
                         ]) {
+                            def ECR_REGISTRY = "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com"
+
                             sh """
                                 ssh -o StrictHostKeyChecking=no ubuntu@${ec2Ip} '
                                     cd /home/ubuntu/catxi
