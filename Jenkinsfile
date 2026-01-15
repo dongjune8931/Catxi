@@ -221,7 +221,7 @@ pipeline {
 
                             // Create .env file on remote server
                             sh """
-                                ssh -o StrictHostKeyChecking=no ubuntu@${ec2Ip} 'cat > /home/ubuntu/catxi/.env' << 'ENVEOF'
+                                ssh -o StrictHostKeyChecking=no ubuntu@\${ec2Ip} 'cat > /home/ubuntu/catxi/.env << EOF
 SPRING_PROFILES_ACTIVE=prod
 BUILD_NUMBER=${BUILD_NUMBER}
 AWS_ACCOUNT_ID=${AWS_ACCOUNT_ID}
@@ -253,7 +253,7 @@ DISCORD_WEBHOOK_URL=${DISCORD_WEBHOOK_URL}
 
 # Timezone
 TZ=Asia/Seoul
-ENVEOF
+EOF'
                             """
 
                             // Set secure permissions on .env
