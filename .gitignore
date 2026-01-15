@@ -54,6 +54,11 @@ firebase-service-account.json
 
 ### Claude Code ###
 CLAUDE.md
+.claude/
+
+### Jenkins & Setup Docs (Contains Credentials) ###
+JENKINS_CREDENTIALS.md
+FIREBASE_SETUP.md
 
 ### Deployment - Environment Variables ###
 .env

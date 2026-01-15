@@ -1,0 +1,63 @@
+# Terraform Variables - Example
+# Copy this file to terraform.tfvars and fill in actual values
+# WARNING: Never commit terraform.tfvars to git!
+
+# ==========================================
+# General Configuration
+# ==========================================
+
+project_name = "catxi"
+environment  = "prod"
+aws_region   = "ap-northeast-2"
+
+# ==========================================
+# Network Configuration
+# ==========================================
+
+vpc_cidr             = "10.0.0.0/16"
+availability_zones   = ["ap-northeast-2a", "ap-northeast-2c"]
+public_subnet_cidrs  = ["10.0.1.0/24", "10.0.2.0/24"]
+private_subnet_cidrs = ["10.0.11.0/24", "10.0.12.0/24"]
+
+# ==========================================
+# EC2 Configuration
+# ==========================================
+
+ec2_instance_type = "t2.micro" # Free tier eligible
+ec2_key_name      = "popol-key" # Your existing key pair name
+
+# IMPORTANT: Update with your actual Jenkins server IP
+# Example: "3.34.123.45/32" (use /32 for single IP)
+jenkins_ip = "0.0.0.0/0" # TODO: Replace with actual Jenkins IP
+
+# ==========================================
+# RDS Configuration
+# ==========================================
+
+rds_instance_class          = "db.t3.micro"
+rds_allocated_storage       = 20
+rds_engine_version          = "8.0.35"
+rds_database_name           = "catxi"
+rds_username                = "catxi_admin"
+rds_password                = "CHANGE-THIS-STRONG-PASSWORD-MIN-8-CHARS" # REQUIRED
+rds_backup_retention_period = 7
+rds_multi_az                = false # Set to true for production HA (doubles cost)
+
+# ==========================================
+# ECR Configuration
+# ==========================================
+
+ecr_repository_name        = "catxi-backend"
+ecr_image_tag_mutability   = "MUTABLE"
+ecr_image_retention_count  = 10
+
+# ==========================================
+# Common Tags
+# ==========================================
+
+common_tags = {
+  Project     = "Catxi"
+  Environment = "Production"
+  ManagedBy   = "Terraform"
+  Owner       = "YourName" # TODO: Add your name
+}
