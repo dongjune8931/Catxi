@@ -216,6 +216,29 @@ pipeline {
                             ubuntu@${ec2Ip}:/home/ubuntu/catxi/docker-compose.prod.yml
                         """
 
+                        // Copy nginx configuration folder
+                        sh """
+                            scp -o StrictHostKeyChecking=no -r \
+                            nginx \
+                            ubuntu@${ec2Ip}:/home/ubuntu/catxi/
+                        """
+
+                        // Create certbot directories and nginx logs directory
+                        sh """
+                            ssh -o StrictHostKeyChecking=no ubuntu@${ec2Ip} '
+                                mkdir -p /home/ubuntu/catxi/certbot/conf
+                                mkdir -p /home/ubuntu/catxi/certbot/www
+                                mkdir -p /home/ubuntu/catxi/nginx/logs
+
+                                # Use nginx.init.conf initially (before SSL cert exists)
+                                # After SSL cert is issued, replace with nginx.conf
+                                if [ ! -d "/home/ubuntu/catxi/certbot/conf/live/catxi.kro.kr" ]; then
+                                    echo "SSL certificate not found, using initial nginx config"
+                                    cp /home/ubuntu/catxi/nginx/nginx.init.conf /home/ubuntu/catxi/nginx/nginx.conf
+                                fi
+                            '
+                        """
+
                         // Create .env file with all secrets
                         withCredentials([
                             string(credentialsId: 'aws-account-id', variable: 'AWS_ACCOUNT_ID'),
@@ -346,7 +369,7 @@ TZ=Asia/Seoul
                             sleep(time: 10, unit: 'SECONDS')
 
                             sh """
-                                curl -f http://${ec2Ip}:8080/actuator/health
+                                curl -f http://${ec2Ip}/actuator/health
                             """
 
                             healthCheckPassed = true
@@ -383,15 +406,16 @@ TZ=Asia/Seoul
                             curl -X POST '${DISCORD_WEBHOOK_URL}' \
                             -H 'Content-Type: application/json' \
                             -d '{
-                                "content": "Catxi Backend deployed successfully! Build: #${BUILD_NUMBER}, URL: http://${ec2Ip}:8080"
+                                "content": "Catxi Backend deployed successfully! Build: #${BUILD_NUMBER}, URL: https://catxi.kro.kr"
                             }'
                         """
                     }
 
                     echo "============================================"
                     echo "Deployment completed successfully!"
-                    echo "Application URL: http://${ec2Ip}:8080"
-                    echo "Health Check: http://${ec2Ip}:8080/actuator/health"
+                    echo "Application URL: https://catxi.kro.kr"
+                    echo "Health Check: https://catxi.kro.kr/actuator/health"
+                    echo "(Note: HTTPS will work after SSL certificate is issued)"
                     echo "============================================"
                 }
             }
